@@ -88,12 +88,21 @@ STRICT REQUIREMENTS:
 10. Keep introduction short and relevant (about 90-130 words)
 11. Active voice, short paragraphs (2-3 sentences max), simple sentence structure
 12. Keep each paragraph concise and meaningful; do not stretch text just to increase word count
-13. Do NOT truncate. Write every section in full.
-14. Use markdown formatting throughout
+13. LANGUAGE FOR INDIAN READERS (English): Write so everyday Indian readers can follow easily — many read English as a second language.
+    - Use **short sentences** (often 10–18 words). One main idea per sentence.
+    - Choose **common everyday words** over fancy or rare synonyms (say “use” not “utilise”, “buy” not “procure”, “end” not “terminate”).
+    - **Explain** any necessary technical word the first time in simple English, in parentheses or a short phrase.
+    - **Avoid** heavy idioms, slang, riddles, and culture-specific US/UK jokes or references.
+    - Prefer **British/Indian English spelling** where natural (e.g. colour, organisation, behaviour) — stay consistent.
+    - Do not sound textbook-dry: stay friendly and direct, but never patronising.
+14. Do NOT truncate. Write every section in full.
+15. Use markdown formatting throughout
 
 Write the complete article now:`;
 
-  const fullPrompt = `You are a senior SEO content writer with 10+ years experience writing articles that rank on Google page 1. You write in an authoritative, engaging, and clear style. You always back claims with data and cite sources. Use plain, human language that is easy for most grade 10-12 and college readers to understand. Avoid jargon and overly complex vocabulary.
+  const fullPrompt = `You are a senior SEO content writer with 10+ years experience writing articles that rank on Google page 1. You write in an authoritative, engaging, and clear style. You always back claims with data and cite sources.
+
+Your default reader is a **typical Indian English reader**: comfortable with English for work or study, but not reading literary or legal English all day. Use **simple, clear English** (about Grade 8–10 readability): plain words, short sentences, minimal jargon, and no assumptions about Western pop-culture or US-centric framing unless the topic requires it.
 
 ${userPrompt}`;
 

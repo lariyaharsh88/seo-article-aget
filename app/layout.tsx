@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Abril_Fatface, Lora, Space_Mono } from "next/font/google";
+import { SiteHeader } from "@/components/SiteHeader";
 import "./globals.css";
 
 const abril = Abril_Fatface({
@@ -23,7 +24,10 @@ const spaceMono = Space_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "SEO Article Agent",
+  title: {
+    default: "SEO Article Agent",
+    template: "%s · SEO Article Agent",
+  },
   description:
     "Research, outline, and draft long-form SEO articles with Gemini, Tavily, and Serper.",
 };
@@ -38,7 +42,10 @@ export default function RootLayout({
       <body
         className={`${abril.variable} ${lora.variable} ${spaceMono.variable} page-grid`}
       >
-        <div className="relative z-10">{children}</div>
+        <div className="relative z-10">
+          <SiteHeader />
+          {children}
+        </div>
       </body>
     </html>
   );
