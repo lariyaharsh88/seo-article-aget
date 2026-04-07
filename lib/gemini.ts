@@ -4,19 +4,109 @@ const MODEL_CANDIDATES = [
   "gemini-2.5-flash",
   "gemini-2.0-flash-001",
   "gemini-1.5-flash-latest",
-  "gemini-1.5-flash",
+  "gemini-1.5-flash-8b",
+  "gemini-1.5-pro-latest",
+  "gemini-1.5-pro",
 ];
 
 /**
  * If `GEMINI_MODEL` is set (e.g. on Vercel), that model is tried **first** only.
- * On 429/404 we still fall through `MODEL_CANDIDATES` — never lock to a single ID.
- * Use server env only (`GEMINI_MODEL`); do not use `NEXT_PUBLIC_*` (exposes nothing useful client-side).
+ * On 429/404 we still fall through other IDs — never lock to a single ID forever.
  */
 function configuredModels(): string[] {
   const preferred = process.env.GEMINI_MODEL?.trim();
   const out: string[] = [];
   if (preferred) out.push(preferred);
   for (const m of MODEL_CANDIDATES) {
+    if (!out.includes(m)) out.push(m);
+  }
+  return out;
+}
+
+interface ListedModel {
+  name?: string;
+  supportedGenerationMethods?: string[];
+}
+
+const MODEL_LIST_TTL_MS = 10 * 60 * 1000;
+const modelListCache = new Map<
+  string,
+  { ids: string[]; fetchedAt: number }
+>();
+
+function cacheKeyForList(apiKey: string, forStream: boolean): string {
+  return `${forStream ? "s" : "g"}:${apiKey.slice(0, 12)}`;
+}
+
+/**
+ * Uses ListModels so the API key's actual catalog wins over stale hardcoded names.
+ * Same prompts — only routing changes — so article/outline quality stays consistent.
+ */
+async function discoverModelIds(
+  apiKey: string,
+  forStream: boolean,
+): Promise<string[]> {
+  const ck = cacheKeyForList(apiKey, forStream);
+  const hit = modelListCache.get(ck);
+  if (hit && Date.now() - hit.fetchedAt < MODEL_LIST_TTL_MS) {
+    return hit.ids;
+  }
+
+  const url = `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(
+    apiKey,
+  )}&pageSize=100`;
+  const res = await fetch(url);
+  if (!res.ok) {
+    modelListCache.set(ck, { ids: [], fetchedAt: Date.now() });
+    return [];
+  }
+
+  const data = (await res.json()) as { models?: ListedModel[] };
+  const ids: string[] = [];
+
+  for (const m of data.models ?? []) {
+    const methods = m.supportedGenerationMethods ?? [];
+    const supportsText =
+      forStream &&
+      (methods.includes("streamGenerateContent") ||
+        methods.includes("generateContent"));
+    const supportsGen = !forStream && methods.includes("generateContent");
+    if (!supportsText && !supportsGen) continue;
+
+    const name = m.name ?? "";
+    if (!name.startsWith("models/")) continue;
+    const short = name.slice("models/".length);
+    const lower = short.toLowerCase();
+    if (lower.includes("embedding")) continue;
+    if (!lower.includes("gemini")) continue;
+    ids.push(short);
+  }
+
+  ids.sort((a, b) => {
+    const flashA = a.includes("flash") ? 0 : 1;
+    const flashB = b.includes("flash") ? 0 : 1;
+    if (flashA !== flashB) return flashA - flashB;
+    const proA = a.includes("pro") ? 0 : 1;
+    const proB = b.includes("pro") ? 0 : 1;
+    if (proA !== proB) return proA - proB;
+    return a.localeCompare(b);
+  });
+
+  modelListCache.set(ck, { ids, fetchedAt: Date.now() });
+  return ids;
+}
+
+async function mergedModelOrder(
+  apiKey: string,
+  method: "generateContent" | "streamGenerateContent",
+): Promise<string[]> {
+  const staticOrder = configuredModels();
+  const discovered = await discoverModelIds(
+    apiKey,
+    method === "streamGenerateContent",
+  );
+  const out: string[] = [];
+  for (const m of [...staticOrder, ...discovered]) {
     if (!out.includes(m)) out.push(m);
   }
   return out;
@@ -57,8 +147,9 @@ async function postWithModelFallback(
 ): Promise<{ res: Response; model: string }> {
   let lastStatus = 0;
   let lastDetail = "Unknown Gemini error";
-  const models = configuredModels();
+  const models = await mergedModelOrder(apiKey, method);
   const rateLimited: string[] = [];
+  const notFound: string[] = [];
 
   for (let i = 0; i < models.length; i++) {
     const model = models[i];
@@ -76,7 +167,6 @@ async function postWithModelFallback(
     lastStatus = res.status;
     lastDetail = `${model}: ${detail}`;
 
-    // Rate limits and missing models are often per-model — try the next candidate.
     if (res.status === 429) {
       rateLimited.push(model);
       if (i < models.length - 1) {
@@ -85,14 +175,23 @@ async function postWithModelFallback(
       continue;
     }
 
-    if (res.status === 404) continue;
+    if (res.status === 404) {
+      notFound.push(model);
+      continue;
+    }
 
     throw new Error(`Gemini error ${res.status}: ${lastDetail}`);
   }
 
-  if (rateLimited.length === models.length) {
+  if (rateLimited.length === models.length && models.length > 0) {
     throw new Error(
-      `Gemini rate limited on all tried models (${rateLimited.join(", ")}). Wait 1–2 minutes and run again, or set GEMINI_MODEL to a model with available quota.`,
+      `Gemini rate limited on all tried models (${rateLimited.join(", ")}). Wait 1–2 minutes and run again, or enable billing / raise quotas in Google AI Studio.`,
+    );
+  }
+
+  if (notFound.length === models.length && models.length > 0) {
+    throw new Error(
+      `No Gemini text model available for this API key (all returned 404). Tried: ${notFound.slice(0, 12).join(", ")}${notFound.length > 12 ? "…" : ""}. In Google AI Studio, list models for your key or set GEMINI_MODEL to an ID from ListModels.`,
     );
   }
 
