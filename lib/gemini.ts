@@ -7,10 +7,19 @@ const MODEL_CANDIDATES = [
   "gemini-1.5-flash",
 ];
 
+/**
+ * If `GEMINI_MODEL` is set (e.g. on Vercel), that model is tried **first** only.
+ * On 429/404 we still fall through `MODEL_CANDIDATES` — never lock to a single ID.
+ * Use server env only (`GEMINI_MODEL`); do not use `NEXT_PUBLIC_*` (exposes nothing useful client-side).
+ */
 function configuredModels(): string[] {
-  const env = process.env.GEMINI_MODEL?.trim();
-  if (env) return [env];
-  return MODEL_CANDIDATES;
+  const preferred = process.env.GEMINI_MODEL?.trim();
+  const out: string[] = [];
+  if (preferred) out.push(preferred);
+  for (const m of MODEL_CANDIDATES) {
+    if (!out.includes(m)) out.push(m);
+  }
+  return out;
 }
 
 function extractErrorMessage(raw: string): string {
