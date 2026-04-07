@@ -58,7 +58,7 @@ export async function POST(request: Request) {
   const outlineText = capPromptText(body.outlineText?.trim() || "", 12_000);
   const paas = body.paas ?? [];
 
-  const userPrompt = `Write a COMPLETE, detailed, 2500-word SEO-optimised article.
+  const userPrompt = `Write a COMPLETE, detailed, 1000-1500-word SEO-optimised article.
 
 TOPIC: ${topic}
 PRIMARY KEYWORD: ${primary}
@@ -78,19 +78,22 @@ ${paas.join("\n") || "(derive from topic)"}
 STRICT REQUIREMENTS:
 1. Open with # H1 heading — must contain primary keyword
 2. Follow every H2 (##) and H3 (###) from the outline above exactly
-3. Write 280-350 words per H2 section
+3. Write 220-320 words per H2 section (concise, no fluff)
 4. Cite statistics inline as [Source: domain.com]
 5. Keyword density 1.5-2.5% (natural, never stuffed)
 6. FAQ section: 5 questions with 2-3 sentence answers each
 7. Conclusion: key takeaways + single clear CTA
-8. Use bullet points, numbered lists, and **bold text** for scanability
-9. Active voice, short paragraphs (3-4 sentences max)
-10. Do NOT truncate. Write every section in full.
-11. Use markdown formatting throughout
+8. Use at least one markdown table and multiple bullet/numbered lists for scanability
+9. Add 1-2 data-visual placeholders in markdown image format with clear alt text and source note (for example charts/infographics based on cited stats)
+10. Keep introduction short and relevant (about 90-130 words)
+11. Active voice, short paragraphs (2-3 sentences max), simple sentence structure
+12. Keep each paragraph concise and meaningful; do not stretch text just to increase word count
+13. Do NOT truncate. Write every section in full.
+14. Use markdown formatting throughout
 
 Write the complete article now:`;
 
-  const fullPrompt = `You are a senior SEO content writer with 10+ years experience writing articles that rank on Google page 1. You write in an authoritative, engaging, and clear style. You always back claims with data and cite sources.
+  const fullPrompt = `You are a senior SEO content writer with 10+ years experience writing articles that rank on Google page 1. You write in an authoritative, engaging, and clear style. You always back claims with data and cite sources. Use plain, human language that is easy for most grade 10-12 and college readers to understand. Avoid jargon and overly complex vocabulary.
 
 ${userPrompt}`;
 
