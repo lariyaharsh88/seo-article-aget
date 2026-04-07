@@ -104,6 +104,39 @@ const INDIA_EDUCATION_SEEDS: Array<{ seed: string; group: ReportGroup }> = [
   { seed: "education news India", group: "education" },
 ];
 
+/** ~14 seeds: same breadth, fewer HTTP calls for faster default loads. */
+const INDIA_EDUCATION_SEEDS_LITE: Array<{ seed: string; group: ReportGroup }> = [
+  { seed: "JEE Main", group: "exams" },
+  { seed: "NEET", group: "exams" },
+  { seed: "CUET", group: "exams" },
+  { seed: "UPSC", group: "exams" },
+  { seed: "GATE exam", group: "exams" },
+  { seed: "board exam result", group: "exams" },
+  { seed: "CBSE result", group: "exams" },
+  { seed: "12th result", group: "exams" },
+  { seed: "admit card", group: "exams" },
+  { seed: "exam date", group: "exams" },
+  { seed: "entrance exam", group: "exams" },
+  { seed: "application form", group: "colleges" },
+  { seed: "college admission", group: "colleges" },
+  { seed: "sarkari result", group: "education" },
+];
+
+const SEED_DEFINITIONS_LITE: Array<{ seed: string; group: ReportGroup }> = [
+  { seed: "SAT exam", group: "exams" },
+  { seed: "GRE test", group: "exams" },
+  { seed: "IELTS preparation", group: "exams" },
+  { seed: "entrance exam", group: "exams" },
+  { seed: "college admissions", group: "colleges" },
+  { seed: "scholarship", group: "colleges" },
+  { seed: "MBA program", group: "courses" },
+  { seed: "online courses", group: "courses" },
+  { seed: "accredited online degree", group: "courses" },
+  { seed: "education", group: "education" },
+  { seed: "EdTech", group: "education" },
+  { seed: "K-12 education", group: "education" },
+];
+
 /** Anchor topics for relatedTopics (same four chapters as the report). */
 const TOPIC_ANCHORS: Array<{ keyword: string; group: ReportGroup }> = [
   { keyword: "standardized test", group: "exams" },
@@ -147,6 +180,15 @@ export function parseEducationTimeframe(
     return raw;
   }
   return "past_7_days";
+}
+
+export type EducationFetchScope = "lite" | "full";
+
+export function parseEducationFetchScope(
+  raw: string | null | undefined,
+): EducationFetchScope {
+  if (raw === "full" || raw === "1" || raw === "true") return "full";
+  return "lite";
 }
 
 export interface ExploreQueryRow {
@@ -482,25 +524,30 @@ function sleep(ms: number): Promise<void> {
 }
 
 /** Small parallel batches with pauses — avoids hammering Google (HTML blocks) and keeps total time reasonable on serverless. */
-async function runInBatches<T>(
+/** Fixed pool of workers; small stagger reduces “HTML wall” responses vs full blast. */
+async function mapPool<T>(
   items: readonly T[],
-  batchSize: number,
+  concurrency: number,
   runOne: (item: T) => Promise<void>,
-  pauseBetweenBatchesMs: number,
+  staggerMs: number,
 ): Promise<void> {
-  for (let i = 0; i < items.length; i += batchSize) {
-    const slice = items.slice(i, i + batchSize);
-    await Promise.all(slice.map((item) => runOne(item)));
-    if (i + batchSize < items.length) {
-      await sleep(pauseBetweenBatchesMs);
-    }
-  }
+  const queue = [...items];
+  await Promise.all(
+    Array.from({ length: concurrency }, async () => {
+      while (queue.length > 0) {
+        const item = queue.shift();
+        if (!item) return;
+        await runOne(item);
+        if (staggerMs > 0) await sleep(staggerMs);
+      }
+    }),
+  );
 }
 
-const RELATED_BATCH = 3;
-const RELATED_PAUSE_MS = 480;
-const TOPIC_BATCH = 2;
-const TOPIC_PAUSE_MS = 520;
+const RELATED_CONCURRENCY = 5;
+const RELATED_STAGGER_MS = 100;
+const TOPIC_CONCURRENCY = 3;
+const TOPIC_STAGGER_MS = 140;
 
 function isRecord(x: unknown): x is Record<string, unknown> {
   return typeof x === "object" && x !== null;
@@ -751,6 +798,8 @@ export interface EducationTrendsPayload {
   warnings: string[];
   /** Plain-language summary of warnings for the UI (null if no warnings). */
   userNotice: UserFacingTrendsNotice | null;
+  /** lite = fewer seeds, no topics/daily/realtime (default, faster). full = previous behaviour. */
+  fetchScope: EducationFetchScope;
 }
 
 const REPORT_ORDER: ReportGroup[] = [
@@ -796,12 +845,13 @@ function shouldReplaceRising(
 
 export async function fetchEducationTrends(
   geo: string,
-  options?: { timeframe?: EducationTimeframe },
+  options?: { timeframe?: EducationTimeframe; scope?: EducationFetchScope },
 ): Promise<EducationTrendsPayload> {
   mergeMap.clear();
   const dataSourcesUsed: string[] = [];
   const warnings: string[] = [];
   const timeframe: EducationTimeframe = options?.timeframe ?? "past_90_days";
+  const fetchScope: EducationFetchScope = options?.scope ?? "lite";
   const { start: windowStart, end: windowEnd } = timeframeToWindow(timeframe);
 
   const topMap = new Map<string, { query: string; score: number }>();
@@ -815,14 +865,27 @@ export async function fetchEducationTrends(
     }
   >();
 
-  const seedList = geo === "IN" ? INDIA_EDUCATION_SEEDS : SEED_DEFINITIONS;
+  const seedList =
+    fetchScope === "lite"
+      ? geo === "IN"
+        ? INDIA_EDUCATION_SEEDS_LITE
+        : SEED_DEFINITIONS_LITE
+      : geo === "IN"
+        ? INDIA_EDUCATION_SEEDS
+        : SEED_DEFINITIONS;
   const topicAnchors = geo === "IN" ? TOPIC_ANCHORS_IN : TOPIC_ANCHORS;
   const interestBenchmarks =
     geo === "IN" ? INTEREST_BENCHMARKS_IN : INTEREST_BENCHMARKS;
 
-  await runInBatches(
+  const interestPromise = fetchInterestComparison(
+    geo,
+    warnings,
+    interestBenchmarks,
+  );
+
+  await mapPool(
     seedList,
-    RELATED_BATCH,
+    RELATED_CONCURRENCY,
     async ({ seed, group }) => {
       try {
         const raw = await googleTrends.relatedQueries({
@@ -889,13 +952,14 @@ export async function fetchEducationTrends(
         );
       }
     },
-    RELATED_PAUSE_MS,
+    RELATED_STAGGER_MS,
   );
 
-  await runInBatches(
-    topicAnchors,
-    TOPIC_BATCH,
-    async ({ keyword, group }) => {
+  if (fetchScope === "full") {
+    await mapPool(
+      topicAnchors,
+      TOPIC_CONCURRENCY,
+      async ({ keyword, group }) => {
       try {
         const raw = await googleTrends.relatedTopics({
           keyword,
@@ -944,43 +1008,44 @@ export async function fetchEducationTrends(
         );
       }
     },
-    TOPIC_PAUSE_MS,
-  );
-
-  try {
-    const raw = await googleTrends.dailyTrends({
-      geo,
-      trendDate: new Date(),
-    });
-    const pr = parseTrendsResponse(raw);
-    if (!pr.ok) {
-      warnings.push(trendsFailureMessage("dailyTrends", geo, pr));
-    } else {
-      dataSourcesUsed.push("dailyTrends");
-      addRows(parseDailyEducation(pr.data, geo));
-    }
-  } catch (e) {
-    warnings.push(
-      `dailyTrends(${geo}): [other] ${e instanceof Error ? e.message : "error"}`,
+    TOPIC_STAGGER_MS,
     );
+
+    try {
+      const raw = await googleTrends.dailyTrends({
+        geo,
+        trendDate: new Date(),
+      });
+      const pr = parseTrendsResponse(raw);
+      if (!pr.ok) {
+        warnings.push(trendsFailureMessage("dailyTrends", geo, pr));
+      } else {
+        dataSourcesUsed.push("dailyTrends");
+        addRows(parseDailyEducation(pr.data, geo));
+      }
+    } catch (e) {
+      warnings.push(
+        `dailyTrends(${geo}): [other] ${e instanceof Error ? e.message : "error"}`,
+      );
+    }
+
+    try {
+      const raw = await googleTrends.realTimeTrends({ geo, category: "all" });
+      const pr = parseTrendsResponse(raw);
+      if (!pr.ok) {
+        warnings.push(trendsFailureMessage("realTimeTrends", geo, pr));
+      } else {
+        dataSourcesUsed.push("realTimeTrends");
+        addRows(parseRealtimeEducation(pr.data, geo));
+      }
+    } catch (e) {
+      warnings.push(
+        `realTimeTrends(${geo}): [other] ${e instanceof Error ? e.message : "error"}`,
+      );
+    }
   }
 
-  try {
-    const raw = await googleTrends.realTimeTrends({ geo, category: "all" });
-    const pr = parseTrendsResponse(raw);
-    if (!pr.ok) {
-      warnings.push(trendsFailureMessage("realTimeTrends", geo, pr));
-    } else {
-      dataSourcesUsed.push("realTimeTrends");
-      addRows(parseRealtimeEducation(pr.data, geo));
-    }
-  } catch (e) {
-    warnings.push(
-      `realTimeTrends(${geo}): [other] ${e instanceof Error ? e.message : "error"}`,
-    );
-  }
-
-  const interest = await fetchInterestComparison(geo, warnings, interestBenchmarks);
+  const interest = await interestPromise;
 
   const { top: exploreTop, rising: exploreRising } = buildExploreRows({
     topMap,
@@ -1020,6 +1085,7 @@ export async function fetchEducationTrends(
     dataSourcesUsed,
     warnings,
     userNotice: buildUserFacingTrendsNotice(warnings),
+    fetchScope,
   };
 }
 

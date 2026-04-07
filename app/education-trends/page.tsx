@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
 import { unstable_cache } from "next/cache";
 import Link from "next/link";
+import { InterestOverTimeChart } from "@/components/InterestOverTimeChart";
 import {
   fetchEducationTrends,
+  parseEducationFetchScope,
   parseEducationTimeframe,
+  type EducationFetchScope,
   type EducationTimeframe,
   type EducationTrendRow,
   type ExploreQueryRow,
@@ -12,7 +15,7 @@ import {
 export const metadata: Metadata = {
   title: "Education Google Trends",
   description:
-    "Education-related Top and Rising queries in the style of Google Trends Explore (India-focused seeds: exams, results, dates, admit cards, and more).",
+    "Education Top / Rising queries and interest-over-time charts (India-focused seeds).",
 };
 
 const GEO_PRESETS = ["IN", "US", "GB", "AU", "CA"] as const;
@@ -43,327 +46,345 @@ function sourceLabel(source: EducationTrendRow["source"]): string {
 }
 
 function sourceStyle(source: EducationTrendRow["source"]): string {
-  if (source === "realtime_trends") return "bg-sky-100 text-sky-800";
-  if (source === "daily_trends") return "bg-violet-100 text-violet-800";
-  if (source.includes("rising")) return "bg-emerald-100 text-emerald-800";
-  return "bg-slate-200 text-slate-700";
+  if (source === "realtime_trends") return "bg-info/15 text-info";
+  if (source === "daily_trends") return "bg-purple/20 text-purple";
+  if (source.includes("rising")) return "bg-accent/15 text-accent";
+  return "bg-text-muted/20 text-text-secondary";
 }
 
 function changeCellClass(dir: ExploreQueryRow["changeDirection"]): string {
-  if (dir === "breakout") return "font-semibold text-violet-700";
-  if (dir === "up") return "text-emerald-700";
-  if (dir === "down") return "text-rose-700";
-  return "text-slate-500";
+  if (dir === "breakout") return "font-semibold text-purple";
+  if (dir === "up") return "text-success";
+  if (dir === "down") return "text-rose-400";
+  return "text-text-muted";
 }
 
-function qs(geo: string, tf: EducationTimeframe): string {
+function qs(geo: string, tf: EducationTimeframe, scope: EducationFetchScope): string {
   const p = new URLSearchParams();
   p.set("geo", geo);
   p.set("tf", tf);
+  if (scope === "full") p.set("scope", "full");
   return p.toString();
 }
 
 const getCachedEducationTrends = unstable_cache(
-  async (geo: string, timeframe: EducationTimeframe) =>
-    fetchEducationTrends(geo, { timeframe }),
-  ["education-trends-explore-v4"],
+  async (geo: string, timeframe: EducationTimeframe, scope: EducationFetchScope) =>
+    fetchEducationTrends(geo, { timeframe, scope }),
+  ["education-trends-v6"],
   { revalidate: 900 },
 );
 
 export default async function EducationTrendsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ geo?: string; tf?: string }> | { geo?: string; tf?: string };
+  searchParams:
+    | Promise<{ geo?: string; tf?: string; scope?: string }>
+    | { geo?: string; tf?: string; scope?: string };
 }) {
   const sp = await Promise.resolve(searchParams);
   const rawGeo = typeof sp.geo === "string" ? sp.geo : "IN";
   const geo = rawGeo.trim().toUpperCase() || "IN";
   const timeframe = parseEducationTimeframe(sp.tf);
+  const scope = parseEducationFetchScope(sp.scope);
 
-  const data = await getCachedEducationTrends(geo, timeframe);
+  const data = await getCachedEducationTrends(geo, timeframe, scope);
 
   return (
-    <main className="min-h-screen bg-[#f1f3f4] pb-12 text-slate-900">
-      <div className="border-b border-slate-200/80 bg-white/90 shadow-sm backdrop-blur-sm">
-        <div className="mx-auto max-w-6xl px-4 py-8 md:px-6 md:py-10">
-          <p className="text-xs font-medium uppercase tracking-wide text-blue-600">
-            Google Trends · Education (aggregated)
-          </p>
-          <h1 className="mt-2 text-2xl font-normal tracking-tight text-slate-900 md:text-3xl">
-            Explore education searches
-          </h1>
-          <p className="mt-3 max-w-3xl text-sm leading-relaxed text-slate-600">
-            Top and Rising related queries are pulled from many education seeds — results, exam
-            dates, admit cards, applications,{" "}
-            <span className="whitespace-nowrap">JEE Main</span>, NEET, boards, admissions, and
-            more — then merged like a custom Explore view. India uses an India-specific seed list;
-            other regions use a broader set. Unofficial{" "}
-            <a
-              href="https://www.npmjs.com/package/google-trends-api"
-              className="text-blue-600 underline-offset-2 hover:underline"
-              rel="noopener noreferrer"
-              target="_blank"
-            >
-              google-trends-api
-            </a>
-            ; cache ~15 min. Bars are relative within each list, not absolute search volume.
-          </p>
-          <p className="mt-3 text-xs text-slate-500">
-            Fetched {new Date(data.fetchedAt).toLocaleString()} · Web search ·{" "}
-            <span className="font-medium text-slate-700">{data.explore.timeframeLabel}</span>
-          </p>
-        </div>
-      </div>
-
-      <div className="mx-auto max-w-6xl px-4 pt-6 md:px-6">
-        {/* Filter bar — Explore-style */}
-        <div className="mb-6 flex flex-col gap-4 rounded-lg border border-slate-200 bg-white px-4 py-3 shadow-sm md:flex-row md:flex-wrap md:items-center md:justify-between">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs font-medium text-slate-500">Location</span>
-            <div className="flex flex-wrap gap-1">
-              {GEO_PRESETS.map((g) => (
-                <Link
-                  key={g}
-                  href={`/education-trends?${qs(g, timeframe)}`}
-                  className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
-                    g === geo
-                      ? "border-blue-600 bg-blue-50 text-blue-700"
-                      : "border-slate-200 bg-white text-slate-700 hover:border-slate-300"
-                  }`}
-                >
-                  {g === "IN" ? "India" : g}
-                </Link>
-              ))}
-            </div>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs font-medium text-slate-500">Timeframe</span>
-            <div className="flex flex-wrap gap-1">
-              {TIMEFRAMES.map((t) => (
-                <Link
-                  key={t.id}
-                  href={`/education-trends?${qs(geo, t.id)}`}
-                  className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
-                    t.id === timeframe
-                      ? "border-blue-600 bg-blue-50 text-blue-700"
-                      : "border-slate-200 bg-white text-slate-700 hover:border-slate-300"
-                  }`}
-                >
-                  {t.label}
-                </Link>
-              ))}
-            </div>
-          </div>
-          <div className="flex items-center gap-2 text-xs text-slate-500">
-            <span className="font-medium text-slate-600">Search type</span>
-            <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-slate-700">
-              Web Search
-            </span>
-          </div>
-        </div>
-
-        {data.userNotice ? (
-          <div
-            className="mb-6 overflow-hidden rounded-lg border border-amber-200/90 bg-white shadow-sm"
-            role="status"
+    <main className="mx-auto max-w-6xl px-4 py-8 md:px-6 md:py-10">
+      <div className="mb-8 space-y-3 border-b border-border pb-8">
+        <p className="font-mono text-xs uppercase tracking-[0.2em] text-accent">
+          Google Trends · Education
+        </p>
+        <h1 className="font-display text-3xl text-text-primary md:text-4xl">
+          Explore education searches
+        </h1>
+        <p className="max-w-3xl font-serif text-sm leading-relaxed text-text-secondary">
+          <strong className="font-medium text-text-primary">Tabular</strong> Top / Rising lists
+          (like Explore) plus an <strong className="font-medium text-text-primary">interest-over-time</strong>{" "}
+          chart for benchmark keywords. Default mode uses fewer background requests so the page loads
+          faster; switch to “Full report” for related topics, daily, and realtime extras. Data via{" "}
+          <a
+            href="https://www.npmjs.com/package/google-trends-api"
+            className="text-info underline-offset-2 hover:underline"
+            rel="noopener noreferrer"
+            target="_blank"
           >
-            <div className="border-b border-amber-100 bg-amber-50/80 px-4 py-3">
-              <p className="text-sm font-semibold text-amber-950">
-                {data.userNotice.headline}
-              </p>
-              <p className="mt-2 text-sm leading-relaxed text-slate-700">
-                {data.userNotice.body}
-              </p>
-              <p className="mt-3 text-xs leading-relaxed text-slate-600">
-                {data.userNotice.statsLine}
-              </p>
-            </div>
-            <div className="px-4 py-3">
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                What you can try
-              </p>
-              <ol className="mt-2 list-decimal space-y-2 pl-5 text-sm text-slate-700">
-                {data.userNotice.tips.map((tip, i) => (
-                  <li key={i}>{tip}</li>
-                ))}
-              </ol>
-              <details className="mt-4 rounded-md border border-slate-200 bg-slate-50/80 px-3 py-2 text-xs text-slate-700">
-                <summary className="cursor-pointer select-none font-medium text-slate-800">
-                  Technical details ({data.userNotice.stats.total} lines)
-                </summary>
-                <p className="mt-2 text-slate-600">
-                  Short labels below: each line is one Google Trends call (keyword or report type)
-                  that failed. “[html]” means a web page came back instead of data.
-                </p>
-                <ul className="mt-2 max-h-64 list-disc space-y-1.5 overflow-y-auto pl-5 font-mono text-[11px] text-slate-600">
-                  {data.userNotice.technicalPreview.map((line, i) => (
-                    <li key={i}>{line}</li>
-                  ))}
-                </ul>
-                {data.userNotice.technicalExtraCount > 0 ? (
-                  <p className="mt-2 font-mono text-[11px] text-slate-500">
-                    … and {data.userNotice.technicalExtraCount} more (see API JSON if needed).
-                  </p>
-                ) : null}
-              </details>
-            </div>
-          </div>
-        ) : null}
-
-        {data.explore.top.length === 0 && data.explore.rising.length === 0 ? (
-          <div className="rounded-lg border border-slate-200 bg-white p-8 text-center text-sm text-slate-600 shadow-sm">
-            No Top / Rising related queries returned for this region and timeframe. Try Past 7 or
-            90 days, or another region (Google may throttle short windows).
-          </div>
-        ) : (
-          <div className="grid gap-4 lg:grid-cols-2">
-            <ExploreCard
-              title="Top queries"
-              subtitle="Higher relative interest in related-queries “top” lists (merged across education seeds)."
-              rows={data.explore.top}
-              geo={geo}
-            />
-            <ExploreCard
-              title="Rising queries"
-              subtitle="Largest growth in related-queries “rising” lists; BREAKOUT = sharp spike."
-              rows={data.explore.rising}
-              geo={geo}
-            />
-          </div>
-        )}
-
-        {/* Raw feed (optional detail) */}
-        {data.items.length > 0 && (
-          <section className="mt-10">
-            <h2 className="mb-3 text-lg font-medium text-slate-800">All merged signals</h2>
-            <p className="mb-3 text-xs text-slate-600">
-              Includes related topics, daily and realtime education-scoped titles, plus every seed row
-              (deduped by title).
-            </p>
-            <div className="custom-scrollbar overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
-              <table className="w-full min-w-[640px] border-collapse text-left text-sm">
-                <thead>
-                  <tr className="border-b border-slate-200 bg-slate-50 text-xs font-medium uppercase tracking-wide text-slate-500">
-                    <th className="px-4 py-3">Topic</th>
-                    <th className="px-4 py-3">Source</th>
-                    <th className="px-4 py-3">Metric</th>
-                    <th className="px-4 py-3">Explore</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.items.map((row) => (
-                    <tr
-                      key={row.id}
-                      className="border-b border-slate-100 transition-colors hover:bg-slate-50/80"
-                    >
-                      <td className="px-4 py-3 font-medium text-slate-900">{row.title}</td>
-                      <td className="px-4 py-3">
-                        <span
-                          className={`inline-block rounded-md px-2 py-0.5 font-mono text-[10px] uppercase ${sourceStyle(row.source)}`}
-                        >
-                          {sourceLabel(row.source)}
-                        </span>
-                        {row.seed ? (
-                          <span className="mt-1 block font-mono text-[10px] text-slate-500">
-                            Seed: {row.seed}
-                          </span>
-                        ) : null}
-                      </td>
-                      <td className="max-w-[220px] px-4 py-3 text-slate-600">{row.metric}</td>
-                      <td className="px-4 py-3">
-                        <a
-                          href={row.exploreUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-xs font-medium text-blue-600 underline-offset-2 hover:underline"
-                        >
-                          Open in Trends ↗
-                        </a>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </section>
-        )}
-
-        <p className="mt-8 text-[10px] leading-relaxed text-slate-500">
-          Sources merged: {data.dataSourcesUsed.join(", ") || "—"}
+            google-trends-api
+          </a>
+          , cached ~15 minutes.
+        </p>
+        <p className="font-mono text-xs text-text-muted">
+          Fetched {new Date(data.fetchedAt).toLocaleString()} · {data.explore.timeframeLabel} ·
+          Scope:{" "}
+          <strong className="text-text-secondary">
+            {data.fetchScope === "lite" ? "Fast (lite)" : "Full report"}
+          </strong>
         </p>
       </div>
+
+      {/* Filters — compact toolbar */}
+      <div className="mb-6 flex flex-col gap-4 rounded-xl border border-border bg-surface/80 px-4 py-3 backdrop-blur-sm md:flex-row md:flex-wrap md:items-center md:justify-between">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="font-mono text-[10px] uppercase text-text-muted">Region</span>
+          <div className="flex flex-wrap gap-1">
+            {GEO_PRESETS.map((g) => (
+              <Link
+                key={g}
+                href={`/education-trends?${qs(g, timeframe, scope)}`}
+                className={`rounded-lg border px-2.5 py-1 font-mono text-xs transition-colors ${
+                  g === geo
+                    ? "border-accent bg-accent/15 text-accent"
+                    : "border-border text-text-secondary hover:border-accent hover:text-accent"
+                }`}
+              >
+                {g === "IN" ? "India" : g}
+              </Link>
+            ))}
+          </div>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="font-mono text-[10px] uppercase text-text-muted">Time window</span>
+          <div className="flex flex-wrap gap-1">
+            {TIMEFRAMES.map((t) => (
+              <Link
+                key={t.id}
+                href={`/education-trends?${qs(geo, t.id, scope)}`}
+                className={`rounded-lg border px-2.5 py-1 font-mono text-xs transition-colors ${
+                  t.id === timeframe
+                    ? "border-accent bg-accent/15 text-accent"
+                    : "border-border text-text-secondary hover:border-accent hover:text-accent"
+                }`}
+              >
+                {t.label}
+              </Link>
+            ))}
+          </div>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="font-mono text-[10px] uppercase text-text-muted">Data depth</span>
+          <div className="flex gap-1">
+            <Link
+              href={`/education-trends?${qs(geo, timeframe, "lite")}`}
+              className={`rounded-lg border px-2.5 py-1 font-mono text-xs transition-colors ${
+                scope === "lite"
+                  ? "border-accent bg-accent/15 text-accent"
+                  : "border-border text-text-secondary hover:border-accent hover:text-accent"
+              }`}
+            >
+              Fast
+            </Link>
+            <Link
+              href={`/education-trends?${qs(geo, timeframe, "full")}`}
+              className={`rounded-lg border px-2.5 py-1 font-mono text-xs transition-colors ${
+                scope === "full"
+                  ? "border-accent bg-accent/15 text-accent"
+                  : "border-border text-text-secondary hover:border-accent hover:text-accent"
+              }`}
+            >
+              Full report
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      {data.userNotice ? (
+        <div
+          className="mb-6 overflow-hidden rounded-xl border border-amber-500/40 bg-amber-950/25"
+          role="status"
+        >
+          <div className="border-b border-amber-500/20 px-4 py-3">
+            <p className="font-mono text-sm font-semibold text-amber-100">
+              {data.userNotice.headline}
+            </p>
+            <p className="mt-2 font-serif text-sm leading-relaxed text-amber-100/90">
+              {data.userNotice.body}
+            </p>
+            <p className="mt-2 font-serif text-xs leading-relaxed text-amber-200/80">
+              {data.userNotice.statsLine}
+            </p>
+          </div>
+          <div className="px-4 py-3">
+            <p className="font-mono text-[10px] font-semibold uppercase tracking-wide text-text-muted">
+              What you can try
+            </p>
+            <ol className="mt-2 list-decimal space-y-1.5 pl-5 font-serif text-sm text-text-secondary">
+              {data.userNotice.tips.map((tip, i) => (
+                <li key={i}>{tip}</li>
+              ))}
+            </ol>
+            <details className="mt-4 rounded-lg border border-border bg-background/60 px-3 py-2 font-mono text-[11px] text-text-muted">
+              <summary className="cursor-pointer select-none text-text-secondary">
+                Technical details ({data.userNotice.stats.total})
+              </summary>
+              <ul className="mt-2 max-h-52 list-disc space-y-1 overflow-y-auto pl-5">
+                {data.userNotice.technicalPreview.map((line, i) => (
+                  <li key={i}>{line}</li>
+                ))}
+              </ul>
+              {data.userNotice.technicalExtraCount > 0 ? (
+                <p className="mt-2 opacity-80">
+                  … and {data.userNotice.technicalExtraCount} more
+                </p>
+              ) : null}
+            </details>
+          </div>
+        </div>
+      ) : null}
+
+      {/* Chart — Google-style multi-series */}
+      <section className="mb-8 rounded-xl border border-border bg-surface/80 px-4 py-5 md:px-6">
+        <h2 className="font-display text-lg text-text-primary md:text-xl">
+          Interest over time
+        </h2>
+        <p className="mt-1 font-serif text-xs text-text-muted">
+          Compared benchmark keywords (0–100 index, same method as Google Trends). Runs in parallel
+          with Top/Rising fetches in fast mode.
+        </p>
+        <div className="mt-4">
+          <InterestOverTimeChart interest={data.interest} />
+        </div>
+      </section>
+
+      {data.explore.top.length === 0 && data.explore.rising.length === 0 ? (
+        <div className="rounded-xl border border-border bg-surface/60 p-8 text-center font-serif text-sm text-text-secondary">
+          No Top / Rising queries for this region and window. Try Past 7 or 90 days, or refresh
+          later.
+        </div>
+      ) : (
+        <div className="grid gap-6 lg:grid-cols-2">
+          <ExploreTableCard
+            title="Top queries"
+            hint="Merged “top” related queries across education seeds — interest bar is relative within this table."
+            rows={data.explore.top}
+          />
+          <ExploreTableCard
+            title="Rising queries"
+            hint="Merged “rising” lists. BREAKOUT means a sharp spike."
+            rows={data.explore.rising}
+          />
+        </div>
+      )}
+
+      {data.fetchScope === "full" && data.items.length > 0 ? (
+        <section className="mt-10">
+          <h2 className="font-display text-xl text-text-primary">All merged signals</h2>
+          <p className="mt-1 font-serif text-xs text-text-muted">
+            Related topics, daily, realtime (full report only), deduped by title.
+          </p>
+          <div className="custom-scrollbar mt-4 overflow-x-auto rounded-xl border border-border bg-surface/80">
+            <table className="w-full min-w-[640px] border-collapse text-left font-serif text-sm">
+              <thead>
+                <tr className="border-b border-border font-mono text-[10px] uppercase tracking-wide text-text-muted">
+                  <th className="px-4 py-3">Topic</th>
+                  <th className="px-4 py-3">Source</th>
+                  <th className="px-4 py-3">Metric</th>
+                  <th className="px-4 py-3">Explore</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.items.map((row) => (
+                  <tr
+                    key={row.id}
+                    className="border-b border-border/80 transition-colors hover:bg-background/40"
+                  >
+                    <td className="px-4 py-3 text-text-primary">{row.title}</td>
+                    <td className="px-4 py-3">
+                      <span
+                        className={`inline-block rounded-md px-2 py-0.5 font-mono text-[10px] uppercase ${sourceStyle(row.source)}`}
+                      >
+                        {sourceLabel(row.source)}
+                      </span>
+                      {row.seed ? (
+                        <span className="mt-1 block font-mono text-[10px] text-text-muted">
+                          Seed: {row.seed}
+                        </span>
+                      ) : null}
+                    </td>
+                    <td className="max-w-[220px] px-4 py-3 text-text-secondary">{row.metric}</td>
+                    <td className="px-4 py-3">
+                      <a
+                        href={row.exploreUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-mono text-xs text-info underline-offset-2 hover:underline"
+                      >
+                        Open in Trends ↗
+                      </a>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      ) : null}
+
+      <p className="mt-8 font-mono text-[10px] leading-relaxed text-text-muted">
+        Sources: {data.dataSourcesUsed.join(", ") || "—"}
+      </p>
     </main>
   );
 }
 
-function ExploreCard({
+function ExploreTableCard({
   title,
-  subtitle,
+  hint,
   rows,
-  geo,
 }: {
   title: string;
-  subtitle: string;
+  hint: string;
   rows: ExploreQueryRow[];
-  geo: string;
 }) {
   return (
-    <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
-      <div className="flex items-start justify-between gap-2 border-b border-slate-100 px-4 py-3">
-        <div>
-          <h2 className="text-base font-medium text-slate-900">{title}</h2>
-          <p className="mt-0.5 text-xs text-slate-500">{subtitle}</p>
-        </div>
-        <div className="flex shrink-0 gap-1 text-slate-400" aria-hidden>
-          <span className="rounded p-1 hover:bg-slate-100" title="Download (preview)">
-            <DownloadIcon />
-          </span>
-          <span className="rounded p-1 hover:bg-slate-100" title="About this list">
-            <InfoIcon />
-          </span>
-        </div>
+    <section className="flex flex-col overflow-hidden rounded-xl border border-border bg-surface/80">
+      <div className="border-b border-border px-4 py-3">
+        <h2 className="font-display text-lg text-text-primary">{title}</h2>
+        <p className="mt-1 font-serif text-xs text-text-muted">{hint}</p>
       </div>
       {rows.length === 0 ? (
-        <p className="px-4 py-8 text-center text-sm text-slate-500">No rows for this timeframe.</p>
+        <p className="flex-1 px-4 py-10 text-center font-serif text-sm text-text-muted">
+          No rows.
+        </p>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[320px] text-sm">
+          <table className="w-full min-w-[280px] border-collapse font-serif text-sm">
             <thead>
-              <tr className="border-b border-slate-100 text-left text-xs font-medium text-slate-500">
-                <th className="w-10 px-3 py-2" aria-label="Rank" />
-                <th className="px-3 py-2">Query</th>
-                <th className="hidden min-w-[140px] px-3 py-2 sm:table-cell">Search interest</th>
-                <th className="min-w-[100px] px-3 py-2 text-right">Change</th>
-                <th className="w-8 px-1 py-2" aria-hidden />
+              <tr className="border-b border-border bg-background/30 font-mono text-[10px] uppercase tracking-wide text-text-muted">
+                <th className="w-10 px-3 py-2 text-left">#</th>
+                <th className="px-3 py-2 text-left">Query</th>
+                <th className="hidden min-w-[140px] px-3 py-2 text-left sm:table-cell">
+                  Interest
+                </th>
+                <th className="min-w-[88px] px-3 py-2 text-right">Δ</th>
               </tr>
             </thead>
             <tbody>
               {rows.map((row) => (
                 <tr
-                  key={`${row.rank}-${row.query}`}
-                  className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60"
+                  key={`ExploreTableCard-${row.rank}-${row.query}`}
+                  className="border-b border-border/70 hover:bg-background/35"
                 >
-                  <td className="px-3 py-2.5 align-middle tabular-nums text-xs text-slate-400">
+                  <td className="px-3 py-2.5 font-mono tabular-nums text-xs text-text-muted">
                     {row.rank}
                   </td>
-                  <td className="max-w-[200px] px-3 py-2.5 align-middle sm:max-w-none">
+                  <td className="max-w-[200px] px-3 py-2.5 sm:max-w-none">
                     <a
                       href={row.exploreUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="font-medium text-blue-700 hover:underline"
+                      className="font-medium text-info hover:underline"
                     >
                       {row.query}
                     </a>
-                    <div className="mt-1 sm:hidden">
+                    <div className="mt-1.5 sm:hidden">
                       <InterestBar value={row.interest} />
                     </div>
                   </td>
-                  <td className="hidden px-3 py-2.5 align-middle sm:table-cell">
+                  <td className="hidden px-3 py-2.5 sm:table-cell">
                     <InterestBar value={row.interest} />
                   </td>
                   <td
-                    className={`px-3 py-2.5 text-right align-middle text-xs font-medium ${changeCellClass(row.changeDirection)}`}
+                    className={`px-3 py-2.5 text-right font-mono text-xs ${changeCellClass(row.changeDirection)}`}
                   >
                     <span className="inline-flex items-center justify-end gap-0.5">
                       {row.changeDirection === "up" ? <ArrowUp /> : null}
@@ -371,18 +392,12 @@ function ExploreCard({
                       {row.changeLabel}
                     </span>
                   </td>
-                  <td className="px-1 py-2.5 align-middle text-slate-300">
-                    <MoreIcon />
-                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       )}
-      <p className="border-t border-slate-100 px-4 py-2 text-[10px] text-slate-400">
-        Region {geo} · Opens google.com/trends for the same query
-      </p>
     </section>
   );
 }
@@ -391,61 +406,29 @@ function InterestBar({ value }: { value: number }) {
   const w = Math.max(4, Math.min(100, value));
   return (
     <div className="flex items-center gap-2">
-      <div className="h-2 min-w-[72px] flex-1 overflow-hidden rounded-sm bg-slate-100">
+      <div className="h-2 min-w-[80px] flex-1 overflow-hidden rounded-sm bg-border">
         <div
-          className="h-full rounded-sm bg-[#1a73e8]"
+          className="h-full rounded-sm bg-info"
           style={{ width: `${w}%` }}
         />
       </div>
-      <span className="tabular-nums text-xs text-slate-500">{value}</span>
+      <span className="font-mono tabular-nums text-xs text-text-muted">{value}</span>
     </div>
   );
 }
 
 function ArrowUp() {
   return (
-    <svg className="h-3.5 w-3.5 text-emerald-600" fill="currentColor" viewBox="0 0 20 20" aria-hidden>
-      <path
-        fillRule="evenodd"
-        d="M10 5l5 5H5l5-5z"
-        clipRule="evenodd"
-      />
+    <svg className="h-3 w-3 text-success" fill="currentColor" viewBox="0 0 20 20" aria-hidden>
+      <path fillRule="evenodd" d="M10 5l5 5H5l5-5z" clipRule="evenodd" />
     </svg>
   );
 }
 
 function ArrowDown() {
   return (
-    <svg className="h-3.5 w-3.5 text-rose-600" fill="currentColor" viewBox="0 0 20 20" aria-hidden>
-      <path
-        fillRule="evenodd"
-        d="M10 15l-5-5h10l-5 5z"
-        clipRule="evenodd"
-      />
-    </svg>
-  );
-}
-
-function DownloadIcon() {
-  return (
-    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3" />
-    </svg>
-  );
-}
-
-function InfoIcon() {
-  return (
-    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 16h-1v-4h-1m1-4h.01M12 20a8 8 0 100-16 8 8 0 000 16z" />
-    </svg>
-  );
-}
-
-function MoreIcon() {
-  return (
-    <svg className="mx-auto h-4 w-4" fill="currentColor" viewBox="0 0 20 20" aria-hidden>
-      <path d="M6 10a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zm5 0a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zm5 0a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z" />
+    <svg className="h-3 w-3 text-rose-400" fill="currentColor" viewBox="0 0 20 20" aria-hidden>
+      <path fillRule="evenodd" d="M10 15l-5-5h10l-5 5z" clipRule="evenodd" />
     </svg>
   );
 }
