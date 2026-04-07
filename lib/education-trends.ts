@@ -319,13 +319,188 @@ function slugId(parts: string[]): string {
   return parts.join("|").toLowerCase().replace(/\s+/g, " ").slice(0, 200);
 }
 
-function parseJsonSafe(raw: string): unknown {
+/** Why Google Trends sometimes returns unusable bodies when using unofficial / automated access. */
+export type TrendsParseFailureKind = "empty" | "html" | "json";
+
+export interface TrendsParseResult {
+  ok: true;
+  data: unknown;
+}
+
+export interface TrendsParseFailure {
+  ok: false;
+  kind: TrendsParseFailureKind;
+  /** Short detail for logs; user copy is built separately. */
+  detail: string;
+}
+
+export function parseTrendsResponse(raw: string): TrendsParseResult | TrendsParseFailure {
+  if (raw == null || String(raw).trim() === "") {
+    return {
+      ok: false,
+      kind: "empty",
+      detail: "Empty response from Google",
+    };
+  }
+  const s = String(raw);
+  const head = s.trim().slice(0, 600);
+  if (
+    head.startsWith("<") ||
+    /<!DOCTYPE/i.test(s) ||
+    /<html\b/i.test(s) ||
+    /<head\b/i.test(s)
+  ) {
+    return {
+      ok: false,
+      kind: "html",
+      detail:
+        "Response was a web page, not JSON — Google often does this for automated traffic (rate limits, checks, or blocks).",
+    };
+  }
   try {
-    return JSON.parse(raw) as unknown;
-  } catch {
-    return null;
+    return { ok: true, data: JSON.parse(s) as unknown };
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "Invalid JSON";
+    return {
+      ok: false,
+      kind: "json",
+      detail: msg,
+    };
   }
 }
+
+function trendsFailureMessage(
+  endpoint: string,
+  label: string,
+  f: TrendsParseFailure,
+): string {
+  return `${endpoint}(${label}): [${f.kind}] ${f.detail}`;
+}
+
+export interface UserFacingTrendsNotice {
+  headline: string;
+  body: string;
+  /** One line, e.g. how many failures looked like HTML blocks vs bad JSON. */
+  statsLine: string;
+  tips: string[];
+  /** For the collapsible “technical” section — capped list. */
+  technicalPreview: string[];
+  technicalExtraCount: number;
+  stats: {
+    total: number;
+    htmlOrBlock: number;
+    badJson: number;
+    other: number;
+  };
+}
+
+function classifyWarningLine(w: string): "html" | "json" | "other" {
+  if (
+    /\[html\]/i.test(w) ||
+    /web page/i.test(w) ||
+    /Unexpected token.*HEAD/i.test(w) ||
+    /"<HEAD/i.test(w)
+  ) {
+    return "html";
+  }
+  if (/\[json\]|\[empty\]|invalid JSON/i.test(w)) {
+    return "json";
+  }
+  return "other";
+}
+
+/** Turns raw warning lines into short, readable snippets for a details list. */
+function shortenWarningForDisplay(w: string): string {
+  const m = w.match(/^([^(]+)\(([^)]+)\):\s*(.+)$/);
+  if (m) {
+    const [, ep, label, rest] = m;
+    const r = rest.trim();
+    return `${ep} · “${label}” — ${r.slice(0, 118)}${r.length > 118 ? "…" : ""}`;
+  }
+  return w.length > 140 ? `${w.slice(0, 140)}…` : w;
+}
+
+export function buildUserFacingTrendsNotice(
+  warnings: string[],
+): UserFacingTrendsNotice | null {
+  if (warnings.length === 0) return null;
+
+  let htmlOrBlock = 0;
+  let badJson = 0;
+  let other = 0;
+  for (const w of warnings) {
+    const c = classifyWarningLine(w);
+    if (c === "html") htmlOrBlock++;
+    else if (c === "json") badJson++;
+    else other++;
+  }
+
+  const total = warnings.length;
+  const mostHtml = htmlOrBlock >= Math.max(badJson, other, 1);
+
+  const headline =
+    mostHtml && htmlOrBlock >= total * 0.4
+      ? "Google Trends blocked some data requests"
+      : total >= 8
+        ? "Only part of the Trends data loaded"
+        : "A few Trends requests did not succeed";
+
+  const body = mostHtml
+    ? `Our app asked Google Trends for education search data many times in a row. Often, Google answers those automated requests with a normal web page (HTML) instead of the data format we need. That is not a bug in your topic list — it is how Google limits robots and heavy traffic. When that happens, you may see empty Top / Rising lists or missing charts until a later refresh.`
+    : `Some calls to Google Trends did not return usable data (wrong format or an error). Charts or tables may be incomplete. This is common with unofficial tools and busy servers.`;
+
+  const tips = [
+    "Wait 5–15 minutes and refresh this page — the next batch of requests often works.",
+    "Try “Past 7 days” or “Past 90 days” instead of “Past 24 hours” (sometimes fewer errors).",
+    "If you use a VPN or datacenter hosting, try your normal home network or a different network.",
+    "For the official, full experience, open google.com/trends in your browser and search any keyword.",
+  ];
+
+  const statsLine = `This refresh: ${total} request${total === 1 ? "" : "s"} did not return usable data — about ${htmlOrBlock} looked like a normal web page instead of trends data (usual when Google slows down automated access), ${badJson} had missing or broken data format, and ${other} were other errors.`;
+
+  const maxPreview = 14;
+  const technicalPreview = warnings
+    .slice(0, maxPreview)
+    .map(shortenWarningForDisplay);
+  const technicalExtraCount = Math.max(0, warnings.length - maxPreview);
+
+  return {
+    headline,
+    body,
+    statsLine,
+    tips,
+    technicalPreview,
+    technicalExtraCount,
+    stats: { total, htmlOrBlock, badJson, other },
+  };
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
+/** Small parallel batches with pauses — avoids hammering Google (HTML blocks) and keeps total time reasonable on serverless. */
+async function runInBatches<T>(
+  items: readonly T[],
+  batchSize: number,
+  runOne: (item: T) => Promise<void>,
+  pauseBetweenBatchesMs: number,
+): Promise<void> {
+  for (let i = 0; i < items.length; i += batchSize) {
+    const slice = items.slice(i, i + batchSize);
+    await Promise.all(slice.map((item) => runOne(item)));
+    if (i + batchSize < items.length) {
+      await sleep(pauseBetweenBatchesMs);
+    }
+  }
+}
+
+const RELATED_BATCH = 3;
+const RELATED_PAUSE_MS = 480;
+const TOPIC_BATCH = 2;
+const TOPIC_PAUSE_MS = 520;
 
 function isRecord(x: unknown): x is Record<string, unknown> {
   return typeof x === "object" && x !== null;
@@ -538,14 +713,15 @@ async function fetchInterestComparison(
       geo,
       granularTimeResolution: true,
     });
-    const parsed = parseJsonSafe(raw);
-    if (!parsed) {
-      warnings.push("interestOverTime: invalid JSON");
+    const pr = parseTrendsResponse(raw);
+    if (!pr.ok) {
+      warnings.push(trendsFailureMessage("interestOverTime", "chart", pr));
       return null;
     }
+    const parsed = pr.data;
     const timeline = parseInterestOverTimeMulti(parsed, keywords.length);
     if (timeline.length === 0) {
-      warnings.push("interestOverTime: no timeline rows");
+      warnings.push("interestOverTime: [json] no timeline rows in response");
       return null;
     }
     return {
@@ -555,7 +731,7 @@ async function fetchInterestComparison(
     };
   } catch (e) {
     warnings.push(
-      `interestOverTime: ${e instanceof Error ? e.message : "error"}`,
+      `interestOverTime(chart): [other] ${e instanceof Error ? e.message : "error"}`,
     );
     return null;
   }
@@ -573,6 +749,8 @@ export interface EducationTrendsPayload {
   explore: EducationExploreSnapshot;
   dataSourcesUsed: string[];
   warnings: string[];
+  /** Plain-language summary of warnings for the UI (null if no warnings). */
+  userNotice: UserFacingTrendsNotice | null;
 }
 
 const REPORT_ORDER: ReportGroup[] = [
@@ -642,167 +820,167 @@ export async function fetchEducationTrends(
   const interestBenchmarks =
     geo === "IN" ? INTEREST_BENCHMARKS_IN : INTEREST_BENCHMARKS;
 
-  const relatedJobs = seedList.map(async ({ seed, group }) => {
-    try {
-      const raw = await googleTrends.relatedQueries({
-        keyword: seed,
-        geo,
-        startTime: windowStart,
-        endTime: windowEnd,
-      });
-      const parsed = parseJsonSafe(raw);
-      if (!parsed) {
-        warnings.push(`relatedQueries(${seed}): invalid JSON`);
-        return;
-      }
-      dataSourcesUsed.push(`relatedQueries:${seed}`);
-      for (const { query, value } of extractRankedKeywords(parsed, "top")) {
-        const score = parseTopInterestScore(value);
-        const qk = query.toLowerCase();
-        const prevT = topMap.get(qk);
-        if (!prevT || score > prevT.score) {
-          topMap.set(qk, { query, score });
+  await runInBatches(
+    seedList,
+    RELATED_BATCH,
+    async ({ seed, group }) => {
+      try {
+        const raw = await googleTrends.relatedQueries({
+          keyword: seed,
+          geo,
+          startTime: windowStart,
+          endTime: windowEnd,
+        });
+        const pr = parseTrendsResponse(raw);
+        if (!pr.ok) {
+          warnings.push(trendsFailureMessage("relatedQueries", seed, pr));
+          return;
         }
-        addRows([
-          {
-            id: slugId(["rq-top", geo, seed, query]),
-            title: query,
-            source: "related_queries_top",
-            seed,
-            reportGroup: group,
-            metric: `Top · relative score ${value}`,
-            geo,
-            exploreUrl: exploreUrl(query, geo),
-          },
-        ]);
-      }
-      for (const { query, value } of extractRankedKeywords(parsed, "rising")) {
-        const pr = parseRisingDisplay(value);
-        const qk = query.toLowerCase();
-        const prevR = risingMap.get(qk);
-        const row = {
-          query,
-          label: pr.label,
-          direction: pr.direction,
-          strength: pr.strength,
-        };
-        if (!prevR || shouldReplaceRising(prevR, pr)) {
-          risingMap.set(qk, row);
+        const parsed = pr.data;
+        dataSourcesUsed.push(`relatedQueries:${seed}`);
+        for (const { query, value } of extractRankedKeywords(parsed, "top")) {
+          const score = parseTopInterestScore(value);
+          const qk = query.toLowerCase();
+          const prevT = topMap.get(qk);
+          if (!prevT || score > prevT.score) {
+            topMap.set(qk, { query, score });
+          }
+          addRows([
+            {
+              id: slugId(["rq-top", geo, seed, query]),
+              title: query,
+              source: "related_queries_top",
+              seed,
+              reportGroup: group,
+              metric: `Top · relative score ${value}`,
+              geo,
+              exploreUrl: exploreUrl(query, geo),
+            },
+          ]);
         }
-        addRows([
-          {
-            id: slugId(["rq-rise", geo, seed, query]),
-            title: query,
-            source: "related_queries_rising",
-            seed,
-            reportGroup: group,
-            metric: `Rising · ${value}`,
-            geo,
-            exploreUrl: exploreUrl(query, geo),
-          },
-        ]);
+        for (const { query, value } of extractRankedKeywords(parsed, "rising")) {
+          const pRise = parseRisingDisplay(value);
+          const qk = query.toLowerCase();
+          const prevR = risingMap.get(qk);
+          if (!prevR || shouldReplaceRising(prevR, pRise)) {
+            risingMap.set(qk, {
+              query,
+              label: pRise.label,
+              direction: pRise.direction,
+              strength: pRise.strength,
+            });
+          }
+          addRows([
+            {
+              id: slugId(["rq-rise", geo, seed, query]),
+              title: query,
+              source: "related_queries_rising",
+              seed,
+              reportGroup: group,
+              metric: `Rising · ${value}`,
+              geo,
+              exploreUrl: exploreUrl(query, geo),
+            },
+          ]);
+        }
+      } catch (e) {
+        warnings.push(
+          `relatedQueries(${seed}): [other] ${e instanceof Error ? e.message : "error"}`,
+        );
       }
-    } catch (e) {
-      warnings.push(
-        `relatedQueries(${seed}): ${e instanceof Error ? e.message : "error"}`,
-      );
-    }
-  });
+    },
+    RELATED_PAUSE_MS,
+  );
 
-  const topicJobs = topicAnchors.map(async ({ keyword, group }) => {
-    try {
-      const raw = await googleTrends.relatedTopics({
-        keyword,
-        geo,
-        startTime: windowStart,
-        endTime: windowEnd,
-      });
-      const parsed = parseJsonSafe(raw);
-      if (!parsed) {
-        warnings.push(`relatedTopics(${keyword}): invalid JSON`);
-        return;
+  await runInBatches(
+    topicAnchors,
+    TOPIC_BATCH,
+    async ({ keyword, group }) => {
+      try {
+        const raw = await googleTrends.relatedTopics({
+          keyword,
+          geo,
+          startTime: windowStart,
+          endTime: windowEnd,
+        });
+        const pr = parseTrendsResponse(raw);
+        if (!pr.ok) {
+          warnings.push(trendsFailureMessage("relatedTopics", keyword, pr));
+          return;
+        }
+        const parsed = pr.data;
+        dataSourcesUsed.push(`relatedTopics:${keyword}`);
+        for (const { topic, value } of extractRelatedTopics(parsed, "top")) {
+          addRows([
+            {
+              id: slugId(["rt-top", geo, keyword, topic]),
+              title: topic,
+              source: "related_topics_top",
+              seed: keyword,
+              reportGroup: group,
+              metric: `Related topic · top · ${value}`,
+              geo,
+              exploreUrl: exploreUrl(topic, geo),
+            },
+          ]);
+        }
+        for (const { topic, value } of extractRelatedTopics(parsed, "rising")) {
+          addRows([
+            {
+              id: slugId(["rt-rise", geo, keyword, topic]),
+              title: topic,
+              source: "related_topics_rising",
+              seed: keyword,
+              reportGroup: group,
+              metric: `Related topic · rising · ${value}`,
+              geo,
+              exploreUrl: exploreUrl(topic, geo),
+            },
+          ]);
+        }
+      } catch (e) {
+        warnings.push(
+          `relatedTopics(${keyword}): [other] ${e instanceof Error ? e.message : "error"}`,
+        );
       }
-      dataSourcesUsed.push(`relatedTopics:${keyword}`);
-      for (const { topic, value } of extractRelatedTopics(parsed, "top")) {
-        addRows([
-          {
-            id: slugId(["rt-top", geo, keyword, topic]),
-            title: topic,
-            source: "related_topics_top",
-            seed: keyword,
-            reportGroup: group,
-            metric: `Related topic · top · ${value}`,
-            geo,
-            exploreUrl: exploreUrl(topic, geo),
-          },
-        ]);
-      }
-      for (const { topic, value } of extractRelatedTopics(parsed, "rising")) {
-        addRows([
-          {
-            id: slugId(["rt-rise", geo, keyword, topic]),
-            title: topic,
-            source: "related_topics_rising",
-            seed: keyword,
-            reportGroup: group,
-            metric: `Related topic · rising · ${value}`,
-            geo,
-            exploreUrl: exploreUrl(topic, geo),
-          },
-        ]);
-      }
-    } catch (e) {
-      warnings.push(
-        `relatedTopics(${keyword}): ${e instanceof Error ? e.message : "error"}`,
-      );
-    }
-  });
+    },
+    TOPIC_PAUSE_MS,
+  );
 
-  const dailyJob = (async () => {
-    try {
-      const raw = await googleTrends.dailyTrends({
-        geo,
-        trendDate: new Date(),
-      });
-      const parsed = parseJsonSafe(raw);
-      if (!parsed) {
-        warnings.push("dailyTrends: invalid JSON");
-        return;
-      }
+  try {
+    const raw = await googleTrends.dailyTrends({
+      geo,
+      trendDate: new Date(),
+    });
+    const pr = parseTrendsResponse(raw);
+    if (!pr.ok) {
+      warnings.push(trendsFailureMessage("dailyTrends", geo, pr));
+    } else {
       dataSourcesUsed.push("dailyTrends");
-      addRows(parseDailyEducation(parsed, geo));
-    } catch (e) {
-      warnings.push(`dailyTrends: ${e instanceof Error ? e.message : "error"}`);
+      addRows(parseDailyEducation(pr.data, geo));
     }
-  })();
+  } catch (e) {
+    warnings.push(
+      `dailyTrends(${geo}): [other] ${e instanceof Error ? e.message : "error"}`,
+    );
+  }
 
-  const realtimeJob = (async () => {
-    try {
-      const raw = await googleTrends.realTimeTrends({ geo, category: "all" });
-      const parsed = parseJsonSafe(raw);
-      if (!parsed) {
-        warnings.push("realTimeTrends: invalid JSON");
-        return;
-      }
+  try {
+    const raw = await googleTrends.realTimeTrends({ geo, category: "all" });
+    const pr = parseTrendsResponse(raw);
+    if (!pr.ok) {
+      warnings.push(trendsFailureMessage("realTimeTrends", geo, pr));
+    } else {
       dataSourcesUsed.push("realTimeTrends");
-      addRows(parseRealtimeEducation(parsed, geo));
-    } catch (e) {
-      warnings.push(
-        `realTimeTrends: ${e instanceof Error ? e.message : "error"}`,
-      );
+      addRows(parseRealtimeEducation(pr.data, geo));
     }
-  })();
+  } catch (e) {
+    warnings.push(
+      `realTimeTrends(${geo}): [other] ${e instanceof Error ? e.message : "error"}`,
+    );
+  }
 
-  const interestJob = fetchInterestComparison(geo, warnings, interestBenchmarks);
-
-  await Promise.all([
-    ...relatedJobs,
-    ...topicJobs,
-    dailyJob,
-    realtimeJob,
-  ]);
-
-  const interest = await interestJob;
+  const interest = await fetchInterestComparison(geo, warnings, interestBenchmarks);
 
   const { top: exploreTop, rising: exploreRising } = buildExploreRows({
     topMap,
@@ -841,6 +1019,7 @@ export async function fetchEducationTrends(
     explore,
     dataSourcesUsed,
     warnings,
+    userNotice: buildUserFacingTrendsNotice(warnings),
   };
 }
 

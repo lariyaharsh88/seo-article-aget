@@ -66,7 +66,7 @@ function qs(geo: string, tf: EducationTimeframe): string {
 const getCachedEducationTrends = unstable_cache(
   async (geo: string, timeframe: EducationTimeframe) =>
     fetchEducationTrends(geo, { timeframe }),
-  ["education-trends-explore-v3"],
+  ["education-trends-explore-v4"],
   { revalidate: 900 },
 );
 
@@ -162,19 +162,53 @@ export default async function EducationTrendsPage({
           </div>
         </div>
 
-        {data.warnings.length > 0 && (
+        {data.userNotice ? (
           <div
-            className="mb-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-950"
+            className="mb-6 overflow-hidden rounded-lg border border-amber-200/90 bg-white shadow-sm"
             role="status"
           >
-            <p className="font-semibold text-amber-900">Partial data / notices</p>
-            <ul className="mt-2 list-disc space-y-1 pl-5">
-              {data.warnings.map((w, i) => (
-                <li key={i}>{w}</li>
-              ))}
-            </ul>
+            <div className="border-b border-amber-100 bg-amber-50/80 px-4 py-3">
+              <p className="text-sm font-semibold text-amber-950">
+                {data.userNotice.headline}
+              </p>
+              <p className="mt-2 text-sm leading-relaxed text-slate-700">
+                {data.userNotice.body}
+              </p>
+              <p className="mt-3 text-xs leading-relaxed text-slate-600">
+                {data.userNotice.statsLine}
+              </p>
+            </div>
+            <div className="px-4 py-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                What you can try
+              </p>
+              <ol className="mt-2 list-decimal space-y-2 pl-5 text-sm text-slate-700">
+                {data.userNotice.tips.map((tip, i) => (
+                  <li key={i}>{tip}</li>
+                ))}
+              </ol>
+              <details className="mt-4 rounded-md border border-slate-200 bg-slate-50/80 px-3 py-2 text-xs text-slate-700">
+                <summary className="cursor-pointer select-none font-medium text-slate-800">
+                  Technical details ({data.userNotice.stats.total} lines)
+                </summary>
+                <p className="mt-2 text-slate-600">
+                  Short labels below: each line is one Google Trends call (keyword or report type)
+                  that failed. “[html]” means a web page came back instead of data.
+                </p>
+                <ul className="mt-2 max-h-64 list-disc space-y-1.5 overflow-y-auto pl-5 font-mono text-[11px] text-slate-600">
+                  {data.userNotice.technicalPreview.map((line, i) => (
+                    <li key={i}>{line}</li>
+                  ))}
+                </ul>
+                {data.userNotice.technicalExtraCount > 0 ? (
+                  <p className="mt-2 font-mono text-[11px] text-slate-500">
+                    … and {data.userNotice.technicalExtraCount} more (see API JSON if needed).
+                  </p>
+                ) : null}
+              </details>
+            </div>
           </div>
-        )}
+        ) : null}
 
         {data.explore.top.length === 0 && data.explore.rising.length === 0 ? (
           <div className="rounded-lg border border-slate-200 bg-white p-8 text-center text-sm text-slate-600 shadow-sm">
