@@ -24,7 +24,7 @@ export interface EducationTrendRow {
 
 /** Daily / realtime stories must match this OR group-specific inference below. */
 const EDUCATION_TEXT =
-  /\b(education|educational|edtech|e-learning|elearning|school|schools|campus|universit(y|ies)|college|student(s)?|teacher(s)?|classroom|curriculum|homework|exam(s)?|test prep|quiz|NCERT|CBSE|SAT|ACT|GRE|GMAT|LSAT|MCAT|IELTS|TOEFL|JEE|NEET|UPSC|GATE|scholarship|tuition|admission(s)?|enrollment|degree|MBA|PhD|doctorate|STEM|MOOC|online course|certification|bootcamp|distance learning|kindergarten|K-12|high school|middle school|homeschool|FAFSA|student loan|academic|learn(ing)?|lecture|pedagogy|syllabus|semester|credit hour)\b/i;
+  /\b(education|educational|edtech|e-learning|elearning|school|schools|campus|universit(y|ies)|college|student(s)?|teacher(s)?|classroom|academic|curriculum|homework|exam(s)?|test prep|quiz|NCERT|CBSE|ICSE|ISC|state board|board exam|SAT|ACT|GRE|GMAT|LSAT|MCAT|IELTS|TOEFL|JEE|NEET|CUET|UPSC|SSC|GATE|CAT|CLAT|BITSAT|NTA|KVPY|NTSE|Olympiad|scholarship|tuition|admission(s)?|enrol(l)?ment|degree|MBA|PhD|doctorate|STEM|MOOC|online course|certification|bootcamp|distance learning|kindergarten|K-12|high school|middle school|homeschool|FAFSA|student loan|learn(ing)?|lecture|pedagogy|syllabus|semester|credit hour|sarkari|result(s)?|admit card|hall ticket|application form|exam date|time table|date sheet|revaluation|recheck(ing)?|counsell?ing|cut ?off|merit list|rank list|answer key|provisional|allotment|seat matrix|\bPUC\b|SSLC|HSC|HSLC|MBoSE|CISCE|NIRF|DigiLocker|pariksha)\b/i;
 
 /**
  * Seeds grouped like a Trends “report”: exams, colleges & admissions, courses, broad education.
@@ -66,12 +66,57 @@ const SEED_DEFINITIONS: Array<{ seed: string; group: ReportGroup }> = [
   { seed: "early childhood education", group: "education" },
 ];
 
+/**
+ * Indian education ecosystem: results, dates, forms, hall tickets, and major exams.
+ * Used when geo is IN (and blended into explore aggregation).
+ */
+const INDIA_EDUCATION_SEEDS: Array<{ seed: string; group: ReportGroup }> = [
+  { seed: "JEE Main", group: "exams" },
+  { seed: "JEE Advanced", group: "exams" },
+  { seed: "NEET", group: "exams" },
+  { seed: "CUET", group: "exams" },
+  { seed: "UPSC", group: "exams" },
+  { seed: "SSC exam", group: "exams" },
+  { seed: "GATE exam", group: "exams" },
+  { seed: "CAT exam", group: "exams" },
+  { seed: "CLAT exam", group: "exams" },
+  { seed: "board exam result", group: "exams" },
+  { seed: "CBSE result", group: "exams" },
+  { seed: "ICSE result", group: "exams" },
+  { seed: "10th result", group: "exams" },
+  { seed: "12th result", group: "exams" },
+  { seed: "competitive exam", group: "exams" },
+  { seed: "entrance exam", group: "exams" },
+  { seed: "admit card", group: "exams" },
+  { seed: "hall ticket", group: "exams" },
+  { seed: "exam date", group: "exams" },
+  { seed: "exam time table", group: "exams" },
+  { seed: "application form", group: "colleges" },
+  { seed: "online application college", group: "colleges" },
+  { seed: "college admission", group: "colleges" },
+  { seed: "university admission India", group: "colleges" },
+  { seed: "scholarship India", group: "colleges" },
+  { seed: "cut off marks", group: "colleges" },
+  { seed: "sarkari result", group: "education" },
+  { seed: "NCERT syllabus", group: "courses" },
+  { seed: "online coaching", group: "courses" },
+  { seed: "skill course", group: "courses" },
+  { seed: "education news India", group: "education" },
+];
+
 /** Anchor topics for relatedTopics (same four chapters as the report). */
 const TOPIC_ANCHORS: Array<{ keyword: string; group: ReportGroup }> = [
   { keyword: "standardized test", group: "exams" },
   { keyword: "university admissions", group: "colleges" },
   { keyword: "online learning courses", group: "courses" },
   { keyword: "public education", group: "education" },
+];
+
+const TOPIC_ANCHORS_IN: Array<{ keyword: string; group: ReportGroup }> = [
+  { keyword: "engineering entrance exam", group: "exams" },
+  { keyword: "medical entrance exam India", group: "exams" },
+  { keyword: "university admissions India", group: "colleges" },
+  { keyword: "online courses India", group: "courses" },
 ];
 
 /** Benchmark terms for a multi-series interest-over-time strip (Google-style 0–100 index). */
@@ -81,6 +126,172 @@ const INTEREST_BENCHMARKS = [
   "online courses",
   "education",
 ] as const;
+
+const INTEREST_BENCHMARKS_IN = [
+  "JEE Main",
+  "NEET",
+  "CBSE result",
+  "education",
+] as const;
+
+export type EducationTimeframe = "past_24_hours" | "past_7_days" | "past_90_days";
+
+export function parseEducationTimeframe(
+  raw: string | null | undefined,
+): EducationTimeframe {
+  if (
+    raw === "past_24_hours" ||
+    raw === "past_7_days" ||
+    raw === "past_90_days"
+  ) {
+    return raw;
+  }
+  return "past_7_days";
+}
+
+export interface ExploreQueryRow {
+  rank: number;
+  query: string;
+  /** 0–100 bar width (relative within this list). */
+  interest: number;
+  changeLabel: string;
+  changeDirection: "up" | "down" | "breakout" | "flat";
+  exploreUrl: string;
+}
+
+export interface EducationExploreSnapshot {
+  timeframe: EducationTimeframe;
+  timeframeLabel: string;
+  top: ExploreQueryRow[];
+  rising: ExploreQueryRow[];
+}
+
+function timeframeToWindow(tf: EducationTimeframe): {
+  start: Date;
+  end: Date;
+} {
+  const end = new Date();
+  switch (tf) {
+    case "past_24_hours":
+      return {
+        start: new Date(end.getTime() - 24 * 60 * 60 * 1000),
+        end,
+      };
+    case "past_7_days":
+      return {
+        start: new Date(end.getTime() - 7 * 24 * 60 * 60 * 1000),
+        end,
+      };
+    case "past_90_days":
+    default:
+      return {
+        start: new Date(end.getTime() - 90 * 24 * 60 * 60 * 1000),
+        end,
+      };
+  }
+}
+
+function timeframeLabel(tf: EducationTimeframe): string {
+  switch (tf) {
+    case "past_24_hours":
+      return "Past 24 hours";
+    case "past_7_days":
+      return "Past 7 days";
+    case "past_90_days":
+    default:
+      return "Past 90 days";
+  }
+}
+
+function parseTopInterestScore(raw: string): number {
+  const n = Number(String(raw).replace(/,/g, ""));
+  if (Number.isFinite(n) && n >= 0) return Math.min(100, n);
+  return 0;
+}
+
+function parseRisingDisplay(raw: string): {
+  label: string;
+  direction: ExploreQueryRow["changeDirection"];
+  strength: number;
+} {
+  const v = String(raw).trim();
+  if (/^breakout$/i.test(v) || /^Breakout$/i.test(v) || /breakout/i.test(v)) {
+    return { label: "BREAKOUT", direction: "breakout", strength: 1_000_000 };
+  }
+  const pct = v.match(/([+\-]?[\d][\d,]*)\s*%/);
+  if (pct) {
+    const n = Number(pct[1].replace(/,/g, ""));
+    if (Number.isFinite(n)) {
+      const label = `${n > 0 ? "+" : ""}${n.toLocaleString("en-IN")}%`;
+      return {
+        label,
+        direction: n > 0 ? "up" : n < 0 ? "down" : "flat",
+        strength: Math.abs(n),
+      };
+    }
+  }
+  const plain = Number(String(raw).replace(/,/g, ""));
+  if (Number.isFinite(plain) && plain > 0) {
+    return {
+      label: `+${plain.toLocaleString("en-IN")}%`,
+      direction: "up",
+      strength: plain,
+    };
+  }
+  if (v && v !== "—") {
+    return { label: v, direction: "flat", strength: 0 };
+  }
+  return { label: "—", direction: "flat", strength: 0 };
+}
+
+function buildExploreRows(params: {
+  topMap: Map<string, { query: string; score: number }>;
+  risingMap: Map<
+    string,
+    { query: string; label: string; direction: ExploreQueryRow["changeDirection"]; strength: number }
+  >;
+  geo: string;
+  limit?: number;
+}): { top: ExploreQueryRow[]; rising: ExploreQueryRow[] } {
+  const limit = params.limit ?? 25;
+  const topSorted = Array.from(params.topMap.values()).sort(
+    (a, b) => b.score - a.score,
+  );
+  const topSlice = topSorted.slice(0, limit);
+  const maxTop = topSlice.reduce((m, x) => Math.max(m, x.score), 0) || 1;
+
+  const top: ExploreQueryRow[] = topSlice.map((row, i) => ({
+    rank: i + 1,
+    query: row.query,
+    interest: Math.round((100 * row.score) / maxTop),
+    /** Related-queries "top" lists give relative interest, not % change vs prior period. */
+    changeLabel: "—",
+    changeDirection: "flat" as const,
+    exploreUrl: exploreUrl(row.query, params.geo),
+  }));
+
+  const risingSorted = Array.from(params.risingMap.values()).sort((a, b) => {
+    if (a.direction === "breakout" && b.direction !== "breakout") return -1;
+    if (b.direction === "breakout" && a.direction !== "breakout") return 1;
+    return b.strength - a.strength;
+  });
+  const risingSlice = risingSorted.slice(0, limit);
+  const maxRise = risingSlice.reduce((m, x) => Math.max(m, x.strength), 0) || 1;
+
+  const rising: ExploreQueryRow[] = risingSlice.map((row, i) => ({
+    rank: i + 1,
+    query: row.query,
+    interest:
+      row.direction === "breakout"
+        ? 100
+        : Math.min(100, Math.round((100 * row.strength) / maxRise)),
+    changeLabel: row.label,
+    changeDirection: row.direction,
+    exploreUrl: exploreUrl(row.query, params.geo),
+  }));
+
+  return { top, rising };
+}
 
 export interface InterestTimelinePoint {
   /** e.g. "Apr 3" */
@@ -314,8 +525,9 @@ function parseInterestOverTimeMulti(
 async function fetchInterestComparison(
   geo: string,
   warnings: string[],
+  benchmarks: readonly string[],
 ): Promise<InterestComparison | null> {
-  const keywords = [...INTEREST_BENCHMARKS];
+  const keywords = [...benchmarks];
   try {
     const startTime = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
     const endTime = new Date();
@@ -351,11 +563,14 @@ async function fetchInterestComparison(
 
 export interface EducationTrendsPayload {
   geo: string;
+  timeframe: EducationTimeframe;
   fetchedAt: string;
   items: EducationTrendRow[];
   /** Grouped copies of items for report sections */
   byGroup: Record<ReportGroup, EducationTrendRow[]>;
   interest: InterestComparison | null;
+  /** Merged Top / Rising related queries (Explore-style), from education seeds in this region. */
+  explore: EducationExploreSnapshot;
   dataSourcesUsed: string[];
   warnings: string[];
 }
@@ -392,17 +607,42 @@ function groupItems(items: EducationTrendRow[]): Record<ReportGroup, EducationTr
   return empty;
 }
 
+function shouldReplaceRising(
+  prev: { direction: ExploreQueryRow["changeDirection"]; strength: number },
+  next: { direction: ExploreQueryRow["changeDirection"]; strength: number },
+): boolean {
+  if (next.direction === "breakout" && prev.direction !== "breakout") return true;
+  if (prev.direction === "breakout" && next.direction !== "breakout") return false;
+  return next.strength > prev.strength;
+}
+
 export async function fetchEducationTrends(
   geo: string,
+  options?: { timeframe?: EducationTimeframe },
 ): Promise<EducationTrendsPayload> {
   mergeMap.clear();
   const dataSourcesUsed: string[] = [];
   const warnings: string[] = [];
+  const timeframe: EducationTimeframe = options?.timeframe ?? "past_90_days";
+  const { start: windowStart, end: windowEnd } = timeframeToWindow(timeframe);
 
-  const windowStart = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
-  const windowEnd = new Date();
+  const topMap = new Map<string, { query: string; score: number }>();
+  const risingMap = new Map<
+    string,
+    {
+      query: string;
+      label: string;
+      direction: ExploreQueryRow["changeDirection"];
+      strength: number;
+    }
+  >();
 
-  const relatedJobs = SEED_DEFINITIONS.map(async ({ seed, group }) => {
+  const seedList = geo === "IN" ? INDIA_EDUCATION_SEEDS : SEED_DEFINITIONS;
+  const topicAnchors = geo === "IN" ? TOPIC_ANCHORS_IN : TOPIC_ANCHORS;
+  const interestBenchmarks =
+    geo === "IN" ? INTEREST_BENCHMARKS_IN : INTEREST_BENCHMARKS;
+
+  const relatedJobs = seedList.map(async ({ seed, group }) => {
     try {
       const raw = await googleTrends.relatedQueries({
         keyword: seed,
@@ -417,6 +657,12 @@ export async function fetchEducationTrends(
       }
       dataSourcesUsed.push(`relatedQueries:${seed}`);
       for (const { query, value } of extractRankedKeywords(parsed, "top")) {
+        const score = parseTopInterestScore(value);
+        const qk = query.toLowerCase();
+        const prevT = topMap.get(qk);
+        if (!prevT || score > prevT.score) {
+          topMap.set(qk, { query, score });
+        }
         addRows([
           {
             id: slugId(["rq-top", geo, seed, query]),
@@ -431,6 +677,18 @@ export async function fetchEducationTrends(
         ]);
       }
       for (const { query, value } of extractRankedKeywords(parsed, "rising")) {
+        const pr = parseRisingDisplay(value);
+        const qk = query.toLowerCase();
+        const prevR = risingMap.get(qk);
+        const row = {
+          query,
+          label: pr.label,
+          direction: pr.direction,
+          strength: pr.strength,
+        };
+        if (!prevR || shouldReplaceRising(prevR, pr)) {
+          risingMap.set(qk, row);
+        }
         addRows([
           {
             id: slugId(["rq-rise", geo, seed, query]),
@@ -451,7 +709,7 @@ export async function fetchEducationTrends(
     }
   });
 
-  const topicJobs = TOPIC_ANCHORS.map(async ({ keyword, group }) => {
+  const topicJobs = topicAnchors.map(async ({ keyword, group }) => {
     try {
       const raw = await googleTrends.relatedTopics({
         keyword,
@@ -535,7 +793,7 @@ export async function fetchEducationTrends(
     }
   })();
 
-  const interestJob = fetchInterestComparison(geo, warnings);
+  const interestJob = fetchInterestComparison(geo, warnings, interestBenchmarks);
 
   await Promise.all([
     ...relatedJobs,
@@ -545,6 +803,19 @@ export async function fetchEducationTrends(
   ]);
 
   const interest = await interestJob;
+
+  const { top: exploreTop, rising: exploreRising } = buildExploreRows({
+    topMap,
+    risingMap,
+    geo,
+    limit: 25,
+  });
+  const explore: EducationExploreSnapshot = {
+    timeframe,
+    timeframeLabel: timeframeLabel(timeframe),
+    top: exploreTop,
+    rising: exploreRising,
+  };
 
   const items = Array.from(mergeMap.values()).sort((a, b) => {
     const order = (s: EducationTrendSource) => {
@@ -562,10 +833,12 @@ export async function fetchEducationTrends(
 
   return {
     geo,
+    timeframe,
     fetchedAt: new Date().toISOString(),
     items,
     byGroup: groupItems(items),
     interest,
+    explore,
     dataSourcesUsed,
     warnings,
   };

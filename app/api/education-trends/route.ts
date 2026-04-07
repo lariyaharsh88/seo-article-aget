@@ -1,14 +1,18 @@
 import { NextResponse } from "next/server";
-import { fetchEducationTrends } from "@/lib/education-trends";
+import {
+  fetchEducationTrends,
+  parseEducationTimeframe,
+} from "@/lib/education-trends";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    const raw = searchParams.get("geo") ?? "US";
-    const geo = raw.trim().toUpperCase() || "US";
-    const data = await fetchEducationTrends(geo);
+    const raw = searchParams.get("geo") ?? "IN";
+    const geo = raw.trim().toUpperCase() || "IN";
+    const timeframe = parseEducationTimeframe(searchParams.get("tf"));
+    const data = await fetchEducationTrends(geo, { timeframe });
     return NextResponse.json(data);
   } catch (e) {
     const message =
