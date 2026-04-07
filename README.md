@@ -1,36 +1,53 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# SEO Article Agent
 
-## Getting Started
+A single-page Next.js 14 (App Router) app that turns a topic brief into keyword clusters, Tavily-backed research, SERP/PAA intelligence, a structured outline, a **streaming** Gemini article draft, and an SEO meta package you can copy in one click. API keys stay on the server (`/.env.local`) or travel only over request headers from the browser—nothing secret is embedded in client bundles.
 
-First, run the development server:
+## Free tier limits (indicative)
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+| Provider | Typical free tier | Notes |
+| --- | --- | --- |
+| Google Gemini 1.5 Flash | Generous dev quota via AI Studio | Rate limits vary by region/account |
+| Tavily | Limited monthly searches on free plan | Deep (`advanced`) uses more quota |
+| Serper.dev | ~2,500 free queries | Credit-based; check current pricing |
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Always confirm limits on each provider’s pricing page before production use.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Setup
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. **Clone or copy** this folder and open a terminal inside `seo-article-agent`.
+2. **Install dependencies:** `npm install`
+3. **Environment file:** copy `.env.example` to `.env.local`:
+   ```bash
+   cp .env.example .env.local
+   ```
+4. **Add API keys** (anyone can still paste keys in the UI; server env is optional but handy on Vercel):
+   - [Google AI Studio — Gemini](https://aistudio.google.com/apikey)
+   - [Tavily](https://tavily.com/)
+   - [Serper](https://serper.dev/)
+5. **Run locally:** `npm run dev` then open [http://localhost:3000](http://localhost:3000).
 
-## Learn More
+Keys are never committed: `.env*.local` is gitignored. In the UI, keys are stored in `localStorage` and sent as `x-gemini-key`, `x-tavily-key`, and `x-serper-key` headers. If those headers are omitted, routes fall back to `GEMINI_API_KEY`, `TAVILY_API_KEY`, and `SERPER_API_KEY` from the environment (good for your own Vercel project).
 
-To learn more about Next.js, take a look at the following resources:
+## Deploy to Vercel
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. Push the repo to GitHub/GitLab and **Import** the project in [Vercel](https://vercel.com/).
+2. Under **Settings → Environment Variables**, add:
+   - `GEMINI_API_KEY`
+   - `TAVILY_API_KEY`
+   - `SERPER_API_KEY`
+3. Deploy. The app detects server-side keys and enables **Run** without pasting into the browser (or you can still paste for multi-user demos).
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Estimated free usage per month
 
-## Deploy on Vercel
+Rough order-of-magnitude for light personal use: **dozens** of full pipeline runs may stay within free tiers if you avoid huge concurrency; Tavily advanced searches and long Gemini outputs consume quota fastest. Monitor dashboards for each provider and add billing alerts if you scale up.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Scripts
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `npm run dev` — local development
+- `npm run build` — production build
+- `npm run start` — run production server
+- `npm run lint` — ESLint
+
+## Project layout
+
+See `app/api/*` for route handlers, `lib/*` for Gemini/Tavily/Serper helpers and types, and `components/*` for the editorial dark UI.
