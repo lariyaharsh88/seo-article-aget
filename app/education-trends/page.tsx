@@ -86,8 +86,48 @@ export default async function EducationTrendsPage({
   const geo = rawGeo.trim().toUpperCase() || "IN";
   const timeframe = parseEducationTimeframe(sp.tf);
   const scope = parseEducationFetchScope(sp.scope);
+  let data:
+    | Awaited<ReturnType<typeof getCachedEducationTrends>>
+    | null = null;
+  let loadError: string | null = null;
+  try {
+    data = await getCachedEducationTrends(geo, timeframe, scope);
+  } catch (e) {
+    loadError = e instanceof Error ? e.message : "Failed to load trends data";
+  }
 
-  const data = await getCachedEducationTrends(geo, timeframe, scope);
+  if (!data) {
+    return (
+      <main className="mx-auto max-w-4xl px-4 py-10 md:px-6">
+        <div className="rounded-xl border border-amber-500/40 bg-amber-950/20 p-5">
+          <h1 className="font-display text-2xl text-amber-100">
+            Education trends temporarily unavailable
+          </h1>
+          <p className="mt-2 font-serif text-sm text-amber-100/90">
+            The server could not load Google Trends data for this request. This is usually
+            temporary and may happen when Google limits automated requests.
+          </p>
+          <p className="mt-3 font-mono text-xs text-amber-200/80">
+            Error: {loadError ?? "Unknown server error"}
+          </p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Link
+              href={`/education-trends?${qs(geo, "past_7_days", "lite")}`}
+              className="rounded-lg border border-amber-300/30 px-3 py-1.5 font-mono text-xs text-amber-100 hover:bg-amber-900/30"
+            >
+              Retry fast mode
+            </Link>
+            <Link
+              href={`/education-trends?${qs(geo, "past_90_days", "lite")}`}
+              className="rounded-lg border border-amber-300/30 px-3 py-1.5 font-mono text-xs text-amber-100 hover:bg-amber-900/30"
+            >
+              Try past 90 days
+            </Link>
+          </div>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-8 md:px-6 md:py-10">
