@@ -1,6 +1,7 @@
+/** Prefer 2.0 first on free tiers — 2.5 often hits RPM limits sooner; 429 still falls through the list. */
 const MODEL_CANDIDATES = [
-  "gemini-2.5-flash",
   "gemini-2.0-flash",
+  "gemini-2.5-flash",
   "gemini-2.0-flash-001",
   "gemini-1.5-flash-latest",
   "gemini-1.5-flash",
@@ -36,6 +37,10 @@ function modelUrl(
   return method === "streamGenerateContent" ? `${base}&alt=sse` : base;
 }
 
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 async function postWithModelFallback(
   method: "generateContent" | "streamGenerateContent",
   apiKey: string,
@@ -43,8 +48,11 @@ async function postWithModelFallback(
 ): Promise<{ res: Response; model: string }> {
   let lastStatus = 0;
   let lastDetail = "Unknown Gemini error";
+  const models = configuredModels();
+  const rateLimited: string[] = [];
 
-  for (const model of configuredModels()) {
+  for (let i = 0; i < models.length; i++) {
+    const model = models[i];
     const res = await fetch(modelUrl(model, method, apiKey), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -56,20 +64,27 @@ async function postWithModelFallback(
     const errText = await res.text();
     const detail = extractErrorMessage(errText);
 
-    if (res.status === 429) {
-      throw new Error(
-        `Gemini rate limit on ${model}. Wait and retry, or check your API quota.`,
-      );
-    }
-
     lastStatus = res.status;
     lastDetail = `${model}: ${detail}`;
 
-    // If model is missing/unsupported, try next candidate.
+    // Rate limits and missing models are often per-model — try the next candidate.
+    if (res.status === 429) {
+      rateLimited.push(model);
+      if (i < models.length - 1) {
+        await sleep(900);
+      }
+      continue;
+    }
+
     if (res.status === 404) continue;
 
-    // Any non-404 means retrying another model likely won't help.
     throw new Error(`Gemini error ${res.status}: ${lastDetail}`);
+  }
+
+  if (rateLimited.length === models.length) {
+    throw new Error(
+      `Gemini rate limited on all tried models (${rateLimited.join(", ")}). Wait 1–2 minutes and run again, or set GEMINI_MODEL to a model with available quota.`,
+    );
   }
 
   throw new Error(`Gemini error ${lastStatus || 404}: ${lastDetail}`);
