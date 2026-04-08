@@ -167,12 +167,19 @@ const INTEREST_BENCHMARKS_IN = [
   "education",
 ] as const;
 
-export type EducationTimeframe = "past_24_hours" | "past_7_days" | "past_90_days";
+export type EducationTimeframe =
+  | "past_1_hour"
+  | "past_4_hours"
+  | "past_24_hours"
+  | "past_7_days"
+  | "past_90_days";
 
 export function parseEducationTimeframe(
   raw: string | null | undefined,
 ): EducationTimeframe {
   if (
+    raw === "past_1_hour" ||
+    raw === "past_4_hours" ||
     raw === "past_24_hours" ||
     raw === "past_7_days" ||
     raw === "past_90_days"
@@ -217,6 +224,16 @@ function timeframeToWindow(tf: EducationTimeframe): {
 } {
   const end = new Date();
   switch (tf) {
+    case "past_1_hour":
+      return {
+        start: new Date(end.getTime() - 60 * 60 * 1000),
+        end,
+      };
+    case "past_4_hours":
+      return {
+        start: new Date(end.getTime() - 4 * 60 * 60 * 1000),
+        end,
+      };
     case "past_24_hours":
       return {
         start: new Date(end.getTime() - 24 * 60 * 60 * 1000),
@@ -228,23 +245,33 @@ function timeframeToWindow(tf: EducationTimeframe): {
         end,
       };
     case "past_90_days":
-    default:
       return {
         start: new Date(end.getTime() - 90 * 24 * 60 * 60 * 1000),
         end,
       };
+    default: {
+      const _exhaustive: never = tf;
+      return _exhaustive;
+    }
   }
 }
 
 function timeframeLabel(tf: EducationTimeframe): string {
   switch (tf) {
+    case "past_1_hour":
+      return "Past hour";
+    case "past_4_hours":
+      return "Past 4 hours";
     case "past_24_hours":
       return "Past 24 hours";
     case "past_7_days":
       return "Past 7 days";
     case "past_90_days":
-    default:
       return "Past 90 days";
+    default: {
+      const _exhaustive: never = tf;
+      return _exhaustive;
+    }
   }
 }
 
@@ -523,7 +550,7 @@ export function buildUserFacingTrendsNotice(
 
   const tips = [
     "Wait 5–15 minutes and refresh this page — the next batch of requests often works.",
-    "Try “Past 7 days” or “Past 90 days” instead of “Past 24 hours” (sometimes fewer errors).",
+    "If short windows fail often, try “Past 7 days” or “Past 90 days” (Past hour / 4 hours can be more sensitive to throttling).",
     "If you use a VPN or datacenter hosting, try your normal home network or a different network.",
     "For the official, full experience, open google.com/trends in your browser and search any keyword.",
   ];

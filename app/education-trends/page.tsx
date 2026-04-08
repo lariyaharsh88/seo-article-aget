@@ -21,6 +21,8 @@ export const metadata: Metadata = {
 const GEO_PRESETS = ["IN", "US", "GB", "AU", "CA"] as const;
 
 const TIMEFRAMES: { id: EducationTimeframe; label: string }[] = [
+  { id: "past_1_hour", label: "Past hour" },
+  { id: "past_4_hours", label: "Past 4 hours" },
   { id: "past_24_hours", label: "Past 24 hours" },
   { id: "past_7_days", label: "Past 7 days" },
   { id: "past_90_days", label: "Past 90 days" },
@@ -70,7 +72,7 @@ function qs(geo: string, tf: EducationTimeframe, scope: EducationFetchScope): st
 const getCachedEducationTrends = unstable_cache(
   async (geo: string, timeframe: EducationTimeframe, scope: EducationFetchScope) =>
     fetchEducationTrends(geo, { timeframe, scope }),
-  ["education-trends-v8-breakouts-split"],
+  ["education-trends-v9-timeframes"],
   { revalidate: 900 },
 );
 
@@ -289,8 +291,8 @@ export default async function EducationTrendsPage({
       data.explore.rising.length === 0 &&
       data.explore.breakouts.length === 0 ? (
         <div className="rounded-xl border border-border bg-surface/60 p-8 text-center font-serif text-sm text-text-secondary">
-          No Top / Rising / Breakout queries for this region and window. Try Past 7 or 90 days, or
-          refresh later.
+          No Top / Rising / Breakout queries for this region and window. Try a longer range (e.g.
+          Past 7 or 90 days) or refresh later — very short windows sometimes return no data.
         </div>
       ) : (
         <div className="space-y-6">
