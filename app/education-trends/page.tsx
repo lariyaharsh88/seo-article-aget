@@ -72,7 +72,7 @@ function qs(geo: string, tf: EducationTimeframe, scope: EducationFetchScope): st
 const getCachedEducationTrends = unstable_cache(
   async (geo: string, timeframe: EducationTimeframe, scope: EducationFetchScope) =>
     fetchEducationTrends(geo, { timeframe, scope }),
-  ["education-trends-v9-timeframes"],
+  ["education-trends-v10-expanded-seeds"],
   { revalidate: 900 },
 );
 

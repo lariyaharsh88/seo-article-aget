@@ -24,7 +24,7 @@ export interface EducationTrendRow {
 
 /** Daily / realtime stories must match this OR group-specific inference below. */
 const EDUCATION_TEXT =
-  /\b(education|educational|edtech|e-learning|elearning|school|schools|campus|universit(y|ies)|college|student(s)?|teacher(s)?|classroom|academic|curriculum|homework|exam(s)?|test prep|quiz|NCERT|CBSE|ICSE|ISC|state board|board exam|SAT|ACT|GRE|GMAT|LSAT|MCAT|IELTS|TOEFL|JEE|NEET|CUET|UPSC|SSC|GATE|CAT|CLAT|BITSAT|NTA|KVPY|NTSE|Olympiad|scholarship|tuition|admission(s)?|enrol(l)?ment|degree|MBA|PhD|doctorate|STEM|MOOC|online course|certification|bootcamp|distance learning|kindergarten|K-12|high school|middle school|homeschool|FAFSA|student loan|learn(ing)?|lecture|pedagogy|syllabus|semester|credit hour|sarkari|result(s)?|admit card|hall ticket|application form|exam date|time table|date sheet|revaluation|recheck(ing)?|counsell?ing|cut ?off|merit list|rank list|answer key|provisional|allotment|seat matrix|\bPUC\b|SSLC|HSC|HSLC|MBoSE|CISCE|NIRF|DigiLocker|pariksha)\b/i;
+  /\b(education|educational|edtech|ed-tech|e-learning|elearning|EdTech|school|schools|campus|universit(y|ies)|college|academia|student(s)?|teacher(s)?|faculty|professor|classroom|academic|curriculum|homework|exam(s)?|test prep|entrance test|quiz|NCERT|CBSE|ICSE|ISC|state board|board exam|SAT|ACT|GRE|GMAT|LSAT|MCAT|IELTS|TOEFL|Duolingo English|JEE|NEET|CUET|UPSC|SSC|GATE|CAT|CLAT|BITSAT|VITEEE|NTA|KVPY|NTSE|Olympiad|scholarship|tuition|admission(s)?|enrol(l)?ment|enrollment|degree|MBA|PhD|doctorate|doctoral|MPhil|postgraduate|undergraduate|STEM|MOOC|online course|online class|online learning|distance learning|hybrid learning|blended learning|remote learning|digital learning|certification|bootcamp|vocational|kindergarten|K-12|high school|middle school|homeschool|FAFSA|student loan|financial aid|learn(ing)?|lecture|pedagogy|syllabus|semester|credit hour|GPA|CGPA|accreditation|NAAC|AICTE|\bNEP\b|UGC NET|higher education|study abroad|campus hiring|placement drive|campus placement|sarkari|result(s)?|admit card|hall ticket|application form|exam date|time table|timetable|date sheet|revaluation|recheck(ing)?|counsell?ing|cut ?off|merit list|rank list|answer key|provisional|allotment|seat matrix|mock test|PYQ|proctored|convocation|academic year|fellowship|college internship|student internship|university news|college news|education news|school news|campus news|\bPUC\b|SSLC|HSC|HSLC|MBoSE|CISCE|NIRF|DigiLocker|pariksha|IBPS|CTET|TET exam|RRB|learning management|\bLMS\b|learning platform|education app|education startup|virtual classroom|digital classroom|BYJU|Unacademy|Vedantu|upGrad|Simplilearn|Coursera|Udemy|Eruditus|Scaler|Newton School|educational software|AI in education|classroom technology)\b/i;
 
 /**
  * Seeds grouped like a Trends “report”: exams, colleges & admissions, courses, broad education.
@@ -64,6 +64,32 @@ const SEED_DEFINITIONS: Array<{ seed: string; group: ReportGroup }> = [
   { seed: "teacher training", group: "education" },
   { seed: "special education", group: "education" },
   { seed: "early childhood education", group: "education" },
+  { seed: "AP exam", group: "exams" },
+  { seed: "LSAT prep", group: "exams" },
+  { seed: "USMLE", group: "exams" },
+  { seed: "bar exam study", group: "exams" },
+  { seed: "Duolingo English test", group: "exams" },
+  { seed: "law school admission", group: "colleges" },
+  { seed: "medical school admission", group: "colleges" },
+  { seed: "graduate school admission", group: "colleges" },
+  { seed: "community college", group: "colleges" },
+  { seed: "Common Application", group: "colleges" },
+  { seed: "early decision college", group: "colleges" },
+  { seed: "college waitlist", group: "colleges" },
+  { seed: "US college ranking", group: "colleges" },
+  { seed: "associate degree", group: "courses" },
+  { seed: "trade school", group: "courses" },
+  { seed: "Coursera certificate", group: "courses" },
+  { seed: "LinkedIn Learning", group: "courses" },
+  { seed: "edtech news", group: "education" },
+  { seed: "educational technology news", group: "education" },
+  { seed: "higher education policy", group: "education" },
+  { seed: "campus news university", group: "education" },
+  { seed: "STEM education", group: "education" },
+  { seed: "AI in classrooms", group: "education" },
+  { seed: "learning management system", group: "education" },
+  { seed: "study abroad USA", group: "colleges" },
+  { seed: "Rhodes scholarship", group: "colleges" },
 ];
 
 /**
@@ -75,11 +101,34 @@ const INDIA_EDUCATION_SEEDS: Array<{ seed: string; group: ReportGroup }> = [
   { seed: "JEE Advanced", group: "exams" },
   { seed: "NEET", group: "exams" },
   { seed: "CUET", group: "exams" },
+  { seed: "CUET PG", group: "exams" },
   { seed: "UPSC", group: "exams" },
   { seed: "SSC exam", group: "exams" },
   { seed: "GATE exam", group: "exams" },
   { seed: "CAT exam", group: "exams" },
+  { seed: "XAT exam", group: "exams" },
+  { seed: "SNAP exam", group: "exams" },
   { seed: "CLAT exam", group: "exams" },
+  { seed: "AILET exam", group: "exams" },
+  { seed: "BITSAT", group: "exams" },
+  { seed: "VITEEE", group: "exams" },
+  { seed: "MHT CET", group: "exams" },
+  { seed: "WBJEE", group: "exams" },
+  { seed: "KEAM", group: "exams" },
+  { seed: "KCET", group: "exams" },
+  { seed: "TS EAMCET", group: "exams" },
+  { seed: "AP EAMCET", group: "exams" },
+  { seed: "COMEDK", group: "exams" },
+  { seed: "IBPS exam", group: "exams" },
+  { seed: "RRB exam", group: "exams" },
+  { seed: "CTET exam", group: "exams" },
+  { seed: "UGC NET", group: "exams" },
+  { seed: "NIFT entrance", group: "exams" },
+  { seed: "NID DAT", group: "exams" },
+  { seed: "NATA exam", group: "exams" },
+  { seed: "TISSNET", group: "exams" },
+  { seed: "CMAT exam", group: "exams" },
+  { seed: "MAT exam MBA", group: "exams" },
   { seed: "board exam result", group: "exams" },
   { seed: "CBSE result", group: "exams" },
   { seed: "ICSE result", group: "exams" },
@@ -87,6 +136,8 @@ const INDIA_EDUCATION_SEEDS: Array<{ seed: string; group: ReportGroup }> = [
   { seed: "12th result", group: "exams" },
   { seed: "competitive exam", group: "exams" },
   { seed: "entrance exam", group: "exams" },
+  { seed: "government job exam", group: "exams" },
+  { seed: "state PSC exam", group: "exams" },
   { seed: "admit card", group: "exams" },
   { seed: "hall ticket", group: "exams" },
   { seed: "exam date", group: "exams" },
@@ -95,22 +146,50 @@ const INDIA_EDUCATION_SEEDS: Array<{ seed: string; group: ReportGroup }> = [
   { seed: "online application college", group: "colleges" },
   { seed: "college admission", group: "colleges" },
   { seed: "university admission India", group: "colleges" },
+  { seed: "IIT admission", group: "colleges" },
+  { seed: "IIM admission", group: "colleges" },
+  { seed: "DU admission", group: "colleges" },
+  { seed: "JNU admission", group: "colleges" },
+  { seed: "IGNOU admission", group: "colleges" },
+  { seed: "MBA admission India", group: "colleges" },
+  { seed: "B Tech admission", group: "colleges" },
+  { seed: "M Tech admission", group: "colleges" },
+  { seed: "PhD admission India", group: "colleges" },
+  { seed: "Polytechnic admission", group: "colleges" },
   { seed: "scholarship India", group: "colleges" },
   { seed: "cut off marks", group: "colleges" },
+  { seed: "university ranking India", group: "colleges" },
+  { seed: "NIRF ranking", group: "colleges" },
+  { seed: "campus placement India", group: "colleges" },
+  { seed: "education loan India", group: "colleges" },
+  { seed: "study abroad India", group: "colleges" },
   { seed: "sarkari result", group: "education" },
   { seed: "NCERT syllabus", group: "courses" },
   { seed: "online coaching", group: "courses" },
+  { seed: "online degree India", group: "courses" },
+  { seed: "distance education India", group: "courses" },
+  { seed: "SWAYAM courses", group: "courses" },
+  { seed: "skill development course", group: "courses" },
+  { seed: "ITI course", group: "courses" },
+  { seed: "DIKSHA app", group: "courses" },
   { seed: "skill course", group: "courses" },
   { seed: "education news India", group: "education" },
+  { seed: "university news India", group: "education" },
+  { seed: "edtech India", group: "education" },
+  { seed: "online learning India", group: "education" },
+  { seed: "education technology news India", group: "education" },
+  { seed: "school education India", group: "education" },
 ];
 
-/** ~14 seeds: same breadth, fewer HTTP calls for faster default loads. */
+/** Lean seed set for fast mode — still spans exams, admissions, edtech, and news-style queries. */
 const INDIA_EDUCATION_SEEDS_LITE: Array<{ seed: string; group: ReportGroup }> = [
   { seed: "JEE Main", group: "exams" },
   { seed: "NEET", group: "exams" },
   { seed: "CUET", group: "exams" },
   { seed: "UPSC", group: "exams" },
   { seed: "GATE exam", group: "exams" },
+  { seed: "BITSAT", group: "exams" },
+  { seed: "UGC NET", group: "exams" },
   { seed: "board exam result", group: "exams" },
   { seed: "CBSE result", group: "exams" },
   { seed: "12th result", group: "exams" },
@@ -119,6 +198,10 @@ const INDIA_EDUCATION_SEEDS_LITE: Array<{ seed: string; group: ReportGroup }> = 
   { seed: "entrance exam", group: "exams" },
   { seed: "application form", group: "colleges" },
   { seed: "college admission", group: "colleges" },
+  { seed: "university ranking India", group: "colleges" },
+  { seed: "edtech India", group: "education" },
+  { seed: "online learning India", group: "education" },
+  { seed: "university news India", group: "education" },
   { seed: "sarkari result", group: "education" },
 ];
 
@@ -128,28 +211,37 @@ const SEED_DEFINITIONS_LITE: Array<{ seed: string; group: ReportGroup }> = [
   { seed: "IELTS preparation", group: "exams" },
   { seed: "entrance exam", group: "exams" },
   { seed: "college admissions", group: "colleges" },
+  { seed: "university ranking", group: "colleges" },
   { seed: "scholarship", group: "colleges" },
   { seed: "MBA program", group: "courses" },
   { seed: "online courses", group: "courses" },
   { seed: "accredited online degree", group: "courses" },
   { seed: "education", group: "education" },
   { seed: "EdTech", group: "education" },
+  { seed: "edtech news", group: "education" },
   { seed: "K-12 education", group: "education" },
 ];
 
 /** Anchor topics for relatedTopics (same four chapters as the report). */
 const TOPIC_ANCHORS: Array<{ keyword: string; group: ReportGroup }> = [
   { keyword: "standardized test", group: "exams" },
+  { keyword: "college entrance examination", group: "exams" },
   { keyword: "university admissions", group: "colleges" },
+  { keyword: "higher education", group: "colleges" },
   { keyword: "online learning courses", group: "courses" },
   { keyword: "public education", group: "education" },
+  { keyword: "educational technology", group: "education" },
 ];
 
 const TOPIC_ANCHORS_IN: Array<{ keyword: string; group: ReportGroup }> = [
   { keyword: "engineering entrance exam", group: "exams" },
   { keyword: "medical entrance exam India", group: "exams" },
+  { keyword: "government exam India", group: "exams" },
   { keyword: "university admissions India", group: "colleges" },
+  { keyword: "Indian Institutes of Technology", group: "colleges" },
   { keyword: "online courses India", group: "courses" },
+  { keyword: "Indian edtech", group: "education" },
+  { keyword: "higher education India", group: "education" },
 ];
 
 /** Benchmark terms for a multi-series interest-over-time strip (Google-style 0–100 index). */
@@ -613,25 +705,28 @@ function isRecord(x: unknown): x is Record<string, unknown> {
 function inferReportGroupFromTitle(title: string): ReportGroup {
   const t = title;
   if (
-    /\b(exam|exams|SAT|ACT|GRE|GMAT|MCAT|LSAT|IELTS|TOEFL|JEE|NEET|UPSC|GATE|test prep|entrance|board exam|quiz|proctor|score)\b/i.test(
+    /\b(exam|exams|SAT|ACT|GRE|GMAT|MCAT|LSAT|IELTS|TOEFL|JEE|NEET|CUET|UPSC|GATE|BITSAT|VITEEE|IBPS|CTET|\bNET\b|NTA|test prep|entrance|board exam|quiz|proctor|score|results?|hall ticket|admit card|EAMCET|CET|MHT|WBJEE|KCET)\b/i.test(
       t,
     )
   ) {
     return "exams";
   }
   if (
-    /\b(college|university|campus|admission|ivy|scholarship|tuition|dorm|deferral|ranking|financial aid|Greek life)\b/i.test(
+    /\b(college|university|campus|admission|IIT|IIM|JNU|DU\b|ivy|scholarship|tuition|dorm|deferral|ranking|NIRF|placement|financial aid|Greek life|graduate school|PhD|hostel|campus hiring)\b/i.test(
       t,
     )
   ) {
     return "colleges";
   }
   if (
-    /\b(course|courses|MOOC|certification|bootcamp|syllabus|module|curriculum|workshop|credential|diploma|credit hour)\b/i.test(
+    /\b(course|courses|MOOC|certification|bootcamp|syllabus|module|curriculum|workshop|credential|diploma|credit hour|online degree|distance learning|SWAYAM|NCERT|coaching|edX|Coursera)\b/i.test(
       t,
     )
   ) {
     return "courses";
+  }
+  if (/\b(edtech|EdTech|ed-tech|LMS|learning app|BYJU|Unacademy|Vedantu|classroom tech)\b/i.test(t)) {
+    return "education";
   }
   return "education";
 }
