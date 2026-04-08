@@ -849,10 +849,21 @@ function labelFromRankedEntry(k: Record<string, unknown>): string {
   return "";
 }
 
+function trimTrendsText(x: unknown): string | undefined {
+  if (typeof x !== "string") return undefined;
+  const t = x.trim();
+  return t.length > 0 ? t : undefined;
+}
+
+/**
+ * Parsed row from Trends `rankedKeyword`.
+ * Google puts the same label as the public UI in `formattedValue` (e.g. "+40%", "Breakout", "100");
+ * raw `value` is often a large index and breaks display if concatenated first.
+ */
 function extractRankedKeywords(
   parsed: unknown,
   which: "top" | "rising",
-): Array<{ query: string; value: string }> {
+): Array<{ query: string; value: string; detail?: string }> {
   const root = parsed;
   if (!isRecord(root) || !isRecord(root.default)) return [];
   const def = root.default as Record<string, unknown>;
@@ -863,44 +874,48 @@ function extractRankedKeywords(
   if (!isRecord(bucket)) return [];
   const keywords = bucket.rankedKeyword;
   if (!Array.isArray(keywords)) return [];
-  const out: Array<{ query: string; value: string }> = [];
+  const out: Array<{ query: string; value: string; detail?: string }> = [];
   for (const k of keywords) {
     if (!isRecord(k)) continue;
     const q = labelFromRankedEntry(k);
     if (!q) continue;
     const v = k.value;
     const extracted = k.extractedValue;
+    const fv = trimTrendsText(k.formattedValue);
+    const detail = trimTrendsText(k.snippet);
     let value = "";
+
     if (which === "rising") {
-      /**
-       * Rising rows often put the label in `value` and metadata in `extractedValue`, or the
-       * opposite. Using only `value || extracted` drops "Breakout" when `value` is a number.
-       */
-      const parts: string[] = [];
-      if (typeof v === "string" && v.trim()) parts.push(v.trim());
-      else if (typeof v === "number" && Number.isFinite(v)) parts.push(String(v));
-      if (typeof extracted === "string" && extracted.trim()) parts.push(extracted.trim());
-      else if (typeof extracted === "number" && Number.isFinite(extracted))
-        parts.push(String(extracted));
-      const formattedVal = k.formattedValue;
-      if (typeof formattedVal === "string" && formattedVal.trim())
-        parts.push(formattedVal.trim());
-      const joined = parts.join(" ").trim();
-      if (joined && (isBreakoutToken(joined) || parts.some((p) => isBreakoutToken(p)))) {
-        value = "Breakout";
+      if (fv) {
+        value = fv;
       } else {
-        value = joined || "—";
+        const parts: string[] = [];
+        if (typeof v === "string" && v.trim()) parts.push(v.trim());
+        else if (typeof v === "number" && Number.isFinite(v)) parts.push(String(v));
+        if (typeof extracted === "string" && extracted.trim()) parts.push(extracted.trim());
+        else if (typeof extracted === "number" && Number.isFinite(extracted))
+          parts.push(String(extracted));
+        value = parts.join(" ").trim() || "—";
       }
+    } else if (fv) {
+      value = fv;
+    } else if (typeof v === "number" && Number.isFinite(v)) {
+      value = String(v);
+    } else if (typeof v === "string" && v.trim()) {
+      value = v.trim();
+    } else if (typeof extracted === "number" && Number.isFinite(extracted)) {
+      value = String(extracted);
+    } else if (typeof extracted === "string" && extracted.trim()) {
+      value = extracted.trim();
     } else {
-      if (typeof v === "number" || typeof v === "string") {
-        value = String(v);
-      }
-      if (typeof extracted === "number" || typeof extracted === "string") {
-        value = value || String(extracted);
-      }
-      if (!value) value = "—";
+      value = "—";
     }
-    out.push({ query: q, value: value || "—" });
+
+    if (detail) {
+      out.push({ query: q, value: value || "—", detail });
+    } else {
+      out.push({ query: q, value: value || "—" });
+    }
   }
   return out;
 }
@@ -1192,13 +1207,17 @@ export async function fetchEducationTrends(
         }
         const parsed = pr.data;
         dataSourcesUsed.push(`relatedQueries:${seed}`);
-        for (const { query, value } of extractRankedKeywords(parsed, "top")) {
+        for (const row of extractRankedKeywords(parsed, "top")) {
+          const { query, value, detail } = row;
           const score = parseTopInterestScore(value);
           const qk = query.toLowerCase();
           const prevT = topMap.get(qk);
           if (!prevT || score > prevT.score) {
             topMap.set(qk, { query, score });
           }
+          const metric = detail
+            ? `Top · relative score ${value} — ${detail}`
+            : `Top · relative score ${value}`;
           addRows([
             {
               id: slugId(["rq-top", geo, seed, query]),
@@ -1206,13 +1225,14 @@ export async function fetchEducationTrends(
               source: "related_queries_top",
               seed,
               reportGroup: group,
-              metric: `Top · relative score ${value}`,
+              metric,
               geo,
               exploreUrl: exploreUrl(query, geo),
             },
           ]);
         }
-        for (const { query, value } of extractRankedKeywords(parsed, "rising")) {
+        for (const row of extractRankedKeywords(parsed, "rising")) {
+          const { query, value, detail } = row;
           const pRise = parseRisingDisplay(value);
           const qk = query.toLowerCase();
           const prevR = risingMap.get(qk);
@@ -1224,6 +1244,7 @@ export async function fetchEducationTrends(
               strength: pRise.strength,
             });
           }
+          const metric = detail ? `Rising · ${value} — ${detail}` : `Rising · ${value}`;
           addRows([
             {
               id: slugId(["rq-rise", geo, seed, query]),
@@ -1231,7 +1252,7 @@ export async function fetchEducationTrends(
               source: "related_queries_rising",
               seed,
               reportGroup: group,
-              metric: `Rising · ${value}`,
+              metric,
               geo,
               exploreUrl: exploreUrl(query, geo),
             },
