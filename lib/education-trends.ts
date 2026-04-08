@@ -205,6 +205,9 @@ export interface EducationExploreSnapshot {
   timeframe: EducationTimeframe;
   timeframeLabel: string;
   top: ExploreQueryRow[];
+  /** Sharp spikes only (Google-style BREAKOUT), not mixed with % rising. */
+  breakouts: ExploreQueryRow[];
+  /** Rising queries with percentage-style growth only (no breakouts). */
   rising: ExploreQueryRow[];
 }
 
@@ -306,7 +309,11 @@ function buildExploreRows(params: {
   >;
   geo: string;
   limit?: number;
-}): { top: ExploreQueryRow[]; rising: ExploreQueryRow[] } {
+}): {
+  top: ExploreQueryRow[];
+  breakouts: ExploreQueryRow[];
+  rising: ExploreQueryRow[];
+} {
   const limit = params.limit ?? 25;
   const topSorted = Array.from(params.topMap.values()).sort(
     (a, b) => b.score - a.score,
@@ -329,22 +336,33 @@ function buildExploreRows(params: {
     if (b.direction === "breakout" && a.direction !== "breakout") return 1;
     return b.strength - a.strength;
   });
-  const risingSlice = risingSorted.slice(0, limit);
-  const maxRise = risingSlice.reduce((m, x) => Math.max(m, x.strength), 0) || 1;
+  const breakoutSource = risingSorted.filter((r) => r.direction === "breakout");
+  const nonBreakoutSource = risingSorted.filter((r) => r.direction !== "breakout");
+
+  const breakoutSlice = breakoutSource.slice(0, limit);
+  const breakouts: ExploreQueryRow[] = breakoutSlice.map((row, i) => ({
+    rank: i + 1,
+    query: row.query,
+    interest: 100,
+    changeLabel: "BREAKOUT",
+    changeDirection: "breakout" as const,
+    exploreUrl: exploreUrl(row.query, params.geo),
+  }));
+
+  const risingSlice = nonBreakoutSource.slice(0, limit);
+  const maxRise =
+    risingSlice.reduce((m, x) => Math.max(m, x.strength), 0) || 1;
 
   const rising: ExploreQueryRow[] = risingSlice.map((row, i) => ({
     rank: i + 1,
     query: row.query,
-    interest:
-      row.direction === "breakout"
-        ? 100
-        : Math.min(100, Math.round((100 * row.strength) / maxRise)),
+    interest: Math.min(100, Math.round((100 * row.strength) / maxRise)),
     changeLabel: row.label,
     changeDirection: row.direction,
     exploreUrl: exploreUrl(row.query, params.geo),
   }));
 
-  return { top, rising };
+  return { top, breakouts, rising };
 }
 
 export interface InterestTimelinePoint {
@@ -1079,7 +1097,11 @@ export async function fetchEducationTrends(
 
   const interest = await interestPromise;
 
-  const { top: exploreTop, rising: exploreRising } = buildExploreRows({
+  const {
+    top: exploreTop,
+    breakouts: exploreBreakouts,
+    rising: exploreRising,
+  } = buildExploreRows({
     topMap,
     risingMap,
     geo,
@@ -1089,6 +1111,7 @@ export async function fetchEducationTrends(
     timeframe,
     timeframeLabel: timeframeLabel(timeframe),
     top: exploreTop,
+    breakouts: exploreBreakouts,
     rising: exploreRising,
   };
 

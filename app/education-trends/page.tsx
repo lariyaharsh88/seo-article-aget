@@ -70,7 +70,7 @@ function qs(geo: string, tf: EducationTimeframe, scope: EducationFetchScope): st
 const getCachedEducationTrends = unstable_cache(
   async (geo: string, timeframe: EducationTimeframe, scope: EducationFetchScope) =>
     fetchEducationTrends(geo, { timeframe, scope }),
-  ["education-trends-v7-breakout"],
+  ["education-trends-v8-breakouts-split"],
   { revalidate: 900 },
 );
 
@@ -285,23 +285,35 @@ export default async function EducationTrendsPage({
         </div>
       </section>
 
-      {data.explore.top.length === 0 && data.explore.rising.length === 0 ? (
+      {data.explore.top.length === 0 &&
+      data.explore.rising.length === 0 &&
+      data.explore.breakouts.length === 0 ? (
         <div className="rounded-xl border border-border bg-surface/60 p-8 text-center font-serif text-sm text-text-secondary">
-          No Top / Rising queries for this region and window. Try Past 7 or 90 days, or refresh
-          later.
+          No Top / Rising / Breakout queries for this region and window. Try Past 7 or 90 days, or
+          refresh later.
         </div>
       ) : (
-        <div className="grid gap-6 lg:grid-cols-2">
-          <ExploreTableCard
-            title="Top queries"
-            hint="Merged “top” related queries across education seeds — interest bar is relative within this table."
-            rows={data.explore.top}
-          />
-          <ExploreTableCard
-            title="Rising queries"
-            hint="Merged “rising” lists. BREAKOUT means a sharp spike."
-            rows={data.explore.rising}
-          />
+        <div className="space-y-6">
+          {data.explore.breakouts.length > 0 ? (
+            <ExploreTableCard
+              title="Breakout queries"
+              hint="Rising searches flagged as BREAKOUT by Google (very sharp spike). Shown separately from percentage-based rising queries."
+              rows={data.explore.breakouts}
+              variant="breakout"
+            />
+          ) : null}
+          <div className="grid gap-6 lg:grid-cols-2">
+            <ExploreTableCard
+              title="Top queries"
+              hint="Merged “top” related queries across education seeds — interest bar is relative within this table."
+              rows={data.explore.top}
+            />
+            <ExploreTableCard
+              title="Rising queries (% change)"
+              hint="Merged “rising” lists with +% style growth only. True breakouts are in the Breakout section above."
+              rows={data.explore.rising}
+            />
+          </div>
         </div>
       )}
 
@@ -370,14 +382,27 @@ function ExploreTableCard({
   title,
   hint,
   rows,
+  variant = "default",
 }: {
   title: string;
   hint: string;
   rows: ExploreQueryRow[];
+  variant?: "default" | "breakout";
 }) {
+  const shell =
+    variant === "breakout"
+      ? "flex flex-col overflow-hidden rounded-xl border border-purple-500/40 bg-purple-950/15 shadow-[inset_0_1px_0_0_rgba(167,139,250,0.1)]"
+      : "flex flex-col overflow-hidden rounded-xl border border-border bg-surface/80";
+  const barAccent = variant === "breakout" ? "purple" : "info";
   return (
-    <section className="flex flex-col overflow-hidden rounded-xl border border-border bg-surface/80">
-      <div className="border-b border-border px-4 py-3">
+    <section className={shell}>
+      <div
+        className={
+          variant === "breakout"
+            ? "border-b border-purple-500/25 px-4 py-3"
+            : "border-b border-border px-4 py-3"
+        }
+      >
         <h2 className="font-display text-lg text-text-primary">{title}</h2>
         <p className="mt-1 font-serif text-xs text-text-muted">{hint}</p>
       </div>
@@ -389,7 +414,13 @@ function ExploreTableCard({
         <div className="overflow-x-auto">
           <table className="w-full min-w-[280px] border-collapse font-serif text-sm">
             <thead>
-              <tr className="border-b border-border bg-background/30 font-mono text-[10px] uppercase tracking-wide text-text-muted">
+              <tr
+                className={
+                  variant === "breakout"
+                    ? "border-b border-purple-500/20 bg-purple-950/25 font-mono text-[10px] uppercase tracking-wide text-text-muted"
+                    : "border-b border-border bg-background/30 font-mono text-[10px] uppercase tracking-wide text-text-muted"
+                }
+              >
                 <th className="w-10 px-3 py-2 text-left">#</th>
                 <th className="px-3 py-2 text-left">Query</th>
                 <th className="hidden min-w-[140px] px-3 py-2 text-left sm:table-cell">
@@ -401,8 +432,12 @@ function ExploreTableCard({
             <tbody>
               {rows.map((row) => (
                 <tr
-                  key={`ExploreTableCard-${row.rank}-${row.query}`}
-                  className="border-b border-border/70 hover:bg-background/35"
+                  key={`ExploreTableCard-${variant}-${row.rank}-${row.query}`}
+                  className={
+                    variant === "breakout"
+                      ? "border-b border-purple-500/15 hover:bg-purple-950/20"
+                      : "border-b border-border/70 hover:bg-background/35"
+                  }
                 >
                   <td className="px-3 py-2.5 font-mono tabular-nums text-xs text-text-muted">
                     {row.rank}
@@ -412,16 +447,20 @@ function ExploreTableCard({
                       href={row.exploreUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="font-medium text-info hover:underline"
+                      className={
+                        variant === "breakout"
+                          ? "font-medium text-purple hover:underline"
+                          : "font-medium text-info hover:underline"
+                      }
                     >
                       {row.query}
                     </a>
                     <div className="mt-1.5 sm:hidden">
-                      <InterestBar value={row.interest} />
+                      <InterestBar value={row.interest} accent={barAccent} />
                     </div>
                   </td>
                   <td className="hidden px-3 py-2.5 sm:table-cell">
-                    <InterestBar value={row.interest} />
+                    <InterestBar value={row.interest} accent={barAccent} />
                   </td>
                   <td
                     className={`px-3 py-2.5 text-right font-mono text-xs ${changeCellClass(row.changeDirection)}`}
@@ -442,15 +481,19 @@ function ExploreTableCard({
   );
 }
 
-function InterestBar({ value }: { value: number }) {
+function InterestBar({
+  value,
+  accent = "info",
+}: {
+  value: number;
+  accent?: "info" | "purple";
+}) {
   const w = Math.max(4, Math.min(100, value));
+  const fill = accent === "purple" ? "bg-purple" : "bg-info";
   return (
     <div className="flex items-center gap-2">
       <div className="h-2 min-w-[80px] flex-1 overflow-hidden rounded-sm bg-border">
-        <div
-          className="h-full rounded-sm bg-info"
-          style={{ width: `${w}%` }}
-        />
+        <div className={`h-full rounded-sm ${fill}`} style={{ width: `${w}%` }} />
       </div>
       <span className="font-mono tabular-nums text-xs text-text-muted">{value}</span>
     </div>
