@@ -373,6 +373,9 @@ function parseTopInterestScore(raw: string): number {
   return 0;
 }
 
+/** Rising % at or above this is treated like Google’s “massive spike” / BREAKOUT tier. */
+const RISING_PCT_AS_BREAKOUT = 2000;
+
 function isBreakoutToken(s: string): boolean {
   const t = s.trim();
   if (!t) return false;
@@ -399,6 +402,13 @@ function parseRisingDisplay(raw: string): {
     const n = Number(pct[1].replace(/,/g, ""));
     if (Number.isFinite(n)) {
       const label = `${n > 0 ? "+" : ""}${n.toLocaleString("en-IN")}%`;
+      if (Math.abs(n) >= RISING_PCT_AS_BREAKOUT) {
+        return {
+          label: `BREAKOUT (${label})`,
+          direction: "breakout",
+          strength: 1_000_000 + Math.min(Math.abs(n), 999_999),
+        };
+      }
       return {
         label,
         direction: n > 0 ? "up" : n < 0 ? "down" : "flat",
@@ -408,6 +418,13 @@ function parseRisingDisplay(raw: string): {
   }
   const plain = Number(String(raw).replace(/,/g, ""));
   if (Number.isFinite(plain) && plain > 0) {
+    if (plain >= RISING_PCT_AS_BREAKOUT) {
+      return {
+        label: `BREAKOUT (+${plain.toLocaleString("en-IN")}%)`,
+        direction: "breakout",
+        strength: 1_000_000 + Math.min(plain, 999_999),
+      };
+    }
     return {
       label: `+${plain.toLocaleString("en-IN")}%`,
       direction: "up",
@@ -463,7 +480,7 @@ function buildExploreRows(params: {
     rank: i + 1,
     query: row.query,
     interest: 100,
-    changeLabel: "BREAKOUT",
+    changeLabel: row.label,
     changeDirection: "breakout" as const,
     exploreUrl: exploreUrl(row.query, params.geo),
   }));
@@ -482,6 +499,65 @@ function buildExploreRows(params: {
   }));
 
   return { top, breakouts, rising };
+}
+
+function risingValueFromTrendMetric(
+  row: EducationTrendRow,
+): string | null {
+  if (row.source === "related_queries_rising") {
+    const m = row.metric.match(/^Rising · (.+)$/);
+    return m ? m[1].trim() : null;
+  }
+  if (row.source === "related_topics_rising") {
+    const m = row.metric.match(/^Related topic · rising · (.+)$/);
+    return m ? m[1].trim() : null;
+  }
+  return null;
+}
+
+/** Re-scan merged rows so breakouts from full report (topics, etc.) are not dropped. */
+function extractExploreBreakoutsFromMergedRows(
+  rows: EducationTrendRow[],
+  geo: string,
+): ExploreQueryRow[] {
+  const out: ExploreQueryRow[] = [];
+  for (const item of rows) {
+    const raw = risingValueFromTrendMetric(item);
+    if (raw == null) continue;
+    const p = parseRisingDisplay(raw);
+    if (p.direction !== "breakout") continue;
+    out.push({
+      rank: 0,
+      query: item.title,
+      interest: 100,
+      changeLabel: p.label,
+      changeDirection: "breakout",
+      exploreUrl: item.exploreUrl || exploreUrl(item.title, geo),
+    });
+  }
+  return out;
+}
+
+function mergeExploreBreakouts(
+  primary: ExploreQueryRow[],
+  extra: ExploreQueryRow[],
+  limit: number,
+): ExploreQueryRow[] {
+  const seen = new Set<string>();
+  const merged: ExploreQueryRow[] = [];
+  for (const row of primary) {
+    const k = row.query.toLowerCase();
+    if (seen.has(k)) continue;
+    seen.add(k);
+    merged.push(row);
+  }
+  for (const row of extra) {
+    const k = row.query.toLowerCase();
+    if (seen.has(k)) continue;
+    seen.add(k);
+    merged.push(row);
+  }
+  return merged.slice(0, limit).map((r, i) => ({ ...r, rank: i + 1 }));
 }
 
 export interface InterestTimelinePoint {
@@ -773,6 +849,9 @@ function extractRankedKeywords(
       if (typeof extracted === "string" && extracted.trim()) parts.push(extracted.trim());
       else if (typeof extracted === "number" && Number.isFinite(extracted))
         parts.push(String(extracted));
+      const formattedVal = k.formattedValue;
+      if (typeof formattedVal === "string" && formattedVal.trim())
+        parts.push(formattedVal.trim());
       const joined = parts.join(" ").trim();
       if (joined && (isBreakoutToken(joined) || parts.some((p) => isBreakoutToken(p)))) {
         value = "Breakout";
@@ -1229,14 +1308,6 @@ export async function fetchEducationTrends(
     geo,
     limit: 25,
   });
-  const explore: EducationExploreSnapshot = {
-    timeframe,
-    timeframeLabel: timeframeLabel(timeframe),
-    top: exploreTop,
-    breakouts: exploreBreakouts,
-    rising: exploreRising,
-  };
-
   const items = Array.from(mergeMap.values()).sort((a, b) => {
     const order = (s: EducationTrendSource) => {
       if (s.startsWith("realtime")) return 0;
@@ -1250,6 +1321,19 @@ export async function fetchEducationTrends(
     if (g !== 0) return g;
     return a.title.localeCompare(b.title);
   });
+
+  const mergedBreakouts = mergeExploreBreakouts(
+    exploreBreakouts,
+    extractExploreBreakoutsFromMergedRows(items, geo),
+    25,
+  );
+  const explore: EducationExploreSnapshot = {
+    timeframe,
+    timeframeLabel: timeframeLabel(timeframe),
+    top: exploreTop,
+    breakouts: mergedBreakouts,
+    rising: exploreRising,
+  };
 
   return {
     geo,

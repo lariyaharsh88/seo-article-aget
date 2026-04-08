@@ -72,7 +72,7 @@ function qs(geo: string, tf: EducationTimeframe, scope: EducationFetchScope): st
 const getCachedEducationTrends = unstable_cache(
   async (geo: string, timeframe: EducationTimeframe, scope: EducationFetchScope) =>
     fetchEducationTrends(geo, { timeframe, scope }),
-  ["education-trends-v10-expanded-seeds"],
+  ["education-trends-v11-breakouts-under-chart"],
   { revalidate: 900 },
 );
 
@@ -229,6 +229,29 @@ export default async function EducationTrendsPage({
         </div>
       </div>
 
+      {/* Chart — Google-style multi-series */}
+      <section className="mb-8 rounded-xl border border-border bg-surface/80 px-4 py-5 md:px-6">
+        <h2 className="font-display text-lg text-text-primary md:text-xl">
+          Interest over time
+        </h2>
+        <p className="mt-1 font-serif text-xs text-text-muted">
+          Compared benchmark keywords (0–100 index, same method as Google Trends). Runs in parallel
+          with Top/Rising fetches in fast mode.
+        </p>
+        <div className="mt-4">
+          <InterestOverTimeChart interest={data.interest} />
+        </div>
+      </section>
+
+      <div className="mb-8">
+        <ExploreTableCard
+          title="Breakout queries"
+          hint="Rising searches flagged as BREAKOUT or extreme +% spikes (same rules as Google Trends explore). Listed separately from ordinary percentage growth."
+          rows={data.explore.breakouts}
+          variant="breakout"
+        />
+      </div>
+
       {data.userNotice ? (
         <div
           className="mb-6 overflow-hidden rounded-xl border border-amber-500/40 bg-amber-950/25"
@@ -273,51 +296,29 @@ export default async function EducationTrendsPage({
         </div>
       ) : null}
 
-      {/* Chart — Google-style multi-series */}
-      <section className="mb-8 rounded-xl border border-border bg-surface/80 px-4 py-5 md:px-6">
-        <h2 className="font-display text-lg text-text-primary md:text-xl">
-          Interest over time
-        </h2>
-        <p className="mt-1 font-serif text-xs text-text-muted">
-          Compared benchmark keywords (0–100 index, same method as Google Trends). Runs in parallel
-          with Top/Rising fetches in fast mode.
-        </p>
-        <div className="mt-4">
-          <InterestOverTimeChart interest={data.interest} />
-        </div>
-      </section>
-
       {data.explore.top.length === 0 &&
       data.explore.rising.length === 0 &&
       data.explore.breakouts.length === 0 ? (
-        <div className="rounded-xl border border-border bg-surface/60 p-8 text-center font-serif text-sm text-text-secondary">
+        <div className="mb-6 rounded-xl border border-border bg-surface/60 p-8 text-center font-serif text-sm text-text-secondary">
           No Top / Rising / Breakout queries for this region and window. Try a longer range (e.g.
           Past 7 or 90 days) or refresh later — very short windows sometimes return no data.
         </div>
-      ) : (
-        <div className="space-y-6">
-          {data.explore.breakouts.length > 0 ? (
-            <ExploreTableCard
-              title="Breakout queries"
-              hint="Rising searches flagged as BREAKOUT by Google (very sharp spike). Shown separately from percentage-based rising queries."
-              rows={data.explore.breakouts}
-              variant="breakout"
-            />
-          ) : null}
-          <div className="grid gap-6 lg:grid-cols-2">
-            <ExploreTableCard
-              title="Top queries"
-              hint="Merged “top” related queries across education seeds — interest bar is relative within this table."
-              rows={data.explore.top}
-            />
-            <ExploreTableCard
-              title="Rising queries (% change)"
-              hint="Merged “rising” lists with +% style growth only. True breakouts are in the Breakout section above."
-              rows={data.explore.rising}
-            />
-          </div>
+      ) : null}
+
+      <div className="space-y-6">
+        <div className="grid gap-6 lg:grid-cols-2">
+          <ExploreTableCard
+            title="Top queries"
+            hint="Merged “top” related queries across education seeds — interest bar is relative within this table."
+            rows={data.explore.top}
+          />
+          <ExploreTableCard
+            title="Rising queries (% change)"
+            hint="Merged “rising” lists with +% style growth only. True breakouts are listed in the Breakout section directly under the chart."
+            rows={data.explore.rising}
+          />
         </div>
-      )}
+      </div>
 
       {data.fetchScope === "full" && data.items.length > 0 ? (
         <section className="mt-10">
@@ -409,9 +410,24 @@ function ExploreTableCard({
         <p className="mt-1 font-serif text-xs text-text-muted">{hint}</p>
       </div>
       {rows.length === 0 ? (
-        <p className="flex-1 px-4 py-10 text-center font-serif text-sm text-text-muted">
-          No rows.
-        </p>
+        <div className="flex-1 px-4 py-10 text-center">
+          {variant === "breakout" ? (
+            <>
+              <p className="font-serif text-sm text-text-secondary">
+                No breakout queries in this window. Google only labels a small share of rising terms
+                as Breakout; very short ranges often return none.
+              </p>
+              <p className="mt-3 font-serif text-xs text-text-muted">
+                Try <strong className="font-medium text-text-secondary">Past 7 or 90 days</strong>{" "}
+                or enable <strong className="font-medium text-text-secondary">Full report</strong>{" "}
+                for related topics and extra signals. Breakout-style rows from merged sources are
+                included here when detected.
+              </p>
+            </>
+          ) : (
+            <p className="font-serif text-sm text-text-muted">No rows.</p>
+          )}
+        </div>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full min-w-[280px] border-collapse font-serif text-sm">
