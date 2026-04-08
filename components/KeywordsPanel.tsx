@@ -1,6 +1,6 @@
 "use client";
 
-import type { Keyword } from "@/lib/types";
+import type { FeaturedSnippet, Keyword } from "@/lib/types";
 
 const TYPE_ORDER: Keyword["type"][] = [
   "primary",
@@ -32,9 +32,14 @@ function difficultyClass(d: Keyword["difficulty"]): string {
 interface KeywordsPanelProps {
   keywords: Keyword[];
   paas: string[];
+  featuredSnippet: FeaturedSnippet | null;
 }
 
-export function KeywordsPanel({ keywords, paas }: KeywordsPanelProps) {
+export function KeywordsPanel({
+  keywords,
+  paas,
+  featuredSnippet,
+}: KeywordsPanelProps) {
   const grouped = TYPE_ORDER.map((type) => ({
     type,
     items: keywords.filter((k) => k.type === type),
@@ -94,6 +99,38 @@ export function KeywordsPanel({ keywords, paas }: KeywordsPanelProps) {
           </ul>
         </section>
       )}
+
+      {featuredSnippet ? (
+        <section
+          aria-labelledby="featured-snippet-heading"
+          className="rounded-xl border border-info/35 bg-info/5 p-4"
+        >
+          <h3
+            id="featured-snippet-heading"
+            className="mb-2 font-mono text-xs uppercase tracking-wide text-info"
+          >
+            Featured snippet · answer box
+          </h3>
+          {featuredSnippet.title ? (
+            <p className="font-serif text-sm font-medium text-text-primary">
+              {featuredSnippet.title}
+            </p>
+          ) : null}
+          <p className="mt-2 whitespace-pre-wrap font-serif text-sm leading-relaxed text-text-secondary">
+            {featuredSnippet.text}
+          </p>
+          {featuredSnippet.url ? (
+            <a
+              href={featuredSnippet.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-3 inline-block font-mono text-xs text-info underline-offset-2 hover:underline"
+            >
+              Source ↗
+            </a>
+          ) : null}
+        </section>
+      ) : null}
     </div>
   );
 }

@@ -10,7 +10,13 @@ import { SourcesList } from "@/components/SourcesList";
 import { TopicForm } from "@/components/TopicForm";
 import { isKeywordRecord } from "@/lib/keyword-guards";
 import { PIPELINE_STAGES } from "@/lib/pipeline-stages";
-import type { Keyword, PipelineInput, SeoMeta, Source } from "@/lib/types";
+import type {
+  FeaturedSnippet,
+  Keyword,
+  PipelineInput,
+  SeoMeta,
+  Source,
+} from "@/lib/types";
 
 type TabId = "article" | "seo" | "keywords" | "sources" | "log";
 
@@ -22,6 +28,12 @@ function buildHeaders(): HeadersInit {
 
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null;
+}
+
+function isFeaturedSnippet(v: unknown): v is FeaturedSnippet {
+  if (typeof v !== "object" || v === null) return false;
+  const o = v as FeaturedSnippet;
+  return typeof o.text === "string" && o.text.trim().length > 0;
 }
 
 export default function Home() {
@@ -39,6 +51,9 @@ export default function Home() {
   const [keywords, setKeywords] = useState<Keyword[]>([]);
   const [sources, setSources] = useState<Source[]>([]);
   const [paas, setPaas] = useState<string[]>([]);
+  const [featuredSnippet, setFeaturedSnippet] = useState<FeaturedSnippet | null>(
+    null,
+  );
   const [meta, setMeta] = useState<SeoMeta | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -61,6 +76,7 @@ export default function Home() {
     setKeywords([]);
     setSources([]);
     setPaas([]);
+    setFeaturedSnippet(null);
     setTab("article");
 
     const headers = buildHeaders();
@@ -164,6 +180,7 @@ export default function Home() {
               : `HTTP ${res.status}`;
           throw new Error(msg);
         }
+        let serpFeatured: FeaturedSnippet | null = null;
         if (isRecord(data)) {
           organic = typeof data.organic === "string" ? data.organic : "";
           if (Array.isArray(data.paas)) {
@@ -176,7 +193,11 @@ export default function Home() {
               (p): p is string => typeof p === "string",
             );
           }
+          if (isFeaturedSnippet(data.featuredSnippet)) {
+            serpFeatured = data.featuredSnippet;
+          }
         }
+        setFeaturedSnippet(serpFeatured);
         setPaas(paasList);
         markDone("serp");
         pushLog(`SERP: ${paasList.length} PAA questions.`);
@@ -451,7 +472,11 @@ export default function Home() {
               )}
               {tab === "seo" && <SeoPackage meta={meta} article={article} />}
               {tab === "keywords" && (
-                <KeywordsPanel keywords={keywords} paas={paas} />
+                <KeywordsPanel
+                  keywords={keywords}
+                  paas={paas}
+                  featuredSnippet={featuredSnippet}
+                />
               )}
               {tab === "sources" && <SourcesList sources={sources} />}
               {tab === "log" && <LiveLog lines={logLines} />}

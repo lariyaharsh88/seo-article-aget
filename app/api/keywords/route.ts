@@ -37,24 +37,27 @@ export async function POST(request: Request) {
     const intent = body.intent ?? "informational";
     const audience = body.audience?.trim() ?? "general readers";
 
-    const [r1, r2] = await Promise.all([
-      serperSearch(topic, serperKey),
-      serperSearch(`${topic} tips guide best`, serperKey),
-    ]);
-
-    const relatedSet = new Set<string>([
-      ...extractRelatedQueries(r1),
-      ...extractRelatedQueries(r2),
-    ]);
-    const sitelinks = [
-      ...extractSitelinkTexts(r1),
-      ...extractSitelinkTexts(r2),
-    ];
-
-    const serperHints = [
-      `Related searches:\n${Array.from(relatedSet).join("\n")}`,
-      `Sitelinks titles:\n${sitelinks.join("\n")}`,
-    ].join("\n\n");
+    let serperHints = "(Serper hints unavailable — generating from topic only.)";
+    try {
+      const [r1, r2] = await Promise.all([
+        serperSearch(topic, serperKey),
+        serperSearch(`${topic} tips guide best`, serperKey),
+      ]);
+      const relatedSet = new Set<string>([
+        ...extractRelatedQueries(r1),
+        ...extractRelatedQueries(r2),
+      ]);
+      const sitelinks = [
+        ...extractSitelinkTexts(r1),
+        ...extractSitelinkTexts(r2),
+      ];
+      serperHints = [
+        `Related searches:\n${Array.from(relatedSet).join("\n")}`,
+        `Sitelinks titles:\n${sitelinks.join("\n")}`,
+      ].join("\n\n");
+    } catch {
+      /* Still run Gemini + fallback so the pipeline does not go empty on Serper errors. */
+    }
 
     const prompt = `You are an SEO keyword strategist. Given the topic, audience, and Serper hints, output exactly 20 keyword objects as JSON.
 
@@ -71,7 +74,8 @@ Return JSON with this exact shape (no markdown, no commentary):
 Rules:
 - One primary keyword closely matching the topic.
 - Balanced mix of secondary, lsi, and longtail.
-- Align intent fields sensibly with ${intent}.
+- Align intent fields sensibly with ${intent}. If the focus intent is "navigational", still use only informational, commercial, or transactional on each row (prefer informational).
+- Use lowercase for type, intent, and difficulty exactly as in the schema.
 - Difficulty is an estimate.`;
 
     let keywords: Keyword[] = [];

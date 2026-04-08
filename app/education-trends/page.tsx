@@ -72,7 +72,7 @@ function qs(geo: string, tf: EducationTimeframe, scope: EducationFetchScope): st
 const getCachedEducationTrends = unstable_cache(
   async (geo: string, timeframe: EducationTimeframe, scope: EducationFetchScope) =>
     fetchEducationTrends(geo, { timeframe, scope }),
-  ["education-trends-v11-breakouts-under-chart"],
+  ["education-trends-v12-short-window-related-queries"],
   { revalidate: 900 },
 );
 
@@ -229,14 +229,24 @@ export default async function EducationTrendsPage({
         </div>
       </div>
 
+      {data.explore.relatedQueriesWindowNote ? (
+        <div
+          className="mb-6 rounded-xl border border-info/35 bg-info/10 px-4 py-3 font-serif text-sm leading-relaxed text-text-secondary"
+          role="note"
+        >
+          {data.explore.relatedQueriesWindowNote}
+        </div>
+      ) : null}
+
       {/* Chart — Google-style multi-series */}
       <section className="mb-8 rounded-xl border border-border bg-surface/80 px-4 py-5 md:px-6">
         <h2 className="font-display text-lg text-text-primary md:text-xl">
           Interest over time
         </h2>
         <p className="mt-1 font-serif text-xs text-text-muted">
-          Compared benchmark keywords (0–100 index, same method as Google Trends). Runs in parallel
-          with Top/Rising fetches in fast mode.
+          Compared benchmark keywords (0–100 index, same method as Google Trends). The chart matches
+          your selected time window; related-query tables may use a longer lookback when 1h–24h lists
+          would otherwise be empty.
         </p>
         <div className="mt-4">
           <InterestOverTimeChart interest={data.interest} />

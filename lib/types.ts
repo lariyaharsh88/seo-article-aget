@@ -5,6 +5,13 @@ export interface Keyword {
   difficulty: "low" | "medium" | "high";
 }
 
+/** Google answer / featured-snippet block from Serper `answerBox`. */
+export interface FeaturedSnippet {
+  title?: string;
+  url?: string;
+  text: string;
+}
+
 export interface Source {
   url: string;
   title: string;

@@ -308,6 +308,11 @@ export interface EducationExploreSnapshot {
   breakouts: ExploreQueryRow[];
   /** Rising queries with percentage-style growth only (no breakouts). */
   rising: ExploreQueryRow[];
+  /**
+   * Set when related Top/Rising/topics used a wider lookback than the chart because
+   * Google’s unofficial API often returns empty lists for 1h–24h windows.
+   */
+  relatedQueriesWindowNote?: string;
 }
 
 function timeframeToWindow(tf: EducationTimeframe): {
@@ -365,6 +370,34 @@ function timeframeLabel(tf: EducationTimeframe): string {
       return _exhaustive;
     }
   }
+}
+
+/** Sub‑day windows routinely return empty related Top/Rising from Google’s unofficial API. */
+const SHORT_TIMEFRAMES_NO_RELATED_DATA = new Set<EducationTimeframe>([
+  "past_1_hour",
+  "past_4_hours",
+  "past_24_hours",
+]);
+
+const RELATED_QUERIES_FALLBACK_DAYS = 7;
+
+/**
+ * Effective date range for `relatedQueries` / `relatedTopics` only.
+ * The interest-over-time chart still uses the user-selected window.
+ */
+function relatedQueriesApiWindow(
+  timeframe: EducationTimeframe,
+  userStart: Date,
+  userEnd: Date,
+): { start: Date; end: Date; widened: boolean } {
+  if (!SHORT_TIMEFRAMES_NO_RELATED_DATA.has(timeframe)) {
+    return { start: userStart, end: userEnd, widened: false };
+  }
+  const end = userEnd;
+  const start = new Date(
+    end.getTime() - RELATED_QUERIES_FALLBACK_DAYS * 24 * 60 * 60 * 1000,
+  );
+  return { start, end, widened: true };
 }
 
 function parseTopInterestScore(raw: string): number {
@@ -999,17 +1032,19 @@ async function fetchInterestComparison(
   geo: string,
   warnings: string[],
   benchmarks: readonly string[],
+  timeframe: EducationTimeframe,
 ): Promise<InterestComparison | null> {
   const keywords = [...benchmarks];
   try {
-    const startTime = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-    const endTime = new Date();
+    const { start: startTime, end: endTime } = timeframeToWindow(timeframe);
+    const spanMs = endTime.getTime() - startTime.getTime();
+    const granularTimeResolution = spanMs < 7 * 24 * 60 * 60 * 1000;
     const raw = await googleTrends.interestOverTime({
       keyword: [...keywords],
       startTime,
       endTime,
       geo,
-      granularTimeResolution: true,
+      granularTimeResolution,
     });
     const pr = parseTrendsResponse(raw);
     if (!pr.ok) {
@@ -1104,6 +1139,10 @@ export async function fetchEducationTrends(
   const timeframe: EducationTimeframe = options?.timeframe ?? "past_90_days";
   const fetchScope: EducationFetchScope = options?.scope ?? "lite";
   const { start: windowStart, end: windowEnd } = timeframeToWindow(timeframe);
+  const rqWindow = relatedQueriesApiWindow(timeframe, windowStart, windowEnd);
+  const relatedQueriesWindowNote = rqWindow.widened
+    ? `Related Top/Rising and topics below use the past ${RELATED_QUERIES_FALLBACK_DAYS} days — Google’s unofficial API often returns no query lists for 1h–24h windows. The interest chart matches “${timeframeLabel(timeframe)}”.`
+    : undefined;
 
   const topMap = new Map<string, { query: string; score: number }>();
   const risingMap = new Map<
@@ -1132,6 +1171,7 @@ export async function fetchEducationTrends(
     geo,
     warnings,
     interestBenchmarks,
+    timeframe,
   );
 
   await mapPool(
@@ -1142,8 +1182,8 @@ export async function fetchEducationTrends(
         const raw = await googleTrends.relatedQueries({
           keyword: seed,
           geo,
-          startTime: windowStart,
-          endTime: windowEnd,
+          startTime: rqWindow.start,
+          endTime: rqWindow.end,
         });
         const pr = parseTrendsResponse(raw);
         if (!pr.ok) {
@@ -1215,8 +1255,8 @@ export async function fetchEducationTrends(
         const raw = await googleTrends.relatedTopics({
           keyword,
           geo,
-          startTime: windowStart,
-          endTime: windowEnd,
+          startTime: rqWindow.start,
+          endTime: rqWindow.end,
         });
         const pr = parseTrendsResponse(raw);
         if (!pr.ok) {
@@ -1333,6 +1373,7 @@ export async function fetchEducationTrends(
     top: exploreTop,
     breakouts: mergedBreakouts,
     rising: exploreRising,
+    relatedQueriesWindowNote,
   };
 
   return {

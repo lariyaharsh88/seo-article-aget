@@ -1,3 +1,5 @@
+import type { FeaturedSnippet } from "@/lib/types";
+
 export interface SerperOrganicItem {
   title?: string;
   link?: string;
@@ -16,11 +18,33 @@ export interface SerperRelatedSearch {
   query?: string;
 }
 
+export interface SerperAnswerBox {
+  title?: string;
+  link?: string;
+  snippet?: string;
+  answer?: string;
+}
+
 export interface SerperResponse {
   organic?: SerperOrganicItem[];
   peopleAlsoAsk?: SerperPeopleAlsoAskItem[];
   relatedSearches?: SerperRelatedSearch[];
   news?: SerperOrganicItem[];
+  answerBox?: SerperAnswerBox;
+}
+
+export function extractFeaturedSnippet(data: SerperResponse): FeaturedSnippet | null {
+  const box = data.answerBox;
+  if (!box || typeof box !== "object") return null;
+  const title =
+    typeof box.title === "string" && box.title.trim() ? box.title.trim() : undefined;
+  const url =
+    typeof box.link === "string" && box.link.trim() ? box.link.trim() : undefined;
+  const answer = typeof box.answer === "string" ? box.answer.trim() : "";
+  const snippet = typeof box.snippet === "string" ? box.snippet.trim() : "";
+  const text = [answer, snippet].filter(Boolean).join("\n\n").trim();
+  if (!text) return null;
+  return { title, url, text };
 }
 
 export async function serperSearch(
