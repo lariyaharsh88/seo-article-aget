@@ -251,13 +251,25 @@ function parseTopInterestScore(raw: string): number {
   return 0;
 }
 
+function isBreakoutToken(s: string): boolean {
+  const t = s.trim();
+  if (!t) return false;
+  // Google Trends UI + common variants / typos (user searches often say "breakthrough")
+  return (
+    /\bbreakout\b/i.test(t) ||
+    /\bbreak\s*out\b/i.test(t) ||
+    /\bbreak\s*through\b/i.test(t) ||
+    /\bbreakthough\b/i.test(t)
+  );
+}
+
 function parseRisingDisplay(raw: string): {
   label: string;
   direction: ExploreQueryRow["changeDirection"];
   strength: number;
 } {
   const v = String(raw).trim();
-  if (/^breakout$/i.test(v) || /^Breakout$/i.test(v) || /breakout/i.test(v)) {
+  if (isBreakoutToken(v)) {
     return { label: "BREAKOUT", direction: "breakout", strength: 1_000_000 };
   }
   const pct = v.match(/([+\-]?[\d][\d,]*)\s*%/);
@@ -607,14 +619,34 @@ function extractRankedKeywords(
     if (!isRecord(k)) continue;
     const q = labelFromRankedEntry(k);
     if (!q) continue;
-    let value = "";
     const v = k.value;
-    if (typeof v === "number" || typeof v === "string") {
-      value = String(v);
-    }
     const extracted = k.extractedValue;
-    if (typeof extracted === "number" || typeof extracted === "string") {
-      value = value || String(extracted);
+    let value = "";
+    if (which === "rising") {
+      /**
+       * Rising rows often put the label in `value` and metadata in `extractedValue`, or the
+       * opposite. Using only `value || extracted` drops "Breakout" when `value` is a number.
+       */
+      const parts: string[] = [];
+      if (typeof v === "string" && v.trim()) parts.push(v.trim());
+      else if (typeof v === "number" && Number.isFinite(v)) parts.push(String(v));
+      if (typeof extracted === "string" && extracted.trim()) parts.push(extracted.trim());
+      else if (typeof extracted === "number" && Number.isFinite(extracted))
+        parts.push(String(extracted));
+      const joined = parts.join(" ").trim();
+      if (joined && (isBreakoutToken(joined) || parts.some((p) => isBreakoutToken(p)))) {
+        value = "Breakout";
+      } else {
+        value = joined || "—";
+      }
+    } else {
+      if (typeof v === "number" || typeof v === "string") {
+        value = String(v);
+      }
+      if (typeof extracted === "number" || typeof extracted === "string") {
+        value = value || String(extracted);
+      }
+      if (!value) value = "—";
     }
     out.push({ query: q, value: value || "—" });
   }
