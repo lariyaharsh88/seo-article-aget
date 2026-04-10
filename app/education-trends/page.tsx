@@ -61,6 +61,12 @@ function changeCellClass(dir: ExploreQueryRow["changeDirection"]): string {
   return "text-text-muted";
 }
 
+function queryTypeBadgeStyle(kind: "breakout" | "rising" | "top"): string {
+  if (kind === "breakout") return "bg-purple/20 text-purple";
+  if (kind === "rising") return "bg-accent/15 text-accent";
+  return "bg-info/15 text-info";
+}
+
 function qs(geo: string, tf: EducationTimeframe, scope: EducationFetchScope): string {
   const p = new URLSearchParams();
   p.set("geo", geo);
@@ -97,6 +103,15 @@ export default async function EducationTrendsPage({
   } catch (e) {
     loadError = e instanceof Error ? e.message : "Failed to load trends data";
   }
+
+  const fullWidthRows =
+    data == null
+      ? []
+      : [
+          ...data.explore.breakouts.map((r) => ({ kind: "breakout" as const, row: r })),
+          ...data.explore.rising.map((r) => ({ kind: "rising" as const, row: r })),
+          ...data.explore.top.map((r) => ({ kind: "top" as const, row: r })),
+        ];
 
   if (!data) {
     return (
@@ -261,6 +276,65 @@ export default async function EducationTrendsPage({
           variant="breakout"
         />
       </div>
+
+      {fullWidthRows.length > 0 ? (
+        <section className="mb-8">
+          <h2 className="font-display text-xl text-text-primary">Top / Rising / Breakout (full table)</h2>
+          <p className="mt-1 font-serif text-xs text-text-muted">
+            Full-width view with query score, change label, and direct Trends links.
+          </p>
+          <div className="custom-scrollbar mt-4 overflow-x-auto rounded-xl border border-border bg-surface/80">
+            <table className="w-full min-w-[760px] border-collapse text-left font-serif text-sm">
+              <thead>
+                <tr className="border-b border-border font-mono text-[10px] uppercase tracking-wide text-text-muted">
+                  <th className="px-4 py-3">Type</th>
+                  <th className="px-4 py-3">#</th>
+                  <th className="px-4 py-3">Query</th>
+                  <th className="px-4 py-3">Score</th>
+                  <th className="px-4 py-3">Change</th>
+                  <th className="px-4 py-3">Explore</th>
+                </tr>
+              </thead>
+              <tbody>
+                {fullWidthRows.map(({ kind, row }) => (
+                  <tr
+                    key={`full-width-${kind}-${row.rank}-${row.query}`}
+                    className="border-b border-border/80 transition-colors hover:bg-background/40"
+                  >
+                    <td className="px-4 py-3">
+                      <span
+                        className={`inline-block rounded-md px-2 py-0.5 font-mono text-[10px] uppercase ${queryTypeBadgeStyle(kind)}`}
+                      >
+                        {kind}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 font-mono tabular-nums text-xs text-text-muted">
+                      {row.rank}
+                    </td>
+                    <td className="px-4 py-3 text-text-primary">{row.query}</td>
+                    <td className="px-4 py-3 font-mono tabular-nums text-xs text-text-secondary">
+                      {row.interest}
+                    </td>
+                    <td className={`px-4 py-3 font-mono text-xs ${changeCellClass(row.changeDirection)}`}>
+                      {row.changeLabel}
+                    </td>
+                    <td className="px-4 py-3">
+                      <a
+                        href={row.exploreUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-mono text-xs text-info underline-offset-2 hover:underline"
+                      >
+                        Open in Trends ↗
+                      </a>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      ) : null}
 
       {data.userNotice ? (
         <div

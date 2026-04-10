@@ -3,6 +3,7 @@ import Link from "next/link";
 const nav = [
   { href: "/", label: "SEO Agent" },
   { href: "/education-trends", label: "Education trends" },
+  { href: "/education-news", label: "Education news" },
 ];
 
 export function SiteHeader() {
@@ -15,10 +16,7 @@ export function SiteHeader() {
         >
           SEO Article Agent
         </Link>
-        <nav
-          className="flex flex-wrap gap-2"
-          aria-label="Primary"
-        >
+        <nav className="flex flex-wrap gap-2" aria-label="Primary">
           {nav.map((item) => (
             <Link
               key={item.href}
