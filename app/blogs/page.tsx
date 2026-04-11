@@ -11,6 +11,9 @@ export const metadata = buildPageMetadata({
 });
 
 export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
+/** Hobby plan max is 10s; Pro/Enterprise can use 60 — avoids cold Prisma + DB timeout. */
+export const maxDuration = 60;
 
 export default async function BlogsIndexPage() {
   let posts: Awaited<ReturnType<typeof getCachedPublishedBlogPosts>> = [];

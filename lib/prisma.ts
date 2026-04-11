@@ -1,6 +1,9 @@
 import { PrismaClient } from "@prisma/client";
+import { getEffectiveDatabaseUrl } from "@/lib/database-url";
 
 const globalForPrisma = globalThis as unknown as { prisma: PrismaClient | undefined };
+
+const effectiveUrl = getEffectiveDatabaseUrl();
 
 /**
  * Dev: cache on `globalThis` so Next.js HMR does not spawn many Prisma clients.
@@ -11,6 +14,9 @@ const globalForPrisma = globalThis as unknown as { prisma: PrismaClient | undefi
 export const prisma =
   globalForPrisma.prisma ??
   new PrismaClient({
+    ...(effectiveUrl
+      ? { datasources: { db: { url: effectiveUrl } } }
+      : {}),
     log:
       process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
   });
