@@ -40,26 +40,28 @@ export function ArticleCopyBar({ markdown, disabled }: ArticleCopyBarProps) {
   const empty = !markdown.trim();
 
   return (
-    <div className="mb-4 flex flex-wrap items-center gap-2 border-b border-border pb-3">
+    <div className="mb-4 flex flex-col gap-2 border-b border-border pb-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-2">
       <span className="font-mono text-[10px] uppercase tracking-wide text-text-muted">
         Export
       </span>
-      <button
-        type="button"
-        onClick={() => void copyMarkdown()}
-        disabled={disabled || empty}
-        className="rounded-lg border border-border bg-background/80 px-3 py-1.5 font-mono text-xs text-text-secondary transition-colors hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:opacity-40"
-      >
-        Copy Markdown
-      </button>
-      <button
-        type="button"
-        onClick={() => void copyHtml()}
-        disabled={disabled || empty}
-        className="rounded-lg border border-accent/40 bg-accent/10 px-3 py-1.5 font-mono text-xs text-accent transition-colors hover:bg-accent/20 disabled:cursor-not-allowed disabled:opacity-40"
-      >
-        Copy HTML
-      </button>
+      <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+        <button
+          type="button"
+          onClick={() => void copyMarkdown()}
+          disabled={disabled || empty}
+          className="touch-manipulation w-full rounded-lg border border-border bg-background/80 px-3 py-2 font-mono text-xs text-text-secondary transition-colors hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto sm:py-1.5"
+        >
+          Copy Markdown
+        </button>
+        <button
+          type="button"
+          onClick={() => void copyHtml()}
+          disabled={disabled || empty}
+          className="touch-manipulation w-full rounded-lg border border-accent/40 bg-accent/10 px-3 py-2 font-mono text-xs text-accent transition-colors hover:bg-accent/20 disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto sm:py-1.5"
+        >
+          Copy HTML
+        </button>
+      </div>
       {status ? (
         <span className="font-mono text-xs text-success" role="status">
           {status}

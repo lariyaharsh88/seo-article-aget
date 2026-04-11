@@ -39,7 +39,7 @@ export function TopicForm({
     <div className="space-y-4">
       <fieldset
         disabled={disabled}
-        className="grid gap-4 rounded-xl border border-border bg-surface/80 p-4 backdrop-blur"
+        className="grid gap-3 rounded-xl border border-border bg-surface/80 p-3 backdrop-blur sm:gap-4 sm:p-4"
       >
         <legend className="font-mono text-sm uppercase text-accent">
           Brief
@@ -119,7 +119,7 @@ export function TopicForm({
 
       <fieldset
         disabled={disabled}
-        className="rounded-xl border border-border bg-surface/80 p-4 backdrop-blur"
+        className="rounded-xl border border-border bg-surface/80 p-3 backdrop-blur sm:p-4"
       >
         <legend className="font-mono text-sm uppercase text-accent">
           Search signals
@@ -130,12 +130,12 @@ export function TopicForm({
           in env) and Google&apos;s autocomplete for the primary keyword.
         </p>
 
-        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
           <button
             type="button"
             onClick={() => onFetchSearchConsole()}
             disabled={disabled || loadingGsc || !searchConsoleConfigured}
-            className="rounded-lg border border-border bg-background/80 px-4 py-2 font-mono text-xs text-text-primary transition-colors hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:opacity-40"
+            className="touch-manipulation w-full rounded-lg border border-border bg-background/80 px-4 py-2.5 text-center font-mono text-xs text-text-primary transition-colors hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto sm:py-2"
           >
             {loadingGsc ? "Loading GSC…" : "Fetch Search Console queries"}
           </button>
@@ -143,7 +143,7 @@ export function TopicForm({
             type="button"
             onClick={() => onFetchGoogleSuggestions()}
             disabled={disabled || loadingSuggest}
-            className="rounded-lg border border-accent/50 bg-accent/10 px-4 py-2 font-mono text-xs text-accent transition-colors hover:bg-accent/20 disabled:cursor-not-allowed disabled:opacity-40"
+            className="touch-manipulation w-full rounded-lg border border-accent/50 bg-accent/10 px-4 py-2.5 text-center font-mono text-xs text-accent transition-colors hover:bg-accent/20 disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto sm:py-2"
           >
             {loadingSuggest ? "Loading suggestions…" : "Fetch Google suggestions"}
           </button>

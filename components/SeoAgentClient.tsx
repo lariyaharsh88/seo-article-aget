@@ -270,7 +270,7 @@ export function SeoAgentClient() {
   ];
 
   return (
-    <main className="mx-auto flex max-w-6xl flex-col gap-8 px-4 py-10 md:px-6">
+    <main className="mx-auto flex min-w-0 max-w-6xl flex-col gap-6 px-4 py-8 sm:gap-8 sm:py-10 md:px-6">
       <p className="font-mono text-xs">
         <Link
           href="/"
@@ -279,21 +279,21 @@ export function SeoAgentClient() {
           ← All tools
         </Link>
       </p>
-      <header className="space-y-3 border-b border-border pb-8">
+      <header className="space-y-3 border-b border-border pb-6 sm:pb-8">
         <p className="font-mono text-xs uppercase tracking-[0.2em] text-accent">
           Next.js · Gemini · Tavily · Serper
         </p>
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <h1 className="font-display text-4xl text-text-primary md:text-5xl">
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between sm:gap-4">
+          <div className="min-w-0">
+            <h1 className="font-display text-3xl text-text-primary sm:text-4xl md:text-5xl">
               RankFlowHQ · Article pipeline
             </h1>
-            <p className="mt-2 max-w-2xl font-serif text-lg text-text-secondary">
+            <p className="mt-2 max-w-2xl font-serif text-base text-text-secondary sm:text-lg">
               From SERP signals to a streaming long-form draft, with research
               citations and an exportable SEO pack.
             </p>
           </div>
-          <span className="rounded-full border border-accent/40 bg-accent/10 px-3 py-1 font-mono text-xs text-accent">
+          <span className="w-fit shrink-0 rounded-full border border-accent/40 bg-accent/10 px-3 py-1 font-mono text-xs text-accent">
             Free-tier APIs
           </span>
         </div>
@@ -312,8 +312,8 @@ export function SeoAgentClient() {
         </div>
       ) : null}
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
-        <div className="space-y-4">
+      <div className="grid min-w-0 gap-6 lg:grid-cols-[1fr_320px]">
+        <div className="min-w-0 space-y-4">
           <TopicForm
             value={input}
             onChange={setInput}
@@ -330,18 +330,26 @@ export function SeoAgentClient() {
             searchConsoleConfigured={searchConsoleConfigured}
           />
 
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
             <button
               type="button"
               onClick={() => void runPipeline()}
               disabled={!canRun}
-              className="rounded-lg bg-accent px-5 py-2.5 font-mono text-sm font-semibold text-background transition-all duration-200 enabled:hover:opacity-90 enabled:focus:outline-none enabled:focus:ring-2 enabled:focus:ring-accent disabled:cursor-not-allowed disabled:opacity-40"
+              className="touch-manipulation w-full rounded-lg bg-accent px-5 py-2.5 font-mono text-sm font-semibold text-background transition-all duration-200 enabled:hover:opacity-90 enabled:focus:outline-none enabled:focus:ring-2 enabled:focus:ring-accent disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto"
             >
               {running ? "Running pipeline…" : "Run pipeline"}
             </button>
-            <span className="font-mono text-xs text-text-muted">
+            <span className="font-mono text-[11px] text-text-muted sm:text-xs">
               Using server keys from `.env.local`.
             </span>
+          </div>
+
+          <div className="lg:hidden">
+            <PipelineProgress
+              stages={PIPELINE_STAGES}
+              currentStage={stage}
+              doneStages={doneStages}
+            />
           </div>
 
           {error && (
@@ -355,7 +363,7 @@ export function SeoAgentClient() {
 
           <div className="rounded-xl border border-border bg-surface/80">
             <div
-              className="custom-scrollbar flex gap-1 overflow-x-auto border-b border-border p-2"
+              className="custom-scrollbar flex gap-1 overflow-x-auto border-b border-border p-2 [-webkit-overflow-scrolling:touch]"
               role="tablist"
               aria-label="Output views"
             >
@@ -366,7 +374,7 @@ export function SeoAgentClient() {
                   role="tab"
                   aria-selected={tab === t.id}
                   onClick={() => setTab(t.id)}
-                  className={`whitespace-nowrap rounded-md px-3 py-2 font-mono text-xs transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-accent ${
+                  className={`touch-manipulation whitespace-nowrap rounded-md px-2.5 py-2 font-mono text-[11px] transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-accent sm:px-3 sm:text-xs ${
                     tab === t.id
                       ? "bg-accent text-background"
                       : "text-text-secondary hover:bg-background/80"
@@ -376,7 +384,7 @@ export function SeoAgentClient() {
                 </button>
               ))}
             </div>
-            <div className="custom-scrollbar max-h-[70vh] overflow-y-auto p-4">
+            <div className="custom-scrollbar max-h-[min(70vh,32rem)] overflow-y-auto p-3 sm:max-h-[70vh] sm:p-4">
               {tab === "article" && (
                 <div>
                   <ArticleCopyBar markdown={article} disabled={running} />
@@ -437,7 +445,7 @@ export function SeoAgentClient() {
           </div>
         </div>
 
-        <aside className="space-y-4 lg:sticky lg:top-6 lg:self-start">
+        <aside className="hidden space-y-4 lg:sticky lg:top-6 lg:block lg:self-start">
           <PipelineProgress
             stages={PIPELINE_STAGES}
             currentStage={stage}

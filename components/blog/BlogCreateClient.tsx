@@ -24,6 +24,14 @@ type Props = {
 const DEFAULT_AUDIENCE =
   "Typical Indian English readers interested in clear, practical English.";
 
+/** Comma-separated topics; ignores empty segments. */
+function parseTopics(raw: string): string[] {
+  return raw
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
 export function BlogCreateClient({ initialPosts, loadError }: Props) {
   const router = useRouter();
   const [posts, setPosts] = useState(initialPosts);
@@ -51,7 +59,17 @@ export function BlogCreateClient({ initialPosts, loadError }: Props) {
   const [saveError, setSaveError] = useState<string | null>(null);
   /** Blocks double-submit before React re-renders `saving`. */
   const publishInFlight = useRef(false);
+  /** Batch: 1-based index and total while running multiple topics. */
+  const [batchIndex, setBatchIndex] = useState(0);
+  const [batchTotal, setBatchTotal] = useState(0);
+  /** After a multi-topic batch, allow publishing the last on-screen draft manually. */
+  const [postBatchDraftOk, setPostBatchDraftOk] = useState(false);
 
+  const topicList = useMemo(() => parseTopics(topic), [topic]);
+
+  useEffect(() => {
+    setPostBatchDraftOk(false);
+  }, [topic]);
   const topicFirstLine = topic.trim().split("\n")[0]?.trim() ?? "";
   const primaryKeyword = topicFirstLine;
 
@@ -69,98 +87,24 @@ export function BlogCreateClient({ initialPosts, loadError }: Props) {
     setLogLines((prev) => [...prev, line]);
   }, []);
 
-  const runGenerator = useCallback(async () => {
-    if (!topic.trim() || running) return;
-    setGenError(null);
-    setRunning(true);
-    setDoneStages([]);
-    setStage(null);
-    setLogLines([]);
-    setArticle("");
-    setMeta(null);
-    setKeywords([]);
-    setPubTitle("");
-    setPubSlug("");
-    setPubExcerpt("");
-
-    const markDone = (id: string) => {
-      setDoneStages((prev) => (prev.includes(id) ? prev : [...prev, id]));
-    };
-
-    try {
-      const result = await runArticlePipeline(
-        {
-          topic,
-          audience,
-          intent: "informational",
-          sourceUrl: "",
-          primaryKeyword,
-          searchConsoleQueries: [],
-          googleSuggestions: [],
-        },
-        {
-          onStage: setStage,
-          onDoneStage: markDone,
-          onLog: pushLog,
-          onKeywords: setKeywords,
-          onSources: () => {},
-          onPaas: () => {},
-          onFeaturedSnippet: () => {},
-          onArticleDelta: (delta) => setArticle((prev) => prev + delta),
-          onMeta: setMeta,
-          onResearchTopic: () => {},
-          onResearchContext: () => {},
-        },
-      );
-
-      const m = result.meta;
-      const firstLine = topic.trim().split("\n")[0]?.trim() || "Post";
-      if (m) {
-        setPubTitle(m.metaTitle || firstLine);
-        setPubExcerpt(m.metaDescription || "");
-        setPubSlug(slugify(m.urlSlug || m.metaTitle || firstLine));
-      } else {
-        setPubTitle(firstLine);
-        setPubExcerpt("");
-        setPubSlug(slugify(firstLine));
-      }
-
-      if (!result.article.trim()) {
-        setGenError(
-          "Article generation produced no text. Check API keys and try again.",
-        );
-      }
-    } catch (e) {
-      setGenError(
-        e instanceof Error ? e.message : "Article pipeline failed unexpectedly.",
-      );
-    } finally {
-      setRunning(false);
-      setStage(null);
-    }
-  }, [topic, audience, primaryKeyword, running, pushLog]);
-
-  async function onPublish(e: React.FormEvent) {
-    e.preventDefault();
-    if (publishInFlight.current) return;
-    if (!article.trim() || !pubTitle.trim()) {
-      setSaveError("Title and article content are required.");
-      return;
-    }
-    publishInFlight.current = true;
-    setSaveError(null);
-    setSaving(true);
-    try {
+  const postBlogToApi = useCallback(
+    async (payload: {
+      title: string;
+      slug?: string;
+      excerpt?: string;
+      content: string;
+      published: boolean;
+    }) => {
       const res = await fetch("/api/blog", {
         method: "POST",
         credentials: "same-origin",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          title: pubTitle.trim(),
-          slug: pubSlug.trim() || undefined,
-          excerpt: pubExcerpt.trim() || undefined,
-          content: article,
-          published,
+          title: payload.title.trim(),
+          slug: payload.slug?.trim() || undefined,
+          excerpt: payload.excerpt?.trim() || undefined,
+          content: payload.content,
+          published: payload.published,
         }),
       });
       const raw = await res.text();
@@ -186,6 +130,191 @@ export function BlogCreateClient({ initialPosts, loadError }: Props) {
             : `HTTP ${res.status}`;
         throw new Error(msg);
       }
+      return data;
+    },
+    [],
+  );
+
+  const runGenerator = useCallback(async () => {
+    if (!topic.trim() || running) return;
+    const topics = topicList;
+    if (topics.length === 0) return;
+
+    setGenError(null);
+    setPostBatchDraftOk(false);
+    setRunning(true);
+    setDoneStages([]);
+    setStage(null);
+    setLogLines([]);
+    setArticle("");
+    setMeta(null);
+    setKeywords([]);
+    setPubTitle("");
+    setPubSlug("");
+    setPubExcerpt("");
+    setBatchIndex(0);
+    setBatchTotal(topics.length > 1 ? topics.length : 0);
+
+    const markDone = (id: string) => {
+      setDoneStages((prev) => (prev.includes(id) ? prev : [...prev, id]));
+    };
+
+    const runPipelineForTopicText = async (topicText: string) => {
+      const pk =
+        topicText.trim().split("\n")[0]?.trim() ||
+        topicText.trim() ||
+        "keyword";
+      return runArticlePipeline(
+        {
+          topic: topicText,
+          audience,
+          intent: "informational",
+          sourceUrl: "",
+          primaryKeyword: pk,
+          searchConsoleQueries: [],
+          googleSuggestions: [],
+        },
+        {
+          onStage: setStage,
+          onDoneStage: markDone,
+          onLog: pushLog,
+          onKeywords: setKeywords,
+          onSources: () => {},
+          onPaas: () => {},
+          onFeaturedSnippet: () => {},
+          onArticleDelta: (delta) => setArticle((prev) => prev + delta),
+          onMeta: setMeta,
+          onResearchTopic: () => {},
+          onResearchContext: () => {},
+        },
+      );
+    };
+
+    const applyPublishFieldsFromResult = (
+      topicText: string,
+      result: Awaited<ReturnType<typeof runArticlePipeline>>,
+    ) => {
+      const m = result.meta;
+      const firstLine =
+        topicText.trim().split("\n")[0]?.trim() || topicText.trim() || "Post";
+      if (m) {
+        setPubTitle(m.metaTitle || firstLine);
+        setPubExcerpt(m.metaDescription || "");
+        setPubSlug(slugify(m.urlSlug || m.metaTitle || firstLine));
+      } else {
+        setPubTitle(firstLine);
+        setPubExcerpt("");
+        setPubSlug(slugify(firstLine));
+      }
+    };
+
+    try {
+      if (topics.length === 1) {
+        const result = await runPipelineForTopicText(topics[0]);
+        applyPublishFieldsFromResult(topics[0], result);
+        if (!result.article.trim()) {
+          setGenError(
+            "Article generation produced no text. Check API keys and try again.",
+          );
+        }
+        return;
+      }
+
+      const batchErrors: string[] = [];
+      pushLog(
+        `[Batch] Starting ${topics.length} topics (saved to blog after each).`,
+      );
+
+      for (let i = 0; i < topics.length; i++) {
+        const topicText = topics[i];
+        setBatchIndex(i + 1);
+        setDoneStages([]);
+        setStage(null);
+        setArticle("");
+        setMeta(null);
+        setKeywords([]);
+        pushLog(`[Batch ${i + 1}/${topics.length}] ${topicText}`);
+
+        try {
+          const result = await runPipelineForTopicText(topicText);
+          applyPublishFieldsFromResult(topicText, result);
+
+          if (!result.article.trim()) {
+            batchErrors.push(`${topicText}: empty article`);
+            continue;
+          }
+
+          const m = result.meta;
+          const firstLine =
+            topicText.trim().split("\n")[0]?.trim() ||
+            topicText.trim() ||
+            "Post";
+          const title = m?.metaTitle || firstLine;
+          const excerpt = m?.metaDescription || "";
+          const slug = slugify(m?.urlSlug || m?.metaTitle || firstLine);
+
+          await postBlogToApi({
+            title,
+            slug,
+            excerpt: excerpt || undefined,
+            content: result.article,
+            published,
+          });
+          pushLog(`[Batch ${i + 1}/${topics.length}] Saved: ${title}`);
+          router.refresh();
+        } catch (err) {
+          const msg =
+            err instanceof Error ? err.message : String(err);
+          batchErrors.push(`${topicText}: ${msg}`);
+          pushLog(`[Batch ${i + 1}/${topics.length}] Error: ${msg}`);
+        }
+      }
+
+      if (batchErrors.length > 0) {
+        setGenError(
+          `Batch finished with ${batchErrors.length} issue(s):\n${batchErrors.join("\n")}`,
+        );
+      }
+      setPostBatchDraftOk(true);
+    } catch (e) {
+      setGenError(
+        e instanceof Error ? e.message : "Article pipeline failed unexpectedly.",
+      );
+    } finally {
+      setRunning(false);
+      setStage(null);
+      setBatchIndex(0);
+      setBatchTotal(0);
+    }
+  }, [
+    topic,
+    topicList,
+    audience,
+    running,
+    pushLog,
+    postBlogToApi,
+    published,
+    router,
+  ]);
+
+  async function onPublish(e: React.FormEvent) {
+    e.preventDefault();
+    if (publishInFlight.current) return;
+    if (!article.trim() || !pubTitle.trim()) {
+      setSaveError("Title and article content are required.");
+      return;
+    }
+    publishInFlight.current = true;
+    setSaveError(null);
+    setSaving(true);
+    try {
+      await postBlogToApi({
+        title: pubTitle.trim(),
+        slug: pubSlug.trim() || undefined,
+        excerpt: pubExcerpt.trim() || undefined,
+        content: article,
+        published,
+      });
       router.refresh();
       setTopic("");
       setArticle("");
@@ -204,7 +333,10 @@ export function BlogCreateClient({ initialPosts, loadError }: Props) {
     }
   }
 
-  const showPublish = !running && article.trim().length >= 10;
+  const showPublish =
+    !running &&
+    article.trim().length >= 10 &&
+    (topicList.length <= 1 || postBatchDraftOk);
 
   return (
     <div className="mx-auto min-w-0 max-w-6xl space-y-10 px-4 py-8 sm:py-10 md:px-6">
@@ -225,9 +357,12 @@ export function BlogCreateClient({ initialPosts, loadError }: Props) {
             Create a blog post
           </h1>
           <p className="mt-2 max-w-2xl font-serif text-sm text-text-secondary">
-            Enter a topic and run the same pipeline as the SEO article tool
-            (keywords, research, SERP, outline, streaming article, SEO audit).
-            Then publish to the blog.
+            Enter one topic, or several{" "}
+            <span className="font-mono text-text-muted">comma-separated</span>,
+            and run the same pipeline as the SEO article tool (keywords,
+            research, SERP, outline, article, SEO audit). Single topic: review
+            then publish. Multiple topics: each article is generated and saved to
+            the blog in order.
           </p>
         </div>
         <div className="flex flex-wrap gap-2 sm:shrink-0">
@@ -261,7 +396,7 @@ export function BlogCreateClient({ initialPosts, loadError }: Props) {
           </span>
           <textarea
             className="custom-scrollbar min-h-[100px] w-full rounded-lg border border-border bg-background px-3 py-2 font-serif text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-accent"
-            placeholder="e.g. Best MBA colleges in India for working professionals"
+            placeholder="One topic, or many separated by commas — e.g. Best MBA colleges in India, How to choose a B-school, Executive MBA vs full-time"
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
             disabled={running}
@@ -283,13 +418,24 @@ export function BlogCreateClient({ initialPosts, loadError }: Props) {
             {genError}
           </p>
         )}
+        {running && batchTotal > 1 ? (
+          <p className="font-mono text-xs text-accent">
+            Batch {batchIndex}/{batchTotal} — generating and saving each post…
+          </p>
+        ) : null}
         <button
           type="button"
           onClick={() => void runGenerator()}
-          disabled={running || !topic.trim()}
+          disabled={running || !topic.trim() || topicList.length === 0}
           className="w-full rounded-lg bg-accent px-6 py-2.5 font-mono text-sm font-semibold text-background transition-opacity enabled:hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto"
         >
-          {running ? "Generating article…" : "Run full article pipeline"}
+          {running
+            ? batchTotal > 1
+              ? `Batch ${batchIndex}/${batchTotal}…`
+              : "Generating article…"
+            : topicList.length > 1
+              ? `Run batch & save (${topicList.length} topics)`
+              : "Run full article pipeline"}
         </button>
       </section>
 
