@@ -12,7 +12,6 @@ export const metadata = buildPageMetadata({
 });
 
 export const dynamic = "force-dynamic";
-export const runtime = "nodejs";
 
 export default async function BlogsIndexPage() {
   noStore();
@@ -34,10 +33,10 @@ export default async function BlogsIndexPage() {
           role="alert"
           className="mb-8 rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 font-serif text-sm text-amber-100"
         >
-          Could not load articles right now (database unreachable). Refresh in a
-          few seconds. If this keeps happening, confirm{" "}
-          <span className="font-mono text-amber-200/90">DATABASE_URL</span> is set
-          on the host (pooler URL for Vercel) and the database is reachable.
+          Could not load articles right now — the database did not respond in
+          time (often a short-lived network or pooler blip). Try refreshing. If
+          this persists for hours, check the host logs and that the database is
+          up (including Supabase project not paused on free tier).
         </div>
       ) : null}
       <header className="mb-10 border-b border-border pb-8">

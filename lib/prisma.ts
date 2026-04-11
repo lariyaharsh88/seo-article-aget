@@ -3,13 +3,18 @@ import { PrismaClient } from "@prisma/client";
 const globalForPrisma = globalThis as unknown as { prisma: PrismaClient | undefined };
 
 /**
- * Single PrismaClient per runtime (dev HMR + serverless warm invocations).
- * Without `globalThis` in production, cold/warm churn can exhaust DB connections
- * or surface flaky "unreachable" errors on Vercel.
+ * Dev: cache on `globalThis` so Next.js HMR does not spawn many Prisma clients.
+ * Prod: rely on the module singleton (one client per serverless instance); Prisma’s
+ * own guidance often avoids writing to `globalThis` in production to reduce odd
+ * pooler / warm-instance edge cases with some hosts.
  */
 export const prisma =
   globalForPrisma.prisma ??
-  (globalForPrisma.prisma = new PrismaClient({
+  new PrismaClient({
     log:
       process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
-  }));
+  });
+
+if (process.env.NODE_ENV !== "production") {
+  globalForPrisma.prisma = prisma;
+}
