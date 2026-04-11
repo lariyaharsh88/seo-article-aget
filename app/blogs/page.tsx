@@ -51,8 +51,16 @@ export default async function BlogsIndexPage() {
       </header>
       <ul className="space-y-6">
         {posts.length === 0 ? (
-          <li className="font-serif text-text-muted">
-            No published posts yet. Check back soon.
+          <li className="space-y-2 font-serif text-text-muted">
+            <p>No published posts yet.</p>
+            <p className="text-sm text-text-secondary">
+              Only{" "}
+              <span className="font-mono text-text-muted">published</span> rows
+              appear here. Set{" "}
+              <span className="font-mono text-text-muted">published</span> to
+              true in the database or use Blog CMS so the post is saved as
+              published.
+            </p>
           </li>
         ) : (
           posts.map((post) => (
