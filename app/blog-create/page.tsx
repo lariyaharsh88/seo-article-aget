@@ -1,3 +1,4 @@
+import type { BlogPost } from "@prisma/client";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { BlogCreateClient } from "@/components/blog/BlogCreateClient";
@@ -20,9 +21,17 @@ export default async function BlogCreatePage() {
     redirect("/auth/signin?callbackUrl=/blog-create");
   }
 
-  const posts = await prisma.blogPost.findMany({
-    orderBy: { updatedAt: "desc" },
-  });
+  let posts: BlogPost[] = [];
+  let loadError: string | null = null;
+  try {
+    posts = await prisma.blogPost.findMany({
+      orderBy: { updatedAt: "desc" },
+    });
+  } catch (err) {
+    console.error("[blog-create] prisma.blogPost.findMany failed:", err);
+    loadError =
+      "Could not load posts from the database. On the host, set DATABASE_URL (and DIRECT_URL for migrations), run Prisma migrations against that database, then redeploy.";
+  }
 
-  return <BlogCreateClient initialPosts={posts} />;
+  return <BlogCreateClient initialPosts={posts} loadError={loadError} />;
 }

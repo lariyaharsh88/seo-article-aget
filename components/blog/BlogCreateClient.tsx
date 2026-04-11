@@ -17,12 +17,14 @@ import type { Keyword, SeoMeta } from "@/lib/types";
 
 type Props = {
   initialPosts: BlogPost[];
+  /** Set when server-side DB load failed (avoids a 500 on /blog-create). */
+  loadError?: string | null;
 };
 
 const DEFAULT_AUDIENCE =
   "Typical Indian English readers interested in clear, practical English.";
 
-export function BlogCreateClient({ initialPosts }: Props) {
+export function BlogCreateClient({ initialPosts, loadError }: Props) {
   const router = useRouter();
   const [posts, setPosts] = useState(initialPosts);
 
@@ -185,6 +187,14 @@ export function BlogCreateClient({ initialPosts }: Props) {
 
   return (
     <div className="mx-auto max-w-6xl space-y-10 px-4 py-10 md:px-6">
+      {loadError ? (
+        <div
+          role="alert"
+          className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 font-serif text-sm text-amber-100"
+        >
+          {loadError}
+        </div>
+      ) : null}
       <div className="flex flex-wrap items-start justify-between gap-4 border-b border-border pb-6">
         <div>
           <p className="font-mono text-xs uppercase tracking-[0.2em] text-accent">
