@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
+import { Prisma } from "@prisma/client";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth-options";
 import { BLOG_ADMIN_EMAIL } from "@/lib/blog-constants";
@@ -55,23 +57,44 @@ export async function POST(request: Request) {
   const baseSlug = body.slug?.trim()
     ? slugify(body.slug.trim())
     : slugify(title);
-  const slug = await ensureUniqueSlug(baseSlug);
 
   const excerpt =
     typeof body.excerpt === "string" && body.excerpt.trim()
       ? body.excerpt.trim()
       : null;
 
-  const post = await prisma.blogPost.create({
-    data: {
-      slug,
-      title,
-      excerpt,
-      content,
-      published: Boolean(body.published),
-      authorEmail: adminEmail!,
-    },
-  });
-
-  return NextResponse.json(post);
+  let slug = await ensureUniqueSlug(baseSlug);
+  for (let attempt = 0; attempt < 8; attempt++) {
+    try {
+      const post = await prisma.blogPost.create({
+        data: {
+          slug,
+          title,
+          excerpt,
+          content,
+          published: Boolean(body.published),
+          authorEmail: adminEmail!,
+        },
+      });
+      revalidatePath("/blogs");
+      revalidatePath(`/blogs/${post.slug}`);
+      return NextResponse.json(post);
+    } catch (e) {
+      if (
+        e instanceof Prisma.PrismaClientKnownRequestError &&
+        e.code === "P2002" &&
+        attempt < 7
+      ) {
+        slug = await ensureUniqueSlug(
+          `${baseSlug}-${attempt + 1}-${Date.now()}`,
+        );
+        continue;
+      }
+      throw e;
+    }
+  }
+  return NextResponse.json(
+    { error: "Could not create post (slug conflict). Try again." },
+    { status: 500 },
+  );
 }

@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { prisma } from "@/lib/prisma";
+import { unstable_noStore as noStore } from "next/cache";
+import { listPublishedBlogPosts } from "@/lib/blog-post-query";
 import { buildPageMetadata } from "@/lib/seo-page";
 
 export const metadata = buildPageMetadata({
@@ -10,31 +11,9 @@ export const metadata = buildPageMetadata({
 
 export const dynamic = "force-dynamic";
 
-type BlogListItem = {
-  id: string;
-  slug: string;
-  title: string;
-  excerpt: string | null;
-  createdAt: Date;
-};
-
 export default async function BlogsIndexPage() {
-  let posts: BlogListItem[] = [];
-  try {
-    posts = await prisma.blogPost.findMany({
-      where: { published: true },
-      orderBy: { createdAt: "desc" },
-      select: {
-        id: true,
-        slug: true,
-        title: true,
-        excerpt: true,
-        createdAt: true,
-      },
-    });
-  } catch {
-    posts = [];
-  }
+  noStore();
+  const posts = await listPublishedBlogPosts();
 
   return (
     <main className="mx-auto min-w-0 max-w-3xl px-4 py-8 sm:py-10 md:px-6">
@@ -77,7 +56,9 @@ export default async function BlogsIndexPage() {
                   })}
                 </time>
                 <h2 className="mt-2 font-display text-2xl text-text-primary group-hover:text-accent">
-                  <Link href={`/blogs/${post.slug}`}>{post.title}</Link>
+                  <Link href={`/blogs/${post.slug}`} prefetch={false}>
+                    {post.title}
+                  </Link>
                 </h2>
                 {post.excerpt && (
                   <p className="mt-2 font-serif text-sm text-text-secondary line-clamp-3">
@@ -86,6 +67,7 @@ export default async function BlogsIndexPage() {
                 )}
                 <Link
                   href={`/blogs/${post.slug}`}
+                  prefetch={false}
                   className="mt-3 inline-block font-mono text-xs text-accent"
                 >
                   Read more →

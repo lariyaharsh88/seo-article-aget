@@ -142,8 +142,11 @@ export function BlogCreateClient({ initialPosts, loadError }: Props) {
 
   async function onPublish(e: React.FormEvent) {
     e.preventDefault();
-    if (!article.trim() || !pubTitle.trim()) return;
-    if (publishInFlight.current || saving) return;
+    if (publishInFlight.current) return;
+    if (!article.trim() || !pubTitle.trim()) {
+      setSaveError("Title and article content are required.");
+      return;
+    }
     publishInFlight.current = true;
     setSaveError(null);
     setSaving(true);
@@ -160,7 +163,19 @@ export function BlogCreateClient({ initialPosts, loadError }: Props) {
           published,
         }),
       });
-      const data: unknown = await res.json();
+      const raw = await res.text();
+      let data: unknown = null;
+      if (raw) {
+        try {
+          data = JSON.parse(raw) as unknown;
+        } catch {
+          throw new Error(
+            res.ok
+              ? "Invalid response from server."
+              : `Server error (${res.status}). Try again.`,
+          );
+        }
+      }
       if (!res.ok) {
         const msg =
           typeof data === "object" &&
@@ -316,7 +331,11 @@ export function BlogCreateClient({ initialPosts, loadError }: Props) {
               Titles and excerpt are filled from the SEO audit when available.
               Edit before publishing.
             </p>
-            <form onSubmit={(e) => void onPublish(e)} className="space-y-4">
+            <form
+              noValidate
+              onSubmit={(e) => void onPublish(e)}
+              className="space-y-4"
+            >
               <label className="block space-y-2">
                 <span className="font-mono text-xs uppercase text-text-muted">
                   Post title
@@ -366,7 +385,7 @@ export function BlogCreateClient({ initialPosts, loadError }: Props) {
               <button
                 type="submit"
                 disabled={saving || !article.trim()}
-                className="w-full rounded-lg bg-accent px-6 py-2.5 font-mono text-sm font-semibold text-background transition-opacity enabled:hover:opacity-90 disabled:opacity-40 sm:w-auto"
+                className="touch-manipulation w-full rounded-lg bg-accent px-6 py-2.5 font-mono text-sm font-semibold text-background transition-opacity enabled:hover:opacity-90 disabled:opacity-40 sm:w-auto"
               >
                 {saving ? "Publishing…" : "Publish blog post"}
               </button>
@@ -402,6 +421,7 @@ export function BlogCreateClient({ initialPosts, loadError }: Props) {
                 {p.published && (
                   <Link
                     href={`/blogs/${p.slug}`}
+                    prefetch={false}
                     className="shrink-0 font-mono text-xs text-accent hover:underline sm:self-center"
                   >
                     View →

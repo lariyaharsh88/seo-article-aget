@@ -1,5 +1,6 @@
 import type { BlogPost } from "@prisma/client";
 import Link from "next/link";
+import { unstable_noStore as noStore } from "next/cache";
 import { notFound } from "next/navigation";
 import { marked } from "marked";
 import { findPublishedBlogPostBySlug } from "@/lib/blog-post-query";
@@ -11,6 +12,7 @@ type Props = { params: { slug: string } };
 export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }: Props) {
+  noStore();
   let title = "Blog post";
   let description = SITE_NAME;
   try {
@@ -30,6 +32,7 @@ export async function generateMetadata({ params }: Props) {
 }
 
 export default async function BlogPostPage({ params }: Props) {
+  noStore();
   let post: BlogPost | null;
   try {
     post = await findPublishedBlogPostBySlug(params.slug);
