@@ -12,7 +12,6 @@ type Props = { params: { slug: string } };
 export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }: Props) {
-  noStore();
   let title = "Blog post";
   let description = SITE_NAME;
   try {
@@ -33,12 +32,35 @@ export async function generateMetadata({ params }: Props) {
 
 export default async function BlogPostPage({ params }: Props) {
   noStore();
-  let post: BlogPost | null;
+  let post: BlogPost | null = null;
+  let dbError = false;
   try {
     post = await findPublishedBlogPostBySlug(params.slug);
   } catch (err) {
     console.error("[blogs/[slug]] database error:", err);
-    throw err;
+    dbError = true;
+  }
+
+  if (dbError) {
+    return (
+      <main className="mx-auto min-w-0 max-w-3xl px-4 py-8 sm:py-10 md:px-6">
+        <p className="font-mono text-xs">
+          <Link
+            href="/blogs"
+            className="text-text-muted transition-colors hover:text-accent"
+          >
+            ← All posts
+          </Link>
+        </p>
+        <h1 className="mt-6 font-display text-2xl text-text-primary">
+          Could not load this article
+        </h1>
+        <p className="mt-3 font-serif text-sm text-text-secondary">
+          The database was unreachable or returned an error. Refresh the page or
+          try again in a moment.
+        </p>
+      </main>
+    );
   }
 
   if (!post) {
@@ -46,7 +68,14 @@ export default async function BlogPostPage({ params }: Props) {
   }
 
   marked.setOptions({ gfm: true });
-  const html = await marked.parse(post.content);
+  let html: string;
+  try {
+    html = await marked.parse(post.content);
+  } catch (parseErr) {
+    console.error("[blogs/[slug]] markdown parse error:", parseErr);
+    html =
+      '<p class="text-text-muted">This article could not be rendered. Try again later.</p>';
+  }
 
   return (
     <main className="mx-auto min-w-0 max-w-3xl px-4 py-8 sm:py-10 md:px-6">
