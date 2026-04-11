@@ -7,7 +7,7 @@ import { Providers } from "@/app/providers";
 import { StructuredData } from "@/components/StructuredData";
 import { ADSENSE_CLIENT_ID } from "@/lib/adsense-config";
 import { SITE_DESCRIPTION, SITE_NAME } from "@/lib/seo-site";
-import { getSiteUrl } from "@/lib/site-url";
+import { getMetadataBaseUrl, getSiteUrl } from "@/lib/site-url";
 import "./globals.css";
 
 const abril = Abril_Fatface({
@@ -43,7 +43,7 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  metadataBase: new URL(siteUrl),
+  metadataBase: getMetadataBaseUrl(),
   title: {
     default: SITE_NAME,
     template: `%s · ${SITE_NAME}`,
