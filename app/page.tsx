@@ -1,6 +1,8 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useCallback, useEffect, useState } from "react";
+import { ArticleCopyBar } from "@/components/ArticleCopyBar";
 import { ArticleRenderer } from "@/components/ArticleRenderer";
 import { KeywordsPanel } from "@/components/KeywordsPanel";
 import { LiveLog } from "@/components/LiveLog";
@@ -18,6 +20,21 @@ import type {
   SeoMeta,
   Source,
 } from "@/lib/types";
+
+const ArticleEditor = dynamic(
+  () =>
+    import("@/components/ArticleEditor").then((mod) => ({
+      default: mod.ArticleEditor,
+    })),
+  {
+    ssr: false,
+    loading: () => (
+      <p className="animate-pulse font-mono text-sm text-text-muted">
+        Loading editor…
+      </p>
+    ),
+  },
+);
 
 type TabId = "article" | "seo" | "keywords" | "sources" | "log";
 
@@ -79,6 +96,8 @@ export default function Home() {
   );
   const [meta, setMeta] = useState<SeoMeta | null>(null);
   const [error, setError] = useState<string | null>(null);
+  /** Bumps when article generation finishes so the rich editor remounts with full Markdown. */
+  const [articleEditorEpoch, setArticleEditorEpoch] = useState(0);
 
   const canRun =
     Boolean(input.topic.trim() || input.sourceUrl.trim()) && !running;
@@ -471,6 +490,7 @@ export default function Home() {
         }
         markDone("article");
         pushLog("Article: stream complete.");
+        setArticleEditorEpoch((n) => n + 1);
       } catch (e) {
         pushLog(
           `Article: failed — ${e instanceof Error ? e.message : "error"}`,
@@ -624,7 +644,18 @@ export default function Home() {
             </div>
             <div className="custom-scrollbar max-h-[70vh] overflow-y-auto p-4">
               {tab === "article" && (
-                <ArticleRenderer markdown={article} streaming={running} />
+                <div>
+                  <ArticleCopyBar markdown={article} disabled={running} />
+                  {running ? (
+                    <ArticleRenderer markdown={article} streaming />
+                  ) : (
+                    <ArticleEditor
+                      key={articleEditorEpoch}
+                      markdown={article}
+                      onChange={setArticle}
+                    />
+                  )}
+                </div>
               )}
               {tab === "seo" && <SeoPackage meta={meta} article={article} />}
               {tab === "keywords" && (

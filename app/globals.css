@@ -44,6 +44,46 @@ body {
   border-radius: 9999px;
 }
 
+/* Tiptap / ProseMirror (article rich editor) */
+.article-editor-prose .ProseMirror table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 1rem 0;
+  font-size: 0.95rem;
+}
+
+.article-editor-prose .ProseMirror td,
+.article-editor-prose .ProseMirror th {
+  border: 1px solid #1e2d3d;
+  padding: 0.45rem 0.65rem;
+  vertical-align: top;
+}
+
+.article-editor-prose .ProseMirror th {
+  background: rgba(245, 158, 11, 0.08);
+  font-weight: 600;
+}
+
+.article-editor-prose .ProseMirror .selectedCell:after {
+  z-index: 2;
+  position: absolute;
+  content: "";
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  background: rgba(245, 158, 11, 0.12);
+  pointer-events: none;
+}
+
+.article-editor-prose .ProseMirror p.is-editor-empty:first-child::before {
+  color: #475569;
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
 @layer utilities {
   .text-balance {
     text-wrap: balance;
