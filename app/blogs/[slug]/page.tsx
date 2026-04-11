@@ -75,7 +75,7 @@ export default async function BlogPostPage({ params }: Props) {
           </p>
         )}
         <div
-          className="blog-prose mt-10 font-serif text-text-primary"
+          className="blog-prose mt-10 overflow-x-auto font-serif text-text-primary"
           dangerouslySetInnerHTML={{ __html: html }}
         />
       </article>
