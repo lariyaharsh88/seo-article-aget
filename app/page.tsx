@@ -50,6 +50,7 @@ export default function Home() {
   const [loadingGsc, setLoadingGsc] = useState(false);
   const [loadingSuggest, setLoadingSuggest] = useState(false);
   const [gscError, setGscError] = useState<string | null>(null);
+  const [gscNote, setGscNote] = useState<string | null>(null);
   const [suggestError, setSuggestError] = useState<string | null>(null);
   const [searchConsoleConfigured, setSearchConsoleConfigured] =
     useState(false);
@@ -85,6 +86,7 @@ export default function Home() {
   const handleFetchSearchConsole = useCallback(async () => {
     setLoadingGsc(true);
     setGscError(null);
+    setGscNote(null);
     try {
       const pageUrl = input.sourceUrl.trim() || undefined;
       const res = await fetch("/api/search-console-queries", {
@@ -98,7 +100,9 @@ export default function Home() {
           isRecord(data) && typeof data.error === "string"
             ? data.error
             : `HTTP ${res.status}`;
-        throw new Error(msg);
+        const hint =
+          isRecord(data) && typeof data.hint === "string" ? data.hint : "";
+        throw new Error(hint ? `${msg}\n\n${hint}` : msg);
       }
       const details = isRecord(data) && Array.isArray(data.details)
         ? data.details
@@ -116,9 +120,13 @@ export default function Home() {
         }))
         .filter((r) => r.query.length > 0);
       setGscRows(rows);
+      const note =
+        isRecord(data) && typeof data.note === "string" ? data.note : null;
+      setGscNote(note);
     } catch (e) {
       setGscError(e instanceof Error ? e.message : "Search Console failed");
       setGscRows([]);
+      setGscNote(null);
     } finally {
       setLoadingGsc(false);
     }
@@ -561,6 +569,7 @@ export default function Home() {
             loadingGsc={loadingGsc}
             loadingSuggest={loadingSuggest}
             gscError={gscError}
+            gscNote={gscNote}
             suggestError={suggestError}
             searchConsoleConfigured={searchConsoleConfigured}
           />

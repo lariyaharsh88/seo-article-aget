@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import {
   fetchSearchConsoleTopQueries,
+  parseGscApiError,
   searchConsoleEnvConfigured,
 } from "@/lib/gsc-queries";
 
@@ -27,16 +28,25 @@ export async function POST(request: Request) {
 
   try {
     const body = (await request.json()) as Body;
-    const details = await fetchSearchConsoleTopQueries({
+    const { details, note } = await fetchSearchConsoleTopQueries({
       pageUrl: body.pageUrl,
       rowLimit: body.rowLimit,
     });
     return NextResponse.json({
       queries: details.map((d) => d.query),
       details,
+      ...(note ? { note } : {}),
     });
   } catch (e) {
-    const message = e instanceof Error ? e.message : "Search Console request failed";
-    return NextResponse.json({ error: message, queries: [], details: [] }, { status: 502 });
+    const { message, hint, status } = parseGscApiError(e);
+    return NextResponse.json(
+      {
+        error: message,
+        ...(hint ? { hint } : {}),
+        queries: [],
+        details: [],
+      },
+      { status },
+    );
   }
 }

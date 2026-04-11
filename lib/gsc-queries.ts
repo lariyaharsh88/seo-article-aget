@@ -1,5 +1,44 @@
 import { google } from "googleapis";
 
+/** Extract Google API error text and attach a hint for common permission issues. */
+export function parseGscApiError(e: unknown): {
+  message: string;
+  hint?: string;
+  status: number;
+} {
+  let message =
+    e instanceof Error ? e.message : "Search Console request failed";
+
+  const gaxios = e as {
+    response?: { status?: number; data?: { error?: { message?: string } } };
+    errors?: Array<{ message?: string }>;
+  };
+  const apiMsg = gaxios.response?.data?.error?.message;
+  if (typeof apiMsg === "string" && apiMsg.trim()) {
+    message = apiMsg.trim();
+  } else if (Array.isArray(gaxios.errors) && gaxios.errors[0]?.message) {
+    message = String(gaxios.errors[0].message);
+  }
+
+  const lower = message.toLowerCase();
+  const permissionLike =
+    lower.includes("permission") ||
+    lower.includes("not authorized") ||
+    lower.includes("does not have") ||
+    gaxios.response?.status === 403;
+
+  if (permissionLike) {
+    return {
+      message,
+      status: 403,
+      hint:
+        "Open Google Search Console for this property → Settings → Users and permissions → Add user. Paste the service account email from your JSON (the client_email field) and grant Full or Owner. In Vercel, set GSC_SITE_URL to match that property exactly—same protocol, www or not, trailing slash, or use sc-domain:yourdomain.com if the property is a Domain property. Mismatched URLs count as different properties.",
+    };
+  }
+
+  return { message, status: gaxios.response?.status && gaxios.response.status >= 400 ? gaxios.response.status : 502 };
+}
+
 export interface GscQueryRow {
   query: string;
   clicks: number;
@@ -78,15 +117,70 @@ async function getAuthenticatedWebmasters() {
   return { webmasters, siteUrl };
 }
 
+export interface GscFetchResult {
+  details: GscQueryRow[];
+  /** Shown when results are empty or when falling back to site-wide queries */
+  note?: string;
+}
+
+function mapAnalyticsRows(
+  rows:
+    | Array<{
+        keys?: string[] | null;
+        clicks?: number | null;
+        impressions?: number | null;
+      }>
+    | null
+    | undefined,
+): GscQueryRow[] {
+  return (rows ?? [])
+    .map((row) => ({
+      query: row.keys?.[0] ?? "",
+      clicks: row.clicks ?? 0,
+      impressions: row.impressions ?? 0,
+    }))
+    .filter((r) => r.query.length > 0)
+    .sort(
+      (a, b) =>
+        b.clicks - a.clicks ||
+        b.impressions - a.impressions ||
+        a.query.localeCompare(b.query),
+    );
+}
+
+/** GSC "equals" filter is strict — try a few normalizations. */
+function pageUrlFilterVariants(pageUrl: string): string[] {
+  const u = pageUrl.trim();
+  const out: string[] = [];
+  const seen = new Set<string>();
+  const add = (s: string) => {
+    const t = s.trim();
+    if (t && !seen.has(t)) {
+      seen.add(t);
+      out.push(t);
+    }
+  };
+  add(u);
+  add(u.endsWith("/") ? u.slice(0, -1) : `${u}/`);
+  try {
+    const parsed = new URL(u);
+    const href = parsed.href;
+    add(href);
+    add(href.endsWith("/") ? href.slice(0, -1) : `${href}/`);
+  } catch {
+    /* ignore */
+  }
+  return out;
+}
+
 /**
  * Top queries from Google Search Console (last 28 days), optionally filtered to one page URL.
- * Prefer **service account** (`GSC_SERVICE_ACCOUNT_JSON`): add the service account email as a user
- * on the property in Search Console (Owner or Full user).
+ * If a page filter returns no rows, tries URL variants, then site-wide top queries with a note.
  */
 export async function fetchSearchConsoleTopQueries(options: {
   pageUrl?: string;
   rowLimit?: number;
-}): Promise<GscQueryRow[]> {
+}): Promise<GscFetchResult> {
   const { webmasters, siteUrl } = await getAuthenticatedWebmasters();
 
   const end = new Date();
@@ -104,7 +198,9 @@ export async function fetchSearchConsoleTopQueries(options: {
     }>;
   };
 
-  const requestBody: {
+  const rowLimit = Math.min(options.rowLimit ?? 50, 25000);
+
+  const baseBody: {
     startDate: string;
     endDate: string;
     dimensions: string[];
@@ -114,39 +210,59 @@ export async function fetchSearchConsoleTopQueries(options: {
     startDate,
     endDate,
     dimensions: ["query"],
-    rowLimit: Math.min(options.rowLimit ?? 50, 25000),
+    rowLimit,
+  };
+
+  const run = async (
+    body: typeof baseBody,
+  ): Promise<GscQueryRow[]> => {
+    const response = await webmasters.searchanalytics.query({
+      siteUrl,
+      requestBody: body,
+    });
+    return mapAnalyticsRows(response.data.rows);
   };
 
   const page = options.pageUrl?.trim();
-  if (page) {
-    requestBody.dimensionFilterGroups = [
-      {
-        filters: [
-          {
-            dimension: "page",
-            operator: "equals",
-            expression: page,
-          },
-        ],
-      },
-    ];
+
+  if (!page) {
+    const details = await run({ ...baseBody });
+    return {
+      details,
+      note:
+        details.length === 0
+          ? "No search queries in the last 28 days for this property (or data not yet processed)."
+          : undefined,
+    };
   }
 
-  const response = await webmasters.searchanalytics.query({
-    siteUrl,
-    requestBody,
-  });
+  for (const expression of pageUrlFilterVariants(page)) {
+    const body: typeof baseBody = {
+      ...baseBody,
+      dimensionFilterGroups: [
+        {
+          filters: [
+            {
+              dimension: "page",
+              operator: "equals",
+              expression,
+            },
+          ],
+        },
+      ],
+    };
+    const details = await run(body);
+    if (details.length > 0) {
+      return { details };
+    }
+  }
 
-  const rows = response.data.rows ?? [];
-  return rows
-    .map((row) => ({
-      query: row.keys?.[0] ?? "",
-      clicks: row.clicks ?? 0,
-      impressions: row.impressions ?? 0,
-    }))
-    .filter((r) => r.query.length > 0)
-    .sort(
-      (a, b) =>
-        b.clicks - a.clicks || b.impressions - a.impressions || a.query.localeCompare(b.query),
-    );
+  const siteWide = await run({ ...baseBody });
+  return {
+    details: siteWide,
+    note:
+      siteWide.length > 0
+        ? "No query rows matched this page URL in the last 28 days (GSC stores an exact URL). Showing site-wide top queries instead. Tip: open Search Console → Performance → Pages, copy the page URL from there, or clear the reference URL to always load site-wide."
+        : "No query data for this page or for the whole site in the last 28 days. Confirm the URL matches Performance → Pages, or wait for data processing.",
+  };
 }

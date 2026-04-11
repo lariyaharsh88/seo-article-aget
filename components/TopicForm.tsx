@@ -14,6 +14,8 @@ interface TopicFormProps {
   loadingGsc: boolean;
   loadingSuggest: boolean;
   gscError: string | null;
+  /** Non-error info from GSC (e.g. site-wide fallback when page URL had no rows). */
+  gscNote: string | null;
   suggestError: string | null;
   searchConsoleConfigured: boolean;
 }
@@ -29,6 +31,7 @@ export function TopicForm({
   loadingGsc,
   loadingSuggest,
   gscError,
+  gscNote,
   suggestError,
   searchConsoleConfigured,
 }: TopicFormProps) {
@@ -155,8 +158,19 @@ export function TopicForm({
           </p>
         ) : null}
 
+        {gscNote ? (
+          <p
+            className="mt-3 whitespace-pre-wrap rounded-lg border border-info/35 bg-info/10 px-3 py-2 font-serif text-xs leading-relaxed text-text-secondary"
+            role="status"
+          >
+            {gscNote}
+          </p>
+        ) : null}
         {gscError ? (
-          <p className="mt-3 font-mono text-xs text-red-400" role="alert">
+          <p
+            className="mt-3 whitespace-pre-wrap font-mono text-xs text-red-400"
+            role="alert"
+          >
             {gscError}
           </p>
         ) : null}
