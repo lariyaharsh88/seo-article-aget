@@ -44,7 +44,7 @@ export async function extractContactsForDomain(
       const res = await fetch(url, {
         headers: {
           "User-Agent":
-            "Mozilla/5.0 (compatible; SEOArticleAgent/1.0; +https://github.com/)",
+            "Mozilla/5.0 (compatible; RankFlowHQ/1.0; +https://github.com/)",
           Accept: "text/html,application/xhtml+xml",
         },
         redirect: "follow",

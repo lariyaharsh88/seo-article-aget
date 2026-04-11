@@ -1,8 +1,10 @@
 import type { Metadata, Viewport } from "next";
 import { Abril_Fatface, Lora, Space_Mono } from "next/font/google";
 import Script from "next/script";
+import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { StructuredData } from "@/components/StructuredData";
+import { ADSENSE_CLIENT_ID } from "@/lib/adsense-config";
 import { SITE_DESCRIPTION, SITE_NAME } from "@/lib/seo-site";
 import { getSiteUrl } from "@/lib/site-url";
 import "./globals.css";
@@ -33,11 +35,6 @@ const siteUrl = getSiteUrl();
 const GA_MEASUREMENT_ID =
   process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID?.trim() || "G-19XWBZXT88";
 
-/** AdSense publisher ID — override with NEXT_PUBLIC_ADSENSE_CLIENT_ID if needed. */
-const ADSENSE_CLIENT_ID =
-  process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID?.trim() ||
-  "ca-pub-7494206891190273";
-
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
@@ -52,6 +49,7 @@ export const metadata: Metadata = {
   },
   description: SITE_DESCRIPTION,
   keywords: [
+    "RankFlowHQ",
     "SEO article",
     "content SEO",
     "AI writing",
@@ -62,6 +60,7 @@ export const metadata: Metadata = {
     "long-form article",
     "meta description",
     "education trends",
+    "backlink outreach",
   ],
   authors: [{ name: SITE_NAME }],
   creator: SITE_NAME,
@@ -88,6 +87,9 @@ export const metadata: Metadata = {
     card: "summary",
     title: SITE_NAME,
     description: SITE_DESCRIPTION,
+  },
+  other: {
+    "google-adsense-account": ADSENSE_CLIENT_ID,
   },
   ...(process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
     ? {
@@ -128,9 +130,10 @@ export default function RootLayout({
           crossOrigin="anonymous"
         />
         <StructuredData />
-        <div className="relative z-10">
+        <div className="relative z-10 flex min-h-screen flex-col">
           <SiteHeader />
-          {children}
+          <div className="flex-1">{children}</div>
+          <SiteFooter />
         </div>
       </body>
     </html>

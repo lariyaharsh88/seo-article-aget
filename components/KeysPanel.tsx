@@ -8,7 +8,7 @@ export interface ApiKeys {
   serper: string;
 }
 
-const STORAGE = "seo-article-agent-keys";
+const STORAGE = "rankflowhq-agent-keys";
 
 function loadKeys(): ApiKeys {
   if (typeof window === "undefined") {

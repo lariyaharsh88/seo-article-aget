@@ -16,7 +16,7 @@ export function SiteHeader() {
           href="/"
           className="font-display text-lg text-text-primary transition-colors duration-200 hover:text-accent"
         >
-          SEO Article Agent
+          RankFlowHQ
         </Link>
         <nav className="flex flex-wrap gap-2" aria-label="Primary">
           {nav.map((item) => (

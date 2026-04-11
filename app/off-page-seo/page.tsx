@@ -6,7 +6,7 @@ export default async function OffPageSeoPage() {
   const explainerMd = await getToolExplainerMarkdown("off-page-seo");
   return (
     <>
-      <main className="mx-auto min-h-screen max-w-6xl px-4 py-10 md:px-6">
+      <main className="mx-auto max-w-6xl px-4 py-10 md:px-6">
         <header className="mb-10 space-y-3 border-b border-border pb-8">
           <p className="font-mono text-xs uppercase tracking-[0.2em] text-accent">
             Off-page SEO

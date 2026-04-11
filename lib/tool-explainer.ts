@@ -15,10 +15,10 @@ const SPECS: Record<
   { name: string; path: string; facts: string[] }
 > = {
   "seo-agent": {
-    name: "SEO article pipeline",
+    name: "RankFlowHQ article pipeline",
     path: "/seo-agent",
     facts: [
-      "Runs a multi-stage pipeline in the browser backed by Next.js API routes.",
+      "Part of the RankFlowHQ suite; runs a multi-stage pipeline in the browser backed by Next.js API routes.",
       "Uses Serper for SERP/keywords/PAA, Tavily for research, Gemini for outline and streaming article and audit.",
       "Optional Google Search Console queries and Google Suggest when configured.",
       "Outputs Markdown article, keyword list, sources, SEO meta JSON, and optional SVG infographics from numbers in research text (no separate image API).",
@@ -62,7 +62,7 @@ const SPECS: Record<
 const FALLBACK: Record<ToolExplainerId, string> = {
   "seo-agent": `## What this tool does
 
-The **SEO article pipeline** turns a topic (or a source URL) into a structured, research-backed draft and an SEO export pack. It is built for marketers, editors, and SEOs who need a strong first draft with citations and meta fields—not a substitute for editorial judgment or fact-checking.
+The **RankFlowHQ article pipeline** turns a topic (or a source URL) into a structured, research-backed draft and an SEO export pack. It is built for marketers, editors, and SEOs who need a strong first draft with citations and meta fields—not a substitute for editorial judgment or fact-checking.
 
 ## How it works
 

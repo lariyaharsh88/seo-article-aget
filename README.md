@@ -1,6 +1,6 @@
-# SEO Article Agent
+# RankFlowHQ
 
-A single-page Next.js 14 (App Router) app that turns a topic brief into keyword clusters, Tavily-backed research, SERP/PAA intelligence, a structured outline, a **streaming** Gemini article draft, and an SEO meta package you can copy in one click. API keys stay on the server (`/.env.local`) or travel only over request headers from the browser—nothing secret is embedded in client bundles.
+**RankFlowHQ** is a Next.js 14 (App Router) suite that turns a topic brief into keyword clusters, Tavily-backed research, SERP/PAA intelligence, a structured outline, a **streaming** Gemini article draft, and an SEO meta package you can copy in one click. API keys stay on the server (`/.env.local`) or travel only over request headers from the browser—nothing secret is embedded in client bundles.
 
 ## Free tier limits (indicative)
 
@@ -14,7 +14,7 @@ Always confirm limits on each provider’s pricing page before production use.
 
 ## Setup
 
-1. **Clone or copy** this folder and open a terminal inside `seo-article-agent`.
+1. **Clone or copy** this repo and open a terminal in the project root.
 2. **Install dependencies:** `npm install`
 3. **Environment file:** copy `.env.example` to `.env.local`:
    ```bash

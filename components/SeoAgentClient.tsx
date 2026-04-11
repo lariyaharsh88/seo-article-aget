@@ -12,6 +12,8 @@ import { PipelineProgress } from "@/components/PipelineProgress";
 import { SeoPackage } from "@/components/SeoPackage";
 import { SourcesList } from "@/components/SourcesList";
 import { TopicForm } from "@/components/TopicForm";
+import { AdSenseSlot } from "@/components/AdSenseSlot";
+import { ADSENSE_SLOTS } from "@/lib/adsense-config";
 import { isKeywordRecord } from "@/lib/keyword-guards";
 import { PIPELINE_STAGES } from "@/lib/pipeline-stages";
 import type { GscQueryRow } from "@/lib/gsc-queries";
@@ -566,7 +568,7 @@ export function SeoAgentClient() {
   ];
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-6xl flex-col gap-8 px-4 py-10 md:px-6">
+    <main className="mx-auto flex max-w-6xl flex-col gap-8 px-4 py-10 md:px-6">
       <p className="font-mono text-xs">
         <Link
           href="/"
@@ -582,7 +584,7 @@ export function SeoAgentClient() {
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <h1 className="font-display text-4xl text-text-primary md:text-5xl">
-              SEO Article Agent
+              RankFlowHQ · Article pipeline
             </h1>
             <p className="mt-2 max-w-2xl font-serif text-lg text-text-secondary">
               From SERP signals to a streaming long-form draft, with research
@@ -594,6 +596,19 @@ export function SeoAgentClient() {
           </span>
         </div>
       </header>
+
+      {ADSENSE_SLOTS.toolInline ? (
+        <div className="space-y-2">
+          <p className="text-center font-mono text-[10px] uppercase tracking-wider text-text-muted">
+            Advertisement
+          </p>
+          <AdSenseSlot
+            slot={ADSENSE_SLOTS.toolInline}
+            className="flex justify-center"
+            minHeight={90}
+          />
+        </div>
+      ) : null}
 
       <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
         <div className="space-y-4">

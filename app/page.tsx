@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { AdSenseSlot } from "@/components/AdSenseSlot";
 import { buildPageMetadata } from "@/lib/seo-page";
+import { ADSENSE_SLOTS } from "@/lib/adsense-config";
 import { SITE_DESCRIPTION } from "@/lib/seo-site";
 
 export const metadata: Metadata = buildPageMetadata({
   title: "Tools",
-  description: `Browse all apps: SEO article pipeline, off-page outreach, education Google Trends, and education news. ${SITE_DESCRIPTION}`,
+  description: `Browse RankFlowHQ tools: article pipeline, off-page outreach, education Google Trends, and education news. ${SITE_DESCRIPTION}`,
   path: "/",
 });
 
@@ -42,19 +44,32 @@ const tools = [
 
 export default function HomePage() {
   return (
-    <main className="mx-auto min-h-screen max-w-6xl px-4 py-10 md:px-6">
+    <main className="mx-auto max-w-6xl px-4 py-10 md:px-6">
       <header className="mb-12 space-y-4 border-b border-border pb-10">
         <p className="font-mono text-xs uppercase tracking-[0.2em] text-accent">
           Tools hub
         </p>
         <h1 className="font-display text-4xl text-text-primary md:text-5xl">
-          SEO Article Agent
+          RankFlowHQ
         </h1>
         <p className="max-w-2xl font-serif text-lg text-text-secondary">
           Independent tools for content SEO, off-page outreach, trends, and education
           news. Each app opens on its own page — pick one below.
         </p>
       </header>
+
+      {ADSENSE_SLOTS.homeTop ? (
+        <div className="mb-10 space-y-2">
+          <p className="text-center font-mono text-[10px] uppercase tracking-wider text-text-muted">
+            Advertisement
+          </p>
+          <AdSenseSlot
+            slot={ADSENSE_SLOTS.homeTop}
+            className="flex justify-center"
+            minHeight={100}
+          />
+        </div>
+      ) : null}
 
       <ul className="grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
         {tools.map((tool) => (
