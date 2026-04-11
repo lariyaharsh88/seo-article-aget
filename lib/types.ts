@@ -58,3 +58,11 @@ export interface ServerKeyStatus {
   tavily: boolean;
   serper: boolean;
 }
+
+/** Free Pollinations image URL plus caption from research (see /api/research-images). */
+export interface ResearchImageAsset {
+  url: string;
+  alt: string;
+  insight: string;
+  imagePrompt: string;
+}

@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import { useCallback, useEffect, useState } from "react";
 import { ArticleCopyBar } from "@/components/ArticleCopyBar";
 import { ArticleRenderer } from "@/components/ArticleRenderer";
+import { ResearchImagesPanel } from "@/components/ResearchImagesPanel";
 import { KeywordsPanel } from "@/components/KeywordsPanel";
 import { LiveLog } from "@/components/LiveLog";
 import { PipelineProgress } from "@/components/PipelineProgress";
@@ -98,6 +99,9 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   /** Bumps when article generation finishes so the rich editor remounts with full Markdown. */
   const [articleEditorEpoch, setArticleEditorEpoch] = useState(0);
+  /** Last pipeline research bundle (for Pollinations image prompts). */
+  const [storedResearchContext, setStoredResearchContext] = useState("");
+  const [storedResearchTopic, setStoredResearchTopic] = useState("");
 
   const canRun =
     Boolean(input.topic.trim() || input.sourceUrl.trim()) && !running;
@@ -205,6 +209,8 @@ export default function Home() {
     setSources([]);
     setPaas([]);
     setFeaturedSnippet(null);
+    setStoredResearchContext("");
+    setStoredResearchTopic("");
     setTab("article");
 
     const headers = buildHeaders();
@@ -315,6 +321,8 @@ export default function Home() {
           }
         }
         setSources(sourcesList);
+        setStoredResearchContext(researchContext);
+        setStoredResearchTopic(workingTopic);
         markDone("research");
         pushLog(`Research: ${sourcesList.length} unique sources.`);
       } catch (e) {
@@ -646,6 +654,21 @@ export default function Home() {
               {tab === "article" && (
                 <div>
                   <ArticleCopyBar markdown={article} disabled={running} />
+                  <ResearchImagesPanel
+                    topic={
+                      storedResearchTopic.trim() ||
+                      input.topic.trim().split("\n")[0]?.trim() ||
+                      "Article"
+                    }
+                    audience={input.audience}
+                    researchContext={storedResearchContext}
+                    article={article}
+                    disableArticleMutation={running}
+                    onApplyArticle={setArticle}
+                    onRemountEditor={() =>
+                      setArticleEditorEpoch((e) => e + 1)
+                    }
+                  />
                   {running ? (
                     <ArticleRenderer markdown={article} streaming />
                   ) : (
