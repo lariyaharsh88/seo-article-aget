@@ -5,6 +5,8 @@ import type { Source } from "@/lib/types";
 
 interface ResearchBody {
   topic?: string;
+  /** Optional URL of the page being refreshed / optimized — adds context for Tavily. */
+  sourceUrl?: string;
 }
 
 function toSource(url: string, title: string, snippet: string): Source {
@@ -27,8 +29,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "topic is required" }, { status: 400 });
     }
 
+    const sourceUrl = body.sourceUrl?.trim();
+    const topicLine = sourceUrl
+      ? `${topic}\n\nReference page URL (user-provided, for topical alignment): ${sourceUrl}`
+      : topic;
+
     const [deep, stats] = await Promise.all([
-      tavilySearch(topic, tavilyKey, "advanced"),
+      tavilySearch(topicLine, tavilyKey, "advanced"),
       tavilySearch(
         `${topic} statistics data 2024 2025`,
         tavilyKey,

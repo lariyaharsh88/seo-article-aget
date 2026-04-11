@@ -7,7 +7,10 @@ export async function GET() {
   try {
     const keys = serverKeyStatus();
     const serverKeysReady = keys.gemini && keys.tavily && keys.serper;
-    return NextResponse.json({ ...keys, serverKeysReady });
+    return NextResponse.json({
+      ...keys,
+      serverKeysReady,
+    });
   } catch (e) {
     const message = e instanceof Error ? e.message : "Config error";
     return NextResponse.json({ error: message }, { status: 500 });

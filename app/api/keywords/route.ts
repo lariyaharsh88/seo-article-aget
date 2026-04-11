@@ -9,7 +9,13 @@ import {
 import { fallbackKeywords, normalizeKeywordList } from "@/lib/keyword-guards";
 import type { Keyword, PipelineInput } from "@/lib/types";
 
-type KeywordsBody = Pick<PipelineInput, "topic" | "intent" | "audience">;
+type KeywordsBody = Pick<
+  PipelineInput,
+  "topic" | "intent" | "audience" | "sourceUrl" | "primaryKeyword"
+> & {
+  searchConsoleQueries?: string[];
+  googleSuggestions?: string[];
+};
 
 export async function POST(request: Request) {
   try {
@@ -36,6 +42,14 @@ export async function POST(request: Request) {
 
     const intent = body.intent ?? "informational";
     const audience = body.audience?.trim() ?? "general readers";
+    const sourceUrl = body.sourceUrl?.trim() ?? "";
+    const primaryKw = body.primaryKeyword?.trim() ?? "";
+    const gscList = Array.isArray(body.searchConsoleQueries)
+      ? body.searchConsoleQueries.filter((q): q is string => typeof q === "string" && q.trim().length > 0)
+      : [];
+    const suggestList = Array.isArray(body.googleSuggestions)
+      ? body.googleSuggestions.filter((q): q is string => typeof q === "string" && q.trim().length > 0)
+      : [];
 
     let serperHints = "(Serper hints unavailable — generating from topic only.)";
     try {
@@ -59,20 +73,46 @@ export async function POST(request: Request) {
       /* Still run Gemini + fallback so the pipeline does not go empty on Serper errors. */
     }
 
-    const prompt = `You are an SEO keyword strategist. Given the topic, audience, and Serper hints, output exactly 20 keyword objects as JSON.
+    const gscBlock =
+      gscList.length > 0
+        ? `Google Search Console top queries (last ~28 days, when provided):\n${gscList.slice(0, 40).join("\n")}`
+        : "(No Search Console query list provided.)";
+
+    const suggestBlock =
+      suggestList.length > 0
+        ? `Google autocomplete suggestions for the primary phrase:\n${suggestList.slice(0, 40).join("\n")}`
+        : "(No autocomplete list provided.)";
+
+    const urlBlock = sourceUrl
+      ? `User reference URL (published page to align with): ${sourceUrl}`
+      : "(No reference URL.)";
+
+    const primaryHint = primaryKw
+      ? `Preferred primary keyword phrase (if sensible): ${primaryKw}`
+      : "(Infer primary from topic.)";
+
+    const prompt = `You are an SEO keyword strategist. Given the topic, audience, Serper hints, optional GSC queries, optional Google suggestions, and optional reference URL, output exactly 20 keyword objects as JSON.
 
 Topic: ${topic}
 Search intent focus: ${intent}
 Audience: ${audience}
+${urlBlock}
+${primaryHint}
 
 Serper data:
 ${serperHints}
+
+${gscBlock}
+
+${suggestBlock}
 
 Return JSON with this exact shape (no markdown, no commentary):
 {"keywords":[{"keyword":"string","type":"primary"|"secondary"|"lsi"|"longtail","intent":"informational"|"commercial"|"transactional","difficulty":"low"|"medium"|"high"}]}
 
 Rules:
-- One primary keyword closely matching the topic.
+- One primary keyword closely matching the topic${primaryKw ? ` or “${primaryKw}” if it fits the brief` : ""}.
+- When Search Console queries are provided, prioritize real queries users already use on that URL/property; weave them into secondary/longtail.
+- When autocomplete suggestions are provided, treat them as real searcher phrasing to cover in the mix.
 - Balanced mix of secondary, lsi, and longtail.
 - Align intent fields sensibly with ${intent}. If the focus intent is "navigational", still use only informational, commercial, or transactional on each row (prefer informational).
 - Use lowercase for type, intent, and difficulty exactly as in the schema.

@@ -1,5 +1,6 @@
 "use client";
 
+import type { GscQueryRow } from "@/lib/gsc-queries";
 import type { FeaturedSnippet, Keyword } from "@/lib/types";
 
 const TYPE_ORDER: Keyword["type"][] = [
@@ -33,12 +34,16 @@ interface KeywordsPanelProps {
   keywords: Keyword[];
   paas: string[];
   featuredSnippet: FeaturedSnippet | null;
+  gscRows: GscQueryRow[];
+  googleSuggestions: string[];
 }
 
 export function KeywordsPanel({
   keywords,
   paas,
   featuredSnippet,
+  gscRows,
+  googleSuggestions,
 }: KeywordsPanelProps) {
   const grouped = TYPE_ORDER.map((type) => ({
     type,
@@ -47,6 +52,48 @@ export function KeywordsPanel({
 
   return (
     <div className="space-y-6">
+      {gscRows.length > 0 ? (
+        <section aria-labelledby="gsc-queries-heading">
+          <h3
+            id="gsc-queries-heading"
+            className="mb-2 font-mono text-xs uppercase tracking-wide text-success"
+          >
+            Search Console · top queries (used in keyword pass)
+          </h3>
+          <ul className="space-y-1.5 rounded-lg border border-success/25 bg-success/5 p-3 font-mono text-xs text-text-secondary">
+            {gscRows.slice(0, 20).map((row) => (
+              <li key={row.query} className="flex flex-wrap justify-between gap-2">
+                <span className="min-w-0 flex-1">{row.query}</span>
+                <span className="shrink-0 text-[10px] text-text-muted">
+                  {row.clicks} clicks · {Math.round(row.impressions)} impr.
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
+      {googleSuggestions.length > 0 ? (
+        <section aria-labelledby="autosuggest-heading">
+          <h3
+            id="autosuggest-heading"
+            className="mb-2 font-mono text-xs uppercase tracking-wide text-accent"
+          >
+            Google autocomplete (used in keyword pass)
+          </h3>
+          <ul className="flex flex-wrap gap-2">
+            {googleSuggestions.map((s) => (
+              <li
+                key={s}
+                className="rounded-full border border-accent/30 bg-accent/10 px-2.5 py-1 font-serif text-xs text-text-primary"
+              >
+                {s}
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
       {grouped.map(({ type, items }) => (
         <section key={type} aria-labelledby={`kw-${type}`}>
           <h3

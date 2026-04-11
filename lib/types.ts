@@ -47,6 +47,10 @@ export interface PipelineInput {
   topic: string;
   audience: string;
   intent: "informational" | "commercial" | "transactional" | "navigational";
+  /** Optional page URL to align the brief with a published URL (research + GSC filter). */
+  sourceUrl: string;
+  /** Used for Google autocomplete; defaults to topic line if empty when fetching suggestions. */
+  primaryKeyword: string;
 }
 
 export interface ServerKeyStatus {

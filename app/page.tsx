@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { ArticleRenderer } from "@/components/ArticleRenderer";
 import { KeywordsPanel } from "@/components/KeywordsPanel";
 import { LiveLog } from "@/components/LiveLog";
@@ -10,6 +10,7 @@ import { SourcesList } from "@/components/SourcesList";
 import { TopicForm } from "@/components/TopicForm";
 import { isKeywordRecord } from "@/lib/keyword-guards";
 import { PIPELINE_STAGES } from "@/lib/pipeline-stages";
+import type { GscQueryRow } from "@/lib/gsc-queries";
 import type {
   FeaturedSnippet,
   Keyword,
@@ -41,7 +42,28 @@ export default function Home() {
     topic: "",
     audience: "",
     intent: "informational",
+    sourceUrl: "",
+    primaryKeyword: "",
   });
+  const [gscRows, setGscRows] = useState<GscQueryRow[]>([]);
+  const [googleSuggestions, setGoogleSuggestions] = useState<string[]>([]);
+  const [loadingGsc, setLoadingGsc] = useState(false);
+  const [loadingSuggest, setLoadingSuggest] = useState(false);
+  const [gscError, setGscError] = useState<string | null>(null);
+  const [suggestError, setSuggestError] = useState<string | null>(null);
+  const [searchConsoleConfigured, setSearchConsoleConfigured] =
+    useState(false);
+
+  useEffect(() => {
+    void fetch("/api/config")
+      .then((r) => r.json())
+      .then((d: unknown) => {
+        if (isRecord(d) && typeof d.searchConsole === "boolean") {
+          setSearchConsoleConfigured(d.searchConsole);
+        }
+      })
+      .catch(() => setSearchConsoleConfigured(false));
+  }, []);
   const [tab, setTab] = useState<TabId>("article");
   const [running, setRunning] = useState(false);
   const [stage, setStage] = useState<string | null>(null);
@@ -57,7 +79,86 @@ export default function Home() {
   const [meta, setMeta] = useState<SeoMeta | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const canRun = Boolean(input.topic.trim()) && !running;
+  const canRun =
+    Boolean(input.topic.trim() || input.sourceUrl.trim()) && !running;
+
+  const handleFetchSearchConsole = useCallback(async () => {
+    setLoadingGsc(true);
+    setGscError(null);
+    try {
+      const pageUrl = input.sourceUrl.trim() || undefined;
+      const res = await fetch("/api/search-console-queries", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pageUrl }),
+      });
+      const data: unknown = await res.json();
+      if (!res.ok) {
+        const msg =
+          isRecord(data) && typeof data.error === "string"
+            ? data.error
+            : `HTTP ${res.status}`;
+        throw new Error(msg);
+      }
+      const details = isRecord(data) && Array.isArray(data.details)
+        ? data.details
+        : [];
+      const rows: GscQueryRow[] = details
+        .filter(
+          (r): r is Record<string, unknown> =>
+            typeof r === "object" && r !== null,
+        )
+        .map((r) => ({
+          query: typeof r.query === "string" ? r.query : "",
+          clicks: typeof r.clicks === "number" ? r.clicks : 0,
+          impressions:
+            typeof r.impressions === "number" ? r.impressions : 0,
+        }))
+        .filter((r) => r.query.length > 0);
+      setGscRows(rows);
+    } catch (e) {
+      setGscError(e instanceof Error ? e.message : "Search Console failed");
+      setGscRows([]);
+    } finally {
+      setLoadingGsc(false);
+    }
+  }, [input.sourceUrl]);
+
+  const handleFetchGoogleSuggestions = useCallback(async () => {
+    const q =
+      input.primaryKeyword.trim() ||
+      input.topic.trim().split("\n")[0]?.trim() ||
+      "";
+    if (q.length < 2) {
+      setSuggestError("Add a primary keyword or topic line first.");
+      return;
+    }
+    setLoadingSuggest(true);
+    setSuggestError(null);
+    try {
+      const res = await fetch(
+        `/api/google-suggest?q=${encodeURIComponent(q)}`,
+      );
+      const data: unknown = await res.json();
+      if (!res.ok) {
+        const msg =
+          isRecord(data) && typeof data.error === "string"
+            ? data.error
+            : `HTTP ${res.status}`;
+        throw new Error(msg);
+      }
+      const list =
+        isRecord(data) && Array.isArray(data.suggestions)
+          ? data.suggestions.filter((s): s is string => typeof s === "string")
+          : [];
+      setGoogleSuggestions(list);
+    } catch (e) {
+      setSuggestError(e instanceof Error ? e.message : "Suggestions failed");
+      setGoogleSuggestions([]);
+    } finally {
+      setLoadingSuggest(false);
+    }
+  }, [input.primaryKeyword, input.topic]);
 
   const pushLog = useCallback((msg: string) => {
     const line = `[${new Date().toLocaleTimeString()}] ${msg}`;
@@ -65,7 +166,7 @@ export default function Home() {
   }, []);
 
   const runPipeline = useCallback(async () => {
-    if (!input.topic.trim()) return;
+    if (!input.topic.trim() && !input.sourceUrl.trim()) return;
     setRunning(true);
     setError(null);
     setLogLines([]);
@@ -95,6 +196,30 @@ export default function Home() {
     };
 
     try {
+      let workingTopic = input.topic.trim();
+      if (!workingTopic && input.sourceUrl.trim()) {
+        pushLog("Brief: resolving title from URL…");
+        try {
+          const metaRes = await fetch(
+            `/api/page-meta?url=${encodeURIComponent(input.sourceUrl.trim())}`,
+          );
+          const meta: unknown = await metaRes.json();
+          if (
+            metaRes.ok &&
+            isRecord(meta) &&
+            typeof meta.title === "string" &&
+            meta.title.trim()
+          ) {
+            workingTopic = meta.title.trim();
+          } else {
+            workingTopic = input.sourceUrl.trim();
+          }
+        } catch {
+          workingTopic = input.sourceUrl.trim();
+        }
+        pushLog(`Brief: using “${workingTopic.slice(0, 72)}${workingTopic.length > 72 ? "…" : ""}”.`);
+      }
+
       setStage("keywords");
       pushLog("Keywords: requesting Serper + Gemini…");
       try {
@@ -102,9 +227,13 @@ export default function Home() {
           method: "POST",
           headers,
           body: JSON.stringify({
-            topic: input.topic,
+            topic: workingTopic,
             intent: input.intent,
             audience: input.audience,
+            sourceUrl: input.sourceUrl.trim(),
+            primaryKeyword: input.primaryKeyword.trim(),
+            searchConsoleQueries: gscRows.map((r) => r.query),
+            googleSuggestions,
           }),
         });
         const data: unknown = await res.json();
@@ -133,7 +262,10 @@ export default function Home() {
         const res = await fetch("/api/research", {
           method: "POST",
           headers,
-          body: JSON.stringify({ topic: input.topic }),
+          body: JSON.stringify({
+            topic: workingTopic,
+            sourceUrl: input.sourceUrl.trim() || undefined,
+          }),
         });
         const data: unknown = await res.json();
         if (!res.ok) {
@@ -170,7 +302,7 @@ export default function Home() {
         const res = await fetch("/api/serp", {
           method: "POST",
           headers,
-          body: JSON.stringify({ topic: input.topic }),
+          body: JSON.stringify({ topic: workingTopic }),
         });
         const data: unknown = await res.json();
         if (!res.ok) {
@@ -212,7 +344,7 @@ export default function Home() {
           method: "POST",
           headers,
           body: JSON.stringify({
-            topic: input.topic,
+            topic: workingTopic,
             related: relatedList,
             paas: paasList,
           }),
@@ -247,7 +379,7 @@ export default function Home() {
           method: "POST",
           headers,
           body: JSON.stringify({
-            topic: input.topic,
+            topic: workingTopic,
             audience: input.audience,
             intent: input.intent,
             keywords: keywordList,
@@ -272,7 +404,7 @@ export default function Home() {
         markDone("outline");
         pushLog("Outline: ready.");
       } catch (e) {
-        outlineText = `# ${input.topic}\n\n## Introduction\n### Hook\n### Scope\n`;
+        outlineText = `# ${workingTopic}\n\n## Introduction\n### Hook\n### Scope\n`;
         pushLog(
           `Outline: degraded — ${e instanceof Error ? e.message : "error"}`,
         );
@@ -286,7 +418,7 @@ export default function Home() {
           method: "POST",
           headers,
           body: JSON.stringify({
-            topic: input.topic,
+            topic: workingTopic,
             audience: input.audience,
             intent: input.intent,
             keywords: keywordList,
@@ -340,12 +472,12 @@ export default function Home() {
       try {
         const focus =
           keywordList.find((k) => k.type === "primary")?.keyword ??
-          input.topic;
+          workingTopic;
         const res = await fetch("/api/audit", {
           method: "POST",
           headers,
           body: JSON.stringify({
-            topic: input.topic,
+            topic: workingTopic,
             article: articleBody,
             focusKeyword: focus,
           }),
@@ -384,7 +516,7 @@ export default function Home() {
       setRunning(false);
       setStage(null);
     }
-  }, [input, pushLog]);
+  }, [input, pushLog, gscRows, googleSuggestions]);
 
   const tabs: { id: TabId; label: string }[] = [
     { id: "article", label: "Article" },
@@ -418,7 +550,20 @@ export default function Home() {
 
       <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
         <div className="space-y-4">
-          <TopicForm value={input} onChange={setInput} disabled={running} />
+          <TopicForm
+            value={input}
+            onChange={setInput}
+            disabled={running}
+            gscRows={gscRows}
+            googleSuggestions={googleSuggestions}
+            onFetchSearchConsole={() => void handleFetchSearchConsole()}
+            onFetchGoogleSuggestions={() => void handleFetchGoogleSuggestions()}
+            loadingGsc={loadingGsc}
+            loadingSuggest={loadingSuggest}
+            gscError={gscError}
+            suggestError={suggestError}
+            searchConsoleConfigured={searchConsoleConfigured}
+          />
 
           <div className="flex flex-wrap items-center gap-3">
             <button
@@ -476,6 +621,8 @@ export default function Home() {
                   keywords={keywords}
                   paas={paas}
                   featuredSnippet={featuredSnippet}
+                  gscRows={gscRows}
+                  googleSuggestions={googleSuggestions}
                 />
               )}
               {tab === "sources" && <SourcesList sources={sources} />}

@@ -20,10 +20,20 @@ export function serverKeyStatus(): {
   gemini: boolean;
   tavily: boolean;
   serper: boolean;
+  searchConsole: boolean;
 } {
+  const gscSite = Boolean(process.env.GSC_SITE_URL?.trim());
+  const gscSa = Boolean(process.env.GSC_SERVICE_ACCOUNT_JSON?.trim());
+  const gscOAuth =
+    Boolean(process.env.GSC_CLIENT_ID?.trim()) &&
+    Boolean(process.env.GSC_CLIENT_SECRET?.trim()) &&
+    Boolean(process.env.GSC_REFRESH_TOKEN?.trim());
+  const gsc = gscSite && (gscSa || gscOAuth);
+
   return {
     gemini: Boolean(process.env.GEMINI_API_KEY?.trim()),
     tavily: Boolean(process.env.TAVILY_API_KEY?.trim()),
     serper: Boolean(process.env.SERPER_API_KEY?.trim()),
+    searchConsole: gsc,
   };
 }
