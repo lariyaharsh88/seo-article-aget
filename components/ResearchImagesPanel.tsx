@@ -73,9 +73,10 @@ export function ResearchImagesPanel({
                 typeof x === "object" &&
                 x !== null &&
                 typeof (x as ResearchImageAsset).url === "string" &&
+                typeof (x as ResearchImageAsset).dataPoint === "string" &&
                 typeof (x as ResearchImageAsset).alt === "string" &&
                 typeof (x as ResearchImageAsset).insight === "string" &&
-                typeof (x as ResearchImageAsset).imagePrompt === "string",
+                typeof (x as ResearchImageAsset).templateLabel === "string",
             )
           : [];
       setAssets(list);
@@ -112,17 +113,17 @@ export function ResearchImagesPanel({
     <div className="mb-4 space-y-3 rounded-lg border border-border bg-background/40 p-4">
       <div className="flex flex-wrap items-center gap-2">
         <span className="font-mono text-[10px] uppercase tracking-wide text-text-muted">
-          Research images (free — Pollinations)
+          Charts from data (QuickChart — no AI image API)
         </span>
         <label className="flex items-center gap-1.5 font-mono text-xs text-text-secondary">
-          Count
+          Max
           <select
             value={count}
             onChange={(e) => setCount(Number(e.target.value))}
             disabled={loading}
             className="rounded border border-border bg-surface px-2 py-1 text-text-primary"
           >
-            {[3, 4, 5, 6].map((n) => (
+            {[1, 2, 3, 4, 5, 6].map((n) => (
               <option key={n} value={n}>
                 {n}
               </option>
@@ -135,13 +136,14 @@ export function ResearchImagesPanel({
           disabled={loading || !hasContext}
           className="rounded-lg border border-accent/40 bg-accent/10 px-3 py-1.5 font-mono text-xs text-accent transition-colors hover:bg-accent/20 disabled:cursor-not-allowed disabled:opacity-40"
         >
-          {loading ? "Generating…" : "Generate from research"}
+          {loading ? "Building…" : "Build charts from numbers"}
         </button>
       </div>
       {!hasContext && (
         <p className="font-mono text-xs text-text-muted">
-          Run the pipeline through the research step to enable image prompts from
-          your notes.
+          Run the pipeline through the research step. We parse numbers from the
+          notes and fill bar / pie templates (QuickChart). No Gemini tokens for
+          images.
         </p>
       )}
       {error && (
@@ -192,12 +194,18 @@ export function ResearchImagesPanel({
                   loading="lazy"
                 />
                 <div className="space-y-1 p-3">
+                  <p className="font-mono text-[10px] uppercase tracking-wide text-accent">
+                    Data point
+                  </p>
+                  <p className="font-serif text-xs text-text-secondary">
+                    {a.dataPoint}
+                  </p>
                   <p className="font-serif text-sm text-text-primary">{a.alt}</p>
                   <p className="font-serif text-xs italic text-text-secondary">
                     {a.insight}
                   </p>
-                  <p className="font-mono text-[10px] text-text-muted line-clamp-2">
-                    {a.imagePrompt}
+                  <p className="font-mono text-[10px] text-text-muted">
+                    {a.templateLabel}
                   </p>
                 </div>
               </li>

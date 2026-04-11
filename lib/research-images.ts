@@ -1,10 +1,15 @@
 import type { ResearchImageAsset } from "@/lib/types";
 
-/** One Markdown block: small heading, image, italic insight. */
+/** One Markdown block: small heading, image, italic insight, quoted data point. */
 export function researchImageToMarkdownBlock(asset: ResearchImageAsset): string {
   const title = asset.alt.trim() || "Illustration";
   const alt = asset.alt.replace(/[\[\]]/g, "").trim() || "Illustration";
-  return `### ${title}\n\n![${alt}](${asset.url})\n\n*${asset.insight.trim()}*`;
+  const dp = asset.dataPoint.trim();
+  const quote =
+    dp.length > 0
+      ? `\n\n> ${dp.replace(/\n/g, " ")}`
+      : "";
+  return `### ${title}\n\n![${alt}](${asset.url})\n\n*${asset.insight.trim()}*${quote}`;
 }
 
 export function appendResearchImagesSection(
@@ -13,7 +18,7 @@ export function appendResearchImagesSection(
 ): string {
   if (assets.length === 0) return article;
   const body = assets.map(researchImageToMarkdownBlock).join("\n\n");
-  const section = `\n\n## Visual insights from research\n\n${body}\n`;
+  const section = `\n\n## Data points illustrated\n\n${body}\n`;
   const base = article.trimEnd();
   return base ? `${base}${section}` : section.trimStart();
 }

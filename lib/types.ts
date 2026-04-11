@@ -59,10 +59,13 @@ export interface ServerKeyStatus {
   serper: boolean;
 }
 
-/** Free Pollinations image URL plus caption from research (see /api/research-images). */
+/** Chart image URL plus caption from research (see /api/research-images — QuickChart templates). */
 export interface ResearchImageAsset {
   url: string;
+  /** Short excerpt from research that supplied the numeric values. */
+  dataPoint: string;
   alt: string;
   insight: string;
-  imagePrompt: string;
+  /** Fixed template id, e.g. "QuickChart · bar". */
+  templateLabel: string;
 }
