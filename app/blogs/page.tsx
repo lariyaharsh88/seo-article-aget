@@ -12,6 +12,7 @@ export const metadata = buildPageMetadata({
 });
 
 export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export default async function BlogsIndexPage() {
   noStore();
@@ -33,8 +34,10 @@ export default async function BlogsIndexPage() {
           role="alert"
           className="mb-8 rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 font-serif text-sm text-amber-100"
         >
-          Could not load articles right now (database unreachable). Refresh the
-          page in a few seconds.
+          Could not load articles right now (database unreachable). Refresh in a
+          few seconds. If this keeps happening, confirm{" "}
+          <span className="font-mono text-amber-200/90">DATABASE_URL</span> is set
+          on the host (pooler URL for Vercel) and the database is reachable.
         </div>
       ) : null}
       <header className="mb-10 border-b border-border pb-8">

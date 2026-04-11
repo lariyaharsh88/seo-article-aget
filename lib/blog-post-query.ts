@@ -17,9 +17,16 @@ export function normalizeBlogSlugParam(raw: string): string {
   }
 }
 
+/** Connection / pool / timeout issues worth retrying (cold start, pooler blips). */
 function isRetryablePrismaError(err: unknown): boolean {
   if (err instanceof Prisma.PrismaClientKnownRequestError) {
-    return ["P1001", "P1002", "P1017", "P2024"].includes(err.code);
+    return [
+      "P1001", // Can't reach database server
+      "P1002", // Connection timeout
+      "P1008", // Operations timed out
+      "P1017", // Server closed the connection
+      "P2024", // Timed out fetching a new connection from the pool
+    ].includes(err.code);
   }
   if (err instanceof Prisma.PrismaClientInitializationError) {
     return true;
@@ -27,7 +34,7 @@ function isRetryablePrismaError(err: unknown): boolean {
   return false;
 }
 
-const MAX_ATTEMPTS = 3;
+const MAX_ATTEMPTS = 5;
 
 export type PublishedBlogListItem = {
   id: string;
@@ -57,7 +64,7 @@ export async function listPublishedBlogPosts(): Promise<PublishedBlogListItem[]>
       });
     } catch (err) {
       if (attempt < MAX_ATTEMPTS && isRetryablePrismaError(err)) {
-        await sleep(80 * attempt);
+        await sleep(Math.min(120 * 2 ** (attempt - 1), 2000));
         continue;
       }
       throw err;
@@ -83,7 +90,7 @@ export async function findPublishedBlogPostBySlug(
       });
     } catch (err) {
       if (attempt < MAX_ATTEMPTS && isRetryablePrismaError(err)) {
-        await sleep(80 * attempt);
+        await sleep(Math.min(120 * 2 ** (attempt - 1), 2000));
         continue;
       }
       throw err;
