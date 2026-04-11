@@ -4,6 +4,7 @@ import { geminiText } from "@/lib/gemini";
 import { fetchArticlePlainText } from "@/lib/education-news/fetch-article-text";
 import { buildEducationNewsRepurposePrompt } from "@/lib/education-news/repurpose-prompt";
 import { ensureUniqueRepurposedSlug } from "@/lib/education-news/repurpose-news-slug";
+import { createAndStoreNewsHeroImage } from "@/lib/education-news/upload-news-hero-image";
 import { prisma } from "@/lib/prisma";
 import { getSiteUrl } from "@/lib/site-url";
 
@@ -110,6 +111,18 @@ export async function runRepurposeForArticleId(
         repurposedCanonicalUrl,
       },
     });
+
+    emit(96, "Publishing hero image to images CDN…");
+    try {
+      await createAndStoreNewsHeroImage({
+        articleId: id,
+        slug: repurposedSlug,
+        title: row.title,
+      });
+    } catch (imgErr) {
+      console.error("[education-news] hero image:", imgErr);
+    }
+
     try {
       revalidatePath("/news");
       revalidatePath(sitePath);

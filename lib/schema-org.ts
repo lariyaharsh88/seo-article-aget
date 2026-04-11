@@ -177,6 +177,7 @@ export function buildRepurposedNewsArticleSchema(
     | "repurposedSlug"
     | "repurposedAt"
     | "updatedAt"
+    | "repurposedImageUrl"
   >,
 ): Record<string, unknown> {
   const { base, websiteId, orgId } = siteRefs();
@@ -188,6 +189,7 @@ export function buildRepurposedNewsArticleSchema(
   const bcId = `${url}#breadcrumb`;
   const desc = `${post.title} — ${post.source}`.slice(0, 500);
   const published = post.repurposedAt?.toISOString() ?? post.updatedAt.toISOString();
+  const heroUrl = post.repurposedImageUrl?.trim();
 
   const graph: Record<string, unknown>[] = [
     {
@@ -200,6 +202,14 @@ export function buildRepurposedNewsArticleSchema(
       about: { "@id": orgId },
       breadcrumb: { "@id": bcId },
       mainEntity: { "@id": articleId },
+      ...(heroUrl
+        ? {
+            primaryImageOfPage: {
+              "@type": "ImageObject",
+              url: heroUrl,
+            },
+          }
+        : {}),
     },
     {
       "@type": "BreadcrumbList",
@@ -254,6 +264,18 @@ export function buildRepurposedNewsArticleSchema(
         url: post.url,
         name: `${post.source} (original)`,
       },
+      ...(heroUrl
+        ? {
+            image: [
+              {
+                "@type": "ImageObject",
+                url: heroUrl,
+                width: 1200,
+                height: 630,
+              },
+            ],
+          }
+        : {}),
     },
   ];
 

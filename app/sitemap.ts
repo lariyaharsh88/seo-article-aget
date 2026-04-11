@@ -68,7 +68,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
   ];
 
-  /* Blog: `app/blogs/sitemap.xml/route.ts`. News: `app/news/sitemap.ts` → `/news/sitemap.xml`. See robots.ts. */
+  /* Blog: `app/blogs/sitemap.xml/route.ts`. News (Google News XML): `app/news/sitemap.xml/route.ts`. See robots.ts. */
 
   return routes;
 }

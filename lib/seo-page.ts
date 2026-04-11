@@ -12,11 +12,18 @@ export function buildPageMetadata(opts: {
     publishedTime: string;
     modifiedTime: string;
   };
+  /** Absolute or same-origin hero image (e.g. news CDN) for OG / Twitter large card. */
+  ogImage?: string | null;
 }): Metadata {
   const base = getSiteUrl();
   const path = opts.path.startsWith("/") ? opts.path : `/${opts.path}`;
   const url = `${base}${path}`;
   const isArticle = Boolean(opts.article);
+  const hero = opts.ogImage?.trim();
+  const ogImages = hero
+    ? [{ url: hero, width: 1200, height: 630, alt: opts.title }]
+    : undefined;
+
   return {
     title: opts.title,
     description: opts.description,
@@ -34,11 +41,13 @@ export function buildPageMetadata(opts: {
             modifiedTime: opts.article.modifiedTime,
           }
         : {}),
+      ...(ogImages ? { images: ogImages } : {}),
     },
     twitter: {
-      card: "summary",
+      card: ogImages ? "summary_large_image" : "summary",
       title: opts.title,
       description: opts.description,
+      ...(ogImages ? { images: [hero!] } : {}),
     },
   };
 }

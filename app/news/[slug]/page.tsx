@@ -1,5 +1,6 @@
 import type { EducationNewsArticle } from "@prisma/client";
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { unstable_noStore as noStore } from "next/cache";
 import { notFound } from "next/navigation";
@@ -23,12 +24,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   let article:
     | { publishedTime: string; modifiedTime: string }
     | undefined;
+  let ogImage: string | null | undefined;
   const slug = normalizeNewsSlugParam(params.slug);
   try {
     const post = await findReadyRepurposedNewsBySlug(slug);
     if (post?.repurposedSlug?.trim()) {
       title = post.title;
       description = post.title.slice(0, 160);
+      ogImage = post.repurposedImageUrl?.trim() || undefined;
       if (post.repurposedAt) {
         article = {
           publishedTime: post.repurposedAt.toISOString(),
@@ -44,6 +47,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     description,
     path: `/news/${params.slug}`,
     article,
+    ogImage,
   });
 }
 
@@ -102,6 +106,17 @@ export default async function RepurposedNewsArticlePage({ params }: Props) {
           <h1 className="mt-3 font-display text-3xl text-text-primary sm:text-4xl md:text-5xl">
             {post.title}
           </h1>
+          {post.repurposedImageUrl?.trim() ? (
+            <Image
+              src={post.repurposedImageUrl.trim()}
+              alt={post.title}
+              width={1200}
+              height={630}
+              className="mt-6 h-auto w-full max-w-full rounded-xl border border-border object-cover"
+              sizes="(max-width: 768px) 100vw, 720px"
+              priority
+            />
+          ) : null}
           <p className="mt-4 font-mono text-[11px] text-text-muted">
             <a
               href={post.url}

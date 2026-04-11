@@ -62,6 +62,8 @@ model EducationNewsArticle {
   // URL on this site: /news/{repurposedSlug}; full URL stored for sharing / SEO.
   repurposedSlug          String? @unique
   repurposedCanonicalUrl  String?
+  // Hero/OG image on images CDN (e.g. images.rankflowhq.com) after Vercel Blob upload.
+  repurposedImageUrl String?
   // pending | processing | ready | error
   repurposeStatus    String    @default("pending")
   errorMessage       String?   @db.Text
