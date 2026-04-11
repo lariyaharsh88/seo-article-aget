@@ -7,6 +7,20 @@ import { BLOG_ADMIN_EMAIL } from "@/lib/blog-constants";
 import { ensureUniqueSlug, slugify } from "@/lib/blog-slug";
 import { prisma } from "@/lib/prisma";
 
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function isTransientPrismaError(err: unknown): boolean {
+  if (err instanceof Prisma.PrismaClientKnownRequestError) {
+    return ["P1001", "P1002", "P1017", "P2024"].includes(err.code);
+  }
+  if (err instanceof Prisma.PrismaClientInitializationError) {
+    return true;
+  }
+  return false;
+}
+
 function isAuthorized(email: string | null | undefined): boolean {
   return !!email && email.trim().toLowerCase() === BLOG_ADMIN_EMAIL;
 }
@@ -66,16 +80,33 @@ export async function POST(request: Request) {
   let slug = await ensureUniqueSlug(baseSlug);
   for (let attempt = 0; attempt < 8; attempt++) {
     try {
-      const post = await prisma.blogPost.create({
-        data: {
-          slug,
-          title,
-          excerpt,
-          content,
-          published: Boolean(body.published),
-          authorEmail: adminEmail!,
-        },
-      });
+      const post = await (async () => {
+        const maxDb = 4;
+        for (let dbTry = 0; dbTry < maxDb; dbTry++) {
+          try {
+            return await prisma.blogPost.create({
+              data: {
+                slug,
+                title,
+                excerpt,
+                content,
+                published: Boolean(body.published),
+                authorEmail: adminEmail!,
+              },
+            });
+          } catch (e) {
+            if (
+              dbTry < maxDb - 1 &&
+              isTransientPrismaError(e)
+            ) {
+              await sleep(120 * (dbTry + 1));
+              continue;
+            }
+            throw e;
+          }
+        }
+        throw new Error("createBlogPost: unreachable");
+      })();
       revalidatePath("/blogs");
       revalidatePath(`/blogs/${post.slug}`);
       return NextResponse.json(post);

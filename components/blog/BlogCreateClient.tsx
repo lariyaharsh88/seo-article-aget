@@ -32,6 +32,10 @@ function parseTopics(raw: string): string[] {
     .filter(Boolean);
 }
 
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 function postFromApiJson(data: unknown): BlogPost {
   if (typeof data !== "object" || data === null) {
     throw new Error("Invalid post response from server.");
@@ -80,14 +84,7 @@ export function BlogCreateClient({ initialPosts, loadError }: Props) {
   /** Batch: 1-based index and total while running multiple topics. */
   const [batchIndex, setBatchIndex] = useState(0);
   const [batchTotal, setBatchTotal] = useState(0);
-  /** After a multi-topic batch, allow publishing the last on-screen draft manually. */
-  const [postBatchDraftOk, setPostBatchDraftOk] = useState(false);
-
   const topicList = useMemo(() => parseTopics(topic), [topic]);
-
-  useEffect(() => {
-    setPostBatchDraftOk(false);
-  }, [topic]);
   const topicFirstLine = topic.trim().split("\n")[0]?.trim() ?? "";
   const primaryKeyword = topicFirstLine;
 
@@ -113,43 +110,69 @@ export function BlogCreateClient({ initialPosts, loadError }: Props) {
       content: string;
       published: boolean;
     }): Promise<BlogPost> => {
-      const res = await fetch("/api/blog", {
-        method: "POST",
-        credentials: "same-origin",
-        cache: "no-store",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: payload.title.trim(),
-          slug: payload.slug?.trim() || undefined,
-          excerpt: payload.excerpt?.trim() || undefined,
-          content: payload.content,
-          published: payload.published,
-        }),
+      const body = JSON.stringify({
+        title: payload.title.trim(),
+        slug: payload.slug?.trim() || undefined,
+        excerpt: payload.excerpt?.trim() || undefined,
+        content: payload.content,
+        published: payload.published,
       });
-      const raw = await res.text();
-      let data: unknown = null;
-      if (raw) {
+
+      const maxAttempts = 4;
+      let lastErr: Error | null = null;
+
+      for (let attempt = 0; attempt < maxAttempts; attempt++) {
         try {
-          data = JSON.parse(raw) as unknown;
-        } catch {
-          throw new Error(
-            res.ok
-              ? "Invalid response from server."
-              : `Server error (${res.status}). Try again.`,
-          );
+          const res = await fetch("/api/blog", {
+            method: "POST",
+            credentials: "same-origin",
+            cache: "no-store",
+            headers: { "Content-Type": "application/json" },
+            body,
+          });
+          const raw = await res.text();
+          let data: unknown = null;
+          if (raw) {
+            try {
+              data = JSON.parse(raw) as unknown;
+            } catch {
+              throw new Error(
+                res.ok
+                  ? "Invalid response from server."
+                  : `Server error (${res.status}). Try again.`,
+              );
+            }
+          }
+          if (res.ok) {
+            return postFromApiJson(data);
+          }
+          const msg =
+            typeof data === "object" &&
+            data !== null &&
+            "error" in data &&
+            typeof (data as { error: unknown }).error === "string"
+              ? (data as { error: string }).error
+              : `HTTP ${res.status}`;
+          lastErr = new Error(msg);
+          const retryable = [500, 502, 503, 504].includes(res.status);
+          if (retryable && attempt < maxAttempts - 1) {
+            await sleep(350 * (attempt + 1));
+            continue;
+          }
+          throw lastErr;
+        } catch (e) {
+          if (
+            attempt < maxAttempts - 1 &&
+            (e instanceof TypeError ||
+              (e instanceof Error && e.message.includes("fetch")))
+          ) {
+            await sleep(350 * (attempt + 1));
+            continue;
+          }
+          throw e instanceof Error ? e : new Error(String(e));
         }
       }
-      if (!res.ok) {
-        const msg =
-          typeof data === "object" &&
-          data !== null &&
-          "error" in data &&
-          typeof (data as { error: unknown }).error === "string"
-            ? (data as { error: string }).error
-            : `HTTP ${res.status}`;
-        throw new Error(msg);
-      }
-      return postFromApiJson(data);
+      throw lastErr ?? new Error("Save failed after retries.");
     },
     [],
   );
@@ -160,7 +183,6 @@ export function BlogCreateClient({ initialPosts, loadError }: Props) {
     if (topics.length === 0) return;
 
     setGenError(null);
-    setPostBatchDraftOk(false);
     setRunning(true);
     setDoneStages([]);
     setStage(null);
@@ -271,8 +293,8 @@ export function BlogCreateClient({ initialPosts, loadError }: Props) {
           const title = m?.metaTitle || firstLine;
           const excerpt = m?.metaDescription || "";
           const baseSlug = slugify(m?.urlSlug || m?.metaTitle || firstLine);
-          /** Disambiguate slugs inside one batch (same meta titles / collisions). */
-          const slug = `${baseSlug}-p${i + 1}`;
+          /** Per-item unique slug (batch order + time) to avoid collisions and duplicate rows on retry. */
+          const slug = `${baseSlug}-p${i + 1}-t${Date.now()}`;
 
           pushLog(
             `[Batch ${i + 1}/${topics.length}] Saving to database…`,
@@ -304,7 +326,6 @@ export function BlogCreateClient({ initialPosts, loadError }: Props) {
           `Batch finished with ${batchErrors.length} issue(s):\n${batchErrors.join("\n")}`,
         );
       }
-      setPostBatchDraftOk(true);
       router.refresh();
     } catch (e) {
       setGenError(
@@ -367,10 +388,9 @@ export function BlogCreateClient({ initialPosts, loadError }: Props) {
     }
   }
 
+  /** Manual publish only for a single topic (batch auto-saves each post; multi-topic + Publish would duplicate the last draft). */
   const showPublish =
-    !running &&
-    article.trim().length >= 10 &&
-    (topicList.length <= 1 || postBatchDraftOk);
+    !running && article.trim().length >= 10 && topicList.length <= 1;
 
   return (
     <div className="mx-auto min-w-0 max-w-6xl space-y-10 px-4 py-8 sm:py-10 md:px-6">

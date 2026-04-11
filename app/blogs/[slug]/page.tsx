@@ -33,34 +33,12 @@ export async function generateMetadata({ params }: Props) {
 export default async function BlogPostPage({ params }: Props) {
   noStore();
   let post: BlogPost | null = null;
-  let dbError = false;
   try {
     post = await findPublishedBlogPostBySlug(params.slug);
   } catch (err) {
     console.error("[blogs/[slug]] database error:", err);
-    dbError = true;
-  }
-
-  if (dbError) {
-    return (
-      <main className="mx-auto min-w-0 max-w-3xl px-4 py-8 sm:py-10 md:px-6">
-        <p className="font-mono text-xs">
-          <Link
-            href="/blogs"
-            className="text-text-muted transition-colors hover:text-accent"
-          >
-            ← All posts
-          </Link>
-        </p>
-        <h1 className="mt-6 font-display text-2xl text-text-primary">
-          Could not load this article
-        </h1>
-        <p className="mt-3 font-serif text-sm text-text-secondary">
-          The database was unreachable or returned an error. Refresh the page or
-          try again in a moment.
-        </p>
-      </main>
-    );
+    /** Real HTTP error via segment error.tsx — avoids Soft 404 (200 + error copy) in Search Console. */
+    throw err instanceof Error ? err : new Error("Database error");
   }
 
   if (!post) {
