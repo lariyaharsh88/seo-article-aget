@@ -4,11 +4,23 @@ import type { BlogPost } from "@prisma/client";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { ArticleRenderer } from "@/components/ArticleRenderer";
+import { ArticleSeoScorecard } from "@/components/ArticleSeoScorecard";
+import { LiveLog } from "@/components/LiveLog";
+import { PipelineProgress } from "@/components/PipelineProgress";
+import { runArticlePipeline } from "@/lib/article-pipeline";
+import { computeArticleSeoScore } from "@/lib/article-seo-score";
+import { slugify } from "@/lib/blog-slug";
+import { PIPELINE_STAGES } from "@/lib/pipeline-stages";
+import type { Keyword, SeoMeta } from "@/lib/types";
 
 type Props = {
   initialPosts: BlogPost[];
 };
+
+const DEFAULT_AUDIENCE =
+  "Typical Indian English readers interested in clear, practical English.";
 
 export function BlogCreateClient({ initialPosts }: Props) {
   const router = useRouter();
@@ -17,27 +29,127 @@ export function BlogCreateClient({ initialPosts }: Props) {
   useEffect(() => {
     setPosts(initialPosts);
   }, [initialPosts]);
-  const [title, setTitle] = useState("");
-  const [slug, setSlug] = useState("");
-  const [excerpt, setExcerpt] = useState("");
-  const [content, setContent] = useState("");
+
+  const [topic, setTopic] = useState("");
+  const [audience, setAudience] = useState(DEFAULT_AUDIENCE);
+  const [running, setRunning] = useState(false);
+  const [stage, setStage] = useState<string | null>(null);
+  const [doneStages, setDoneStages] = useState<string[]>([]);
+  const [logLines, setLogLines] = useState<string[]>([]);
+  const [article, setArticle] = useState("");
+  const [meta, setMeta] = useState<SeoMeta | null>(null);
+  const [keywords, setKeywords] = useState<Keyword[]>([]);
+  const [genError, setGenError] = useState<string | null>(null);
+
+  const [pubTitle, setPubTitle] = useState("");
+  const [pubSlug, setPubSlug] = useState("");
+  const [pubExcerpt, setPubExcerpt] = useState("");
   const [published, setPublished] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
-  async function onSubmit(e: React.FormEvent) {
+  const topicFirstLine = topic.trim().split("\n")[0]?.trim() ?? "";
+  const primaryKeyword = topicFirstLine;
+
+  const seoScoreResult = useMemo(
+    () =>
+      computeArticleSeoScore(article, meta, keywords, {
+        primaryKeyword,
+        topicFirstLine,
+      }),
+    [article, meta, keywords, primaryKeyword, topicFirstLine],
+  );
+
+  const pushLog = useCallback((msg: string) => {
+    const line = `[${new Date().toLocaleTimeString()}] ${msg}`;
+    setLogLines((prev) => [...prev, line]);
+  }, []);
+
+  const runGenerator = useCallback(async () => {
+    if (!topic.trim() || running) return;
+    setGenError(null);
+    setRunning(true);
+    setDoneStages([]);
+    setStage(null);
+    setLogLines([]);
+    setArticle("");
+    setMeta(null);
+    setKeywords([]);
+    setPubTitle("");
+    setPubSlug("");
+    setPubExcerpt("");
+
+    const markDone = (id: string) => {
+      setDoneStages((prev) => (prev.includes(id) ? prev : [...prev, id]));
+    };
+
+    try {
+      const result = await runArticlePipeline(
+        {
+          topic,
+          audience,
+          intent: "informational",
+          sourceUrl: "",
+          primaryKeyword,
+          searchConsoleQueries: [],
+          googleSuggestions: [],
+        },
+        {
+          onStage: setStage,
+          onDoneStage: markDone,
+          onLog: pushLog,
+          onKeywords: setKeywords,
+          onSources: () => {},
+          onPaas: () => {},
+          onFeaturedSnippet: () => {},
+          onArticleDelta: (delta) => setArticle((prev) => prev + delta),
+          onMeta: setMeta,
+          onResearchTopic: () => {},
+          onResearchContext: () => {},
+        },
+      );
+
+      const m = result.meta;
+      const firstLine = topic.trim().split("\n")[0]?.trim() || "Post";
+      if (m) {
+        setPubTitle(m.metaTitle || firstLine);
+        setPubExcerpt(m.metaDescription || "");
+        setPubSlug(slugify(m.urlSlug || m.metaTitle || firstLine));
+      } else {
+        setPubTitle(firstLine);
+        setPubExcerpt("");
+        setPubSlug(slugify(firstLine));
+      }
+
+      if (!result.article.trim()) {
+        setGenError(
+          "Article generation produced no text. Check API keys and try again.",
+        );
+      }
+    } catch (e) {
+      setGenError(
+        e instanceof Error ? e.message : "Article pipeline failed unexpectedly.",
+      );
+    } finally {
+      setRunning(false);
+      setStage(null);
+    }
+  }, [topic, audience, primaryKeyword, running, pushLog]);
+
+  async function onPublish(e: React.FormEvent) {
     e.preventDefault();
-    setError(null);
+    if (!article.trim() || !pubTitle.trim()) return;
+    setSaveError(null);
     setSaving(true);
     try {
       const res = await fetch("/api/blog", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          title,
-          slug: slug.trim() || undefined,
-          excerpt: excerpt.trim() || undefined,
-          content,
+          title: pubTitle.trim(),
+          slug: pubSlug.trim() || undefined,
+          excerpt: pubExcerpt.trim() || undefined,
+          content: article,
           published,
         }),
       });
@@ -52,31 +164,39 @@ export function BlogCreateClient({ initialPosts }: Props) {
             : `HTTP ${res.status}`;
         throw new Error(msg);
       }
-      setTitle("");
-      setSlug("");
-      setExcerpt("");
-      setContent("");
-      setPublished(true);
       router.refresh();
+      setTopic("");
+      setArticle("");
+      setMeta(null);
+      setKeywords([]);
+      setPubTitle("");
+      setPubSlug("");
+      setPubExcerpt("");
+      setDoneStages([]);
+      setLogLines([]);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Save failed");
+      setSaveError(err instanceof Error ? err.message : "Save failed");
     } finally {
       setSaving(false);
     }
   }
 
+  const showPublish = !running && article.trim().length >= 10;
+
   return (
-    <div className="mx-auto max-w-4xl space-y-10 px-4 py-10 md:px-6">
+    <div className="mx-auto max-w-6xl space-y-10 px-4 py-10 md:px-6">
       <div className="flex flex-wrap items-start justify-between gap-4 border-b border-border pb-6">
         <div>
           <p className="font-mono text-xs uppercase tracking-[0.2em] text-accent">
-            CMS
+            Blog CMS · Article generator
           </p>
           <h1 className="font-display text-3xl text-text-primary">
-            Create blog post
+            Create a blog post
           </h1>
-          <p className="mt-2 font-serif text-sm text-text-secondary">
-            Markdown-friendly body. Slug is generated from the title if left empty.
+          <p className="mt-2 max-w-2xl font-serif text-sm text-text-secondary">
+            Enter a topic and run the same pipeline as the SEO article tool
+            (keywords, research, SERP, outline, streaming article, SEO audit).
+            Then publish to the blog.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -85,6 +205,12 @@ export function BlogCreateClient({ initialPosts }: Props) {
             className="rounded-lg border border-border px-3 py-2 font-mono text-xs text-text-secondary hover:border-accent hover:text-accent"
           >
             View blog
+          </Link>
+          <Link
+            href="/seo-agent"
+            className="rounded-lg border border-border px-3 py-2 font-mono text-xs text-text-muted hover:text-accent"
+          >
+            Full article tool
           </Link>
           <button
             type="button"
@@ -96,75 +222,142 @@ export function BlogCreateClient({ initialPosts }: Props) {
         </div>
       </div>
 
-      <form onSubmit={(e) => void onSubmit(e)} className="space-y-5">
+      <section className="space-y-4 rounded-xl border border-border bg-surface/40 p-6">
+        <h2 className="font-display text-lg text-text-primary">1. Topic</h2>
         <label className="block space-y-2">
           <span className="font-mono text-xs uppercase text-text-muted">
-            Title
+            Topic / brief (required)
           </span>
-          <input
-            required
-            className="w-full rounded-lg border border-border bg-background px-3 py-2 font-serif text-text-primary focus:outline-none focus:ring-2 focus:ring-accent"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Post title"
+          <textarea
+            className="custom-scrollbar min-h-[100px] w-full rounded-lg border border-border bg-background px-3 py-2 font-serif text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-accent"
+            placeholder="e.g. Best MBA colleges in India for working professionals"
+            value={topic}
+            onChange={(e) => setTopic(e.target.value)}
+            disabled={running}
           />
         </label>
         <label className="block space-y-2">
           <span className="font-mono text-xs uppercase text-text-muted">
-            Slug (optional)
-          </span>
-          <input
-            className="w-full rounded-lg border border-border bg-background px-3 py-2 font-mono text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-accent"
-            value={slug}
-            onChange={(e) => setSlug(e.target.value)}
-            placeholder="auto-from-title"
-          />
-        </label>
-        <label className="block space-y-2">
-          <span className="font-mono text-xs uppercase text-text-muted">
-            Excerpt (optional)
+            Audience (optional, passed to the generator)
           </span>
           <textarea
             className="min-h-[72px] w-full rounded-lg border border-border bg-background px-3 py-2 font-serif text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-accent"
-            value={excerpt}
-            onChange={(e) => setExcerpt(e.target.value)}
-            placeholder="Short summary for listings"
+            value={audience}
+            onChange={(e) => setAudience(e.target.value)}
+            disabled={running}
           />
         </label>
-        <label className="block space-y-2">
-          <span className="font-mono text-xs uppercase text-text-muted">
-            Content
-          </span>
-          <textarea
-            required
-            className="custom-scrollbar min-h-[280px] w-full rounded-lg border border-border bg-background px-3 py-2 font-mono text-sm leading-relaxed text-text-primary focus:outline-none focus:ring-2 focus:ring-accent"
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            placeholder="Write in Markdown (headings, lists, links…)"
-          />
-        </label>
-        <label className="flex cursor-pointer items-center gap-3 font-mono text-xs text-text-secondary">
-          <input
-            type="checkbox"
-            checked={published}
-            onChange={(e) => setPublished(e.target.checked)}
-            className="rounded border-border"
-          />
-          Published (visible on /blogs)
-        </label>
-        {error && (
+        {genError && (
           <p className="rounded-lg border border-red-500/40 bg-red-950/30 px-4 py-3 font-mono text-sm text-red-200">
-            {error}
+            {genError}
           </p>
         )}
         <button
-          type="submit"
-          disabled={saving}
-          className="rounded-lg bg-accent px-6 py-2.5 font-mono text-sm font-semibold text-background transition-opacity enabled:hover:opacity-90 disabled:opacity-40"
+          type="button"
+          onClick={() => void runGenerator()}
+          disabled={running || !topic.trim()}
+          className="rounded-lg bg-accent px-6 py-2.5 font-mono text-sm font-semibold text-background transition-opacity enabled:hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
         >
-          {saving ? "Publishing…" : "Publish post"}
+          {running ? "Generating article…" : "Run full article pipeline"}
         </button>
-      </form>
+      </section>
+
+      {(running || logLines.length > 0) && (
+        <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
+          <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start">
+            <PipelineProgress
+              stages={PIPELINE_STAGES}
+              currentStage={stage}
+              doneStages={doneStages}
+            />
+          </aside>
+          <div className="space-y-4">
+            <h2 className="font-display text-lg text-text-primary">Live log</h2>
+            <LiveLog lines={logLines} />
+          </div>
+        </div>
+      )}
+
+      {(running || article) && (
+        <section className="space-y-3">
+          <h2 className="font-display text-lg text-text-primary">
+            {running ? "Draft (streaming)" : "Draft preview"}
+          </h2>
+          <div className="custom-scrollbar max-h-[55vh] overflow-y-auto rounded-xl border border-border bg-surface/60 p-4">
+            <ArticleRenderer markdown={article} streaming={running} />
+          </div>
+        </section>
+      )}
+
+      {showPublish && (
+        <>
+          <ArticleSeoScorecard result={seoScoreResult} compact />
+          <section className="space-y-4 rounded-xl border border-accent/30 bg-accent/5 p-6">
+            <h2 className="font-display text-lg text-text-primary">
+              2. Publish to blog
+            </h2>
+            <p className="font-serif text-sm text-text-secondary">
+              Titles and excerpt are filled from the SEO audit when available.
+              Edit before publishing.
+            </p>
+            <form onSubmit={(e) => void onPublish(e)} className="space-y-4">
+              <label className="block space-y-2">
+                <span className="font-mono text-xs uppercase text-text-muted">
+                  Post title
+                </span>
+                <input
+                  required
+                  className="w-full rounded-lg border border-border bg-background px-3 py-2 font-serif text-text-primary focus:outline-none focus:ring-2 focus:ring-accent"
+                  value={pubTitle}
+                  onChange={(e) => setPubTitle(e.target.value)}
+                />
+              </label>
+              <label className="block space-y-2">
+                <span className="font-mono text-xs uppercase text-text-muted">
+                  URL slug
+                </span>
+                <input
+                  className="w-full rounded-lg border border-border bg-background px-3 py-2 font-mono text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-accent"
+                  value={pubSlug}
+                  onChange={(e) => setPubSlug(e.target.value)}
+                  placeholder="auto-from-title"
+                />
+              </label>
+              <label className="block space-y-2">
+                <span className="font-mono text-xs uppercase text-text-muted">
+                  Excerpt (listing)
+                </span>
+                <textarea
+                  className="min-h-[80px] w-full rounded-lg border border-border bg-background px-3 py-2 font-serif text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-accent"
+                  value={pubExcerpt}
+                  onChange={(e) => setPubExcerpt(e.target.value)}
+                />
+              </label>
+              <label className="flex cursor-pointer items-center gap-3 font-mono text-xs text-text-secondary">
+                <input
+                  type="checkbox"
+                  checked={published}
+                  onChange={(e) => setPublished(e.target.checked)}
+                  className="rounded border-border"
+                />
+                Published (visible on /blogs)
+              </label>
+              {saveError && (
+                <p className="rounded-lg border border-red-500/40 bg-red-950/30 px-4 py-3 font-mono text-sm text-red-200">
+                  {saveError}
+                </p>
+              )}
+              <button
+                type="submit"
+                disabled={saving || !article.trim()}
+                className="rounded-lg bg-accent px-6 py-2.5 font-mono text-sm font-semibold text-background transition-opacity enabled:hover:opacity-90 disabled:opacity-40"
+              >
+                {saving ? "Publishing…" : "Publish blog post"}
+              </button>
+            </form>
+          </section>
+        </>
+      )}
 
       <section className="border-t border-border pt-8">
         <h2 className="font-display text-xl text-text-primary">Your posts</h2>

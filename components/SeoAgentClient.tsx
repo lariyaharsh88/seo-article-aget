@@ -15,7 +15,7 @@ import { ArticleSeoScorecard } from "@/components/ArticleSeoScorecard";
 import { TopicForm } from "@/components/TopicForm";
 import { AdSenseSlot } from "@/components/AdSenseSlot";
 import { ADSENSE_SLOTS } from "@/lib/adsense-config";
-import { isKeywordRecord } from "@/lib/keyword-guards";
+import { runArticlePipeline } from "@/lib/article-pipeline";
 import { computeArticleSeoScore } from "@/lib/article-seo-score";
 import { PIPELINE_STAGES } from "@/lib/pipeline-stages";
 import type { GscQueryRow } from "@/lib/gsc-queries";
@@ -44,20 +44,8 @@ const ArticleEditor = dynamic(
 
 type TabId = "article" | "score" | "seo" | "keywords" | "sources" | "log";
 
-function buildHeaders(): HeadersInit {
-  return {
-    "Content-Type": "application/json",
-  };
-}
-
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null;
-}
-
-function isFeaturedSnippet(v: unknown): v is FeaturedSnippet {
-  if (typeof v !== "object" || v === null) return false;
-  const o = v as FeaturedSnippet;
-  return typeof o.text === "string" && o.text.trim().length > 0;
 }
 
 export function SeoAgentClient() {
@@ -232,339 +220,36 @@ export function SeoAgentClient() {
     setStoredResearchTopic("");
     setTab("article");
 
-    const headers = buildHeaders();
-    let keywordList: Keyword[] = [];
-    let researchContext = "";
-    let sourcesList: Source[] = [];
-    let organic = "";
-    let paasList: string[] = [];
-    let relatedList: string[] = [];
-    let queriesList: string[] = [];
-    let outlineText = "";
-    let articleBody = "";
-
     const markDone = (id: string) => {
       setDoneStages((prev) => (prev.includes(id) ? prev : [...prev, id]));
     };
 
     try {
-      let workingTopic = input.topic.trim();
-      if (!workingTopic && input.sourceUrl.trim()) {
-        pushLog("Brief: resolving title from URL…");
-        try {
-          const metaRes = await fetch(
-            `/api/page-meta?url=${encodeURIComponent(input.sourceUrl.trim())}`,
-          );
-          const meta: unknown = await metaRes.json();
-          if (
-            metaRes.ok &&
-            isRecord(meta) &&
-            typeof meta.title === "string" &&
-            meta.title.trim()
-          ) {
-            workingTopic = meta.title.trim();
-          } else {
-            workingTopic = input.sourceUrl.trim();
-          }
-        } catch {
-          workingTopic = input.sourceUrl.trim();
-        }
-        pushLog(`Brief: using “${workingTopic.slice(0, 72)}${workingTopic.length > 72 ? "…" : ""}”.`);
-      }
-
-      setStage("keywords");
-      pushLog("Keywords: requesting Serper + Gemini…");
-      try {
-        const res = await fetch("/api/keywords", {
-          method: "POST",
-          headers,
-          body: JSON.stringify({
-            topic: workingTopic,
-            intent: input.intent,
-            audience: input.audience,
-            sourceUrl: input.sourceUrl.trim(),
-            primaryKeyword: input.primaryKeyword.trim(),
-            searchConsoleQueries: gscRows.map((r) => r.query),
-            googleSuggestions,
-          }),
-        });
-        const data: unknown = await res.json();
-        if (!res.ok) {
-          const msg =
-            isRecord(data) && typeof data.error === "string"
-              ? data.error
-              : `HTTP ${res.status}`;
-          throw new Error(msg);
-        }
-        if (isRecord(data) && Array.isArray(data.keywords)) {
-          keywordList = data.keywords.filter(isKeywordRecord);
-        }
-        setKeywords(keywordList);
-        markDone("keywords");
-        pushLog(`Keywords: ${keywordList.length} items.`);
-      } catch (e) {
-        pushLog(
-          `Keywords: degraded — ${e instanceof Error ? e.message : "error"}`,
-        );
-      }
-
-      setStage("research");
-      pushLog("Research: Tavily deep + stats pass…");
-      try {
-        const res = await fetch("/api/research", {
-          method: "POST",
-          headers,
-          body: JSON.stringify({
-            topic: workingTopic,
-            sourceUrl: input.sourceUrl.trim() || undefined,
-          }),
-        });
-        const data: unknown = await res.json();
-        if (!res.ok) {
-          const msg =
-            isRecord(data) && typeof data.error === "string"
-              ? data.error
-              : `HTTP ${res.status}`;
-          throw new Error(msg);
-        }
-        if (isRecord(data)) {
-          researchContext =
-            typeof data.context === "string" ? data.context : "";
-          if (Array.isArray(data.results)) {
-            sourcesList = data.results.filter(
-              (s): s is Source =>
-                typeof s === "object" &&
-                s !== null &&
-                typeof (s as Source).url === "string",
-            );
-          }
-        }
-        setSources(sourcesList);
-        setStoredResearchContext(researchContext);
-        setStoredResearchTopic(workingTopic);
-        markDone("research");
-        pushLog(`Research: ${sourcesList.length} unique sources.`);
-      } catch (e) {
-        pushLog(
-          `Research: degraded — ${e instanceof Error ? e.message : "error"}`,
-        );
-      }
-
-      setStage("serp");
-      pushLog("SERP: organic, PAA, related…");
-      try {
-        const res = await fetch("/api/serp", {
-          method: "POST",
-          headers,
-          body: JSON.stringify({ topic: workingTopic }),
-        });
-        const data: unknown = await res.json();
-        if (!res.ok) {
-          const msg =
-            isRecord(data) && typeof data.error === "string"
-              ? data.error
-              : `HTTP ${res.status}`;
-          throw new Error(msg);
-        }
-        let serpFeatured: FeaturedSnippet | null = null;
-        if (isRecord(data)) {
-          organic = typeof data.organic === "string" ? data.organic : "";
-          if (Array.isArray(data.paas)) {
-            paasList = data.paas.filter(
-              (p): p is string => typeof p === "string",
-            );
-          }
-          if (Array.isArray(data.related)) {
-            relatedList = data.related.filter(
-              (p): p is string => typeof p === "string",
-            );
-          }
-          if (isFeaturedSnippet(data.featuredSnippet)) {
-            serpFeatured = data.featuredSnippet;
-          }
-        }
-        setFeaturedSnippet(serpFeatured);
-        setPaas(paasList);
-        markDone("serp");
-        pushLog(`SERP: ${paasList.length} PAA questions.`);
-      } catch (e) {
-        pushLog(`SERP: degraded — ${e instanceof Error ? e.message : "error"}`);
-      }
-
-      setStage("queries");
-      pushLog("Queries: clustering searcher phrasing…");
-      try {
-        const res = await fetch("/api/queries", {
-          method: "POST",
-          headers,
-          body: JSON.stringify({
-            topic: workingTopic,
-            related: relatedList,
-            paas: paasList,
-          }),
-        });
-        const data: unknown = await res.json();
-        if (!res.ok) {
-          const msg =
-            isRecord(data) && typeof data.error === "string"
-              ? data.error
-              : `HTTP ${res.status}`;
-          throw new Error(msg);
-        }
-        if (isRecord(data) && Array.isArray(data.queries)) {
-          queriesList = data.queries.filter(
-            (q): q is string => typeof q === "string",
-          );
-        }
-        markDone("queries");
-        pushLog(`Queries: ${queriesList.length} clustered.`);
-      } catch (e) {
-        queriesList = [...relatedList, ...paasList].slice(0, 10);
-        pushLog(
-          `Queries: degraded — ${e instanceof Error ? e.message : "error"}`,
-        );
-        markDone("queries");
-      }
-
-      setStage("outline");
-      pushLog("Outline: Gemini structural pass…");
-      try {
-        const res = await fetch("/api/outline", {
-          method: "POST",
-          headers,
-          body: JSON.stringify({
-            topic: workingTopic,
-            audience: input.audience,
-            intent: input.intent,
-            keywords: keywordList,
-            researchContext,
-            serpContext: organic,
-            paas: paasList,
-            queries: queriesList,
-          }),
-        });
-        const data: unknown = await res.json();
-        if (!res.ok) {
-          const msg =
-            isRecord(data) && typeof data.error === "string"
-              ? data.error
-              : `HTTP ${res.status}`;
-          throw new Error(msg);
-        }
-        outlineText =
-          isRecord(data) && typeof data.outline === "string"
-            ? data.outline
-            : "";
-        markDone("outline");
-        pushLog("Outline: ready.");
-      } catch (e) {
-        outlineText = `# ${workingTopic}\n\n## Introduction\n### Hook\n### Scope\n`;
-        pushLog(
-          `Outline: degraded — ${e instanceof Error ? e.message : "error"}`,
-        );
-        markDone("outline");
-      }
-
-      setStage("article");
-      pushLog("Article: streaming from Gemini…");
-      try {
-        const res = await fetch("/api/article", {
-          method: "POST",
-          headers,
-          body: JSON.stringify({
-            topic: workingTopic,
-            audience: input.audience,
-            intent: input.intent,
-            keywords: keywordList,
-            researchContext,
-            outlineText,
-            paas: paasList,
-            searchConsoleQueries: gscRows.map((r) => r.query),
-            googleSuggestions,
-          }),
-        });
-        if (!res.ok) {
-          const text = await res.text();
-          throw new Error(text.slice(0, 200) || `HTTP ${res.status}`);
-        }
-        const reader = res.body?.getReader();
-        if (!reader) throw new Error("No response stream");
-        const decoder = new TextDecoder();
-        let buffer = "";
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          buffer += decoder.decode(value, { stream: true });
-          const parts = buffer.split("\n\n");
-          buffer = parts.pop() ?? "";
-          for (const block of parts) {
-            const line = block.trim();
-            if (!line.startsWith("data:")) continue;
-            const raw = line.slice(5).trim();
-            if (raw === "[DONE]") continue;
-            let parsed: { text?: string; error?: string } | null = null;
-            try {
-              parsed = JSON.parse(raw) as { text?: string; error?: string };
-            } catch {
-              continue;
-            }
-            if (parsed?.error) throw new Error(parsed.error);
-            if (parsed?.text) {
-              articleBody += parsed.text;
-              setArticle((prev) => prev + parsed.text);
-            }
-          }
-        }
-        markDone("article");
-        pushLog("Article: stream complete.");
-        setArticleEditorEpoch((n) => n + 1);
-      } catch (e) {
-        pushLog(
-          `Article: failed — ${e instanceof Error ? e.message : "error"}`,
-        );
-      }
-
-      setStage("audit");
-      pushLog("Audit: SEO meta JSON…");
-      try {
-        const focus =
-          keywordList.find((k) => k.type === "primary")?.keyword ??
-          workingTopic;
-        const res = await fetch("/api/audit", {
-          method: "POST",
-          headers,
-          body: JSON.stringify({
-            topic: workingTopic,
-            article: articleBody,
-            focusKeyword: focus,
-          }),
-        });
-        const data: unknown = await res.json();
-        if (!res.ok) {
-          const msg =
-            isRecord(data) && typeof data.error === "string"
-              ? data.error
-              : `HTTP ${res.status}`;
-          throw new Error(msg);
-        }
-        if (
-          isRecord(data) &&
-          typeof data.meta === "object" &&
-          data.meta !== null
-        ) {
-          const m = data.meta as SeoMeta;
-          setMeta(m);
-        }
-        markDone("audit");
-        pushLog("Audit: meta package ready.");
-      } catch (e) {
-        pushLog(
-          `Audit: degraded — ${e instanceof Error ? e.message : "error"}`,
-        );
-      }
-
-      setStage(null);
-      pushLog("Pipeline finished.");
+      await runArticlePipeline(
+        {
+          topic: input.topic,
+          audience: input.audience,
+          intent: input.intent,
+          sourceUrl: input.sourceUrl,
+          primaryKeyword: input.primaryKeyword,
+          searchConsoleQueries: gscRows.map((r) => r.query),
+          googleSuggestions,
+        },
+        {
+          onStage: setStage,
+          onDoneStage: markDone,
+          onLog: pushLog,
+          onKeywords: setKeywords,
+          onSources: setSources,
+          onPaas: setPaas,
+          onFeaturedSnippet: setFeaturedSnippet,
+          onArticleDelta: (delta) => setArticle((prev) => prev + delta),
+          onMeta: setMeta,
+          onResearchTopic: setStoredResearchTopic,
+          onResearchContext: setStoredResearchContext,
+        },
+      );
+      setArticleEditorEpoch((n) => n + 1);
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Unexpected pipeline error";
       setError(msg);

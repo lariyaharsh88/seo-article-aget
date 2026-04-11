@@ -8,7 +8,8 @@ import { buildPageMetadata } from "@/lib/seo-page";
 
 export const metadata = buildPageMetadata({
   title: "Blog CMS",
-  description: "Create and publish blog posts (admin only).",
+  description:
+    "Run the full article generator from a topic, then publish to the blog (admin only).",
   path: "/blog-create",
 });
 
