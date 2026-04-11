@@ -3,6 +3,7 @@ import Link from "next/link";
 const nav = [
   { href: "/", label: "Home" },
   { href: "/seo-agent", label: "Article pipeline" },
+  { href: "/ai-seo-toolkit", label: "AI SEO Toolkit" },
   { href: "/off-page-seo", label: "Off-page SEO" },
   { href: "/education-trends", label: "Education trends" },
   { href: "/education-news", label: "Education news" },

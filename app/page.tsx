@@ -7,7 +7,7 @@ import { SITE_DESCRIPTION } from "@/lib/seo-site";
 
 export const metadata: Metadata = buildPageMetadata({
   title: "Tools",
-  description: `Browse RankFlowHQ tools: article pipeline, off-page outreach, education Google Trends, and education news. ${SITE_DESCRIPTION}`,
+  description: `Browse RankFlowHQ tools: article pipeline, AI SEO Toolkit, off-page outreach, education Google Trends, and education news. ${SITE_DESCRIPTION}`,
   path: "/",
 });
 
@@ -18,6 +18,13 @@ const tools = [
     tag: "Gemini · Tavily · Serper",
     description:
       "From topic and SERP signals to a researched, cited long-form draft: keywords, outline, streaming article, SEO package, and SVG infographics from your data.",
+  },
+  {
+    href: "/ai-seo-toolkit",
+    title: "AI SEO Toolkit",
+    tag: "SQLite · OpenRouter",
+    description:
+      "MVP: AI visibility tracking (brand in LLM answers), prompt mining (Google suggest + AI questions), and AEO content optimizer with local scoring.",
   },
   {
     href: "/off-page-seo",

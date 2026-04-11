@@ -1,0 +1,37 @@
+// PostgreSQL (Supabase, Neon, etc.). Use pooled URL for the app + direct URL for migrations.
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model VisibilityLog {
+  id           Int      @id @default(autoincrement())
+  keyword      String
+  domain       String
+  model        String
+  mentioned    Boolean
+  position     Int?
+  responseText String   @db.Text
+  createdAt    DateTime @default(now())
+}
+
+model PromptQuery {
+  id        Int      @id @default(autoincrement())
+  query     String
+  source    String
+  createdAt DateTime @default(now())
+}
+
+model OptimizedContent {
+  id               Int      @id @default(autoincrement())
+  keyword          String
+  originalContent  String   @db.Text
+  optimizedContent String   @db.Text
+  score            Int
+  createdAt        DateTime @default(now())
+}

@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { ArticleCopyBar } from "@/components/ArticleCopyBar";
 import { ArticleRenderer } from "@/components/ArticleRenderer";
 import { ResearchImagesPanel } from "@/components/ResearchImagesPanel";
@@ -11,10 +11,12 @@ import { LiveLog } from "@/components/LiveLog";
 import { PipelineProgress } from "@/components/PipelineProgress";
 import { SeoPackage } from "@/components/SeoPackage";
 import { SourcesList } from "@/components/SourcesList";
+import { ArticleSeoScorecard } from "@/components/ArticleSeoScorecard";
 import { TopicForm } from "@/components/TopicForm";
 import { AdSenseSlot } from "@/components/AdSenseSlot";
 import { ADSENSE_SLOTS } from "@/lib/adsense-config";
 import { isKeywordRecord } from "@/lib/keyword-guards";
+import { computeArticleSeoScore } from "@/lib/article-seo-score";
 import { PIPELINE_STAGES } from "@/lib/pipeline-stages";
 import type { GscQueryRow } from "@/lib/gsc-queries";
 import type {
@@ -40,7 +42,7 @@ const ArticleEditor = dynamic(
   },
 );
 
-type TabId = "article" | "seo" | "keywords" | "sources" | "log";
+type TabId = "article" | "score" | "seo" | "keywords" | "sources" | "log";
 
 function buildHeaders(): HeadersInit {
   return {
@@ -108,6 +110,20 @@ export function SeoAgentClient() {
 
   const canRun =
     Boolean(input.topic.trim() || input.sourceUrl.trim()) && !running;
+
+  const topicFirstLine =
+    input.topic.trim().split("\n")[0]?.trim() ?? "";
+
+  const seoScoreResult = useMemo(
+    () =>
+      computeArticleSeoScore(article, meta, keywords, {
+        primaryKeyword: input.primaryKeyword,
+        topicFirstLine,
+      }),
+    [article, meta, keywords, input.primaryKeyword, topicFirstLine],
+  );
+
+  const showSeoScore = article.trim().length >= 40 && !running;
 
   const handleFetchSearchConsole = useCallback(async () => {
     setLoadingGsc(true);
@@ -561,6 +577,7 @@ export function SeoAgentClient() {
 
   const tabs: { id: TabId; label: string }[] = [
     { id: "article", label: "Article" },
+    { id: "score", label: "SEO score" },
     { id: "seo", label: "SEO package" },
     { id: "keywords", label: "Keywords" },
     { id: "sources", label: "Sources" },
@@ -702,8 +719,23 @@ export function SeoAgentClient() {
                       onChange={setArticle}
                     />
                   )}
+                  {showSeoScore ? (
+                    <div className="mt-6">
+                      <ArticleSeoScorecard result={seoScoreResult} compact />
+                    </div>
+                  ) : null}
                 </div>
               )}
+              {tab === "score" &&
+                (showSeoScore ? (
+                  <ArticleSeoScorecard result={seoScoreResult} />
+                ) : (
+                  <p className="font-serif text-text-secondary">
+                    Add or generate article text first (about 40+ characters). Scores
+                    use your markdown, the SEO package from the audit stage when
+                    available, and your keyword list.
+                  </p>
+                ))}
               {tab === "seo" && <SeoPackage meta={meta} article={article} />}
               {tab === "keywords" && (
                 <KeywordsPanel
