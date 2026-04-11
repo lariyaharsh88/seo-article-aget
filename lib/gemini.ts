@@ -13,10 +13,28 @@ const MODEL_CANDIDATES = [
  * If `GEMINI_MODEL` is set (e.g. on Vercel), that model is tried **first** only.
  * On 429/404 we still fall through other IDs — never lock to a single ID forever.
  */
+/** TTS / audio-only Gemini IDs cannot answer TEXT prompts (outline, article, JSON). */
+function isTextIncompatibleModelId(id: string): boolean {
+  const lower = id.toLowerCase();
+  return (
+    lower.includes("-tts") ||
+    lower.includes("preview-tts") ||
+    lower.includes("text-to-speech")
+  );
+}
+
 function configuredModels(): string[] {
   const preferred = process.env.GEMINI_MODEL?.trim();
   const out: string[] = [];
-  if (preferred) out.push(preferred);
+    if (preferred) {
+    if (isTextIncompatibleModelId(preferred)) {
+      console.warn(
+        `[gemini] GEMINI_MODEL=${preferred} is audio/TTS-only; ignoring. Set GEMINI_MODEL to a text model (e.g. gemini-2.5-flash or gemini-2.0-flash).`,
+      );
+    } else {
+      out.push(preferred);
+    }
+  }
   for (const m of MODEL_CANDIDATES) {
     if (!out.includes(m)) out.push(m);
   }
@@ -79,6 +97,7 @@ async function discoverModelIds(
     const lower = short.toLowerCase();
     if (lower.includes("embedding")) continue;
     if (!lower.includes("gemini")) continue;
+    if (isTextIncompatibleModelId(short)) continue;
     ids.push(short);
   }
 
@@ -178,6 +197,18 @@ async function postWithModelFallback(
     if (res.status === 404) {
       notFound.push(model);
       continue;
+    }
+
+    if (res.status === 400) {
+      const d = detail.toLowerCase();
+      const modalityMismatch =
+        d.includes("response modalities") ||
+        d.includes("not supported by the model") ||
+        d.includes("accepts the following combination");
+      if (modalityMismatch) {
+        notFound.push(model);
+        continue;
+      }
     }
 
     throw new Error(`Gemini error ${res.status}: ${lastDetail}`);
