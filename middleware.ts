@@ -5,19 +5,16 @@ import { getToken } from "next-auth/jwt";
 const CANONICAL_HOST = "rankflowhq.com";
 
 /**
- * Send www / production *.vercel.app traffic to the apex domain (canonical URLs for SEO).
- * Preview deployments (VERCEL_ENV=preview) keep their *.vercel.app host so QA still works.
+ * Host canonicalization for `www` is handled in **Vercel → Project → Domains** (redirect
+ * `www` → apex or the reverse). Doing the same redirect here caused ERR_TOO_MANY_REDIRECTS
+ * when the edge also redirected between www and apex.
+ *
+ * Production `*.vercel.app` → apex below keeps custom-domain SEO clean; preview deployments
+ * (VERCEL_ENV=preview) keep their deployment URL.
  */
 export async function middleware(request: NextRequest) {
   const rawHost = request.headers.get("host") ?? "";
   const host = rawHost.split(":")[0]?.toLowerCase() ?? "";
-
-  if (host === `www.${CANONICAL_HOST}`) {
-    const url = request.nextUrl.clone();
-    url.hostname = CANONICAL_HOST;
-    url.protocol = "https:";
-    return NextResponse.redirect(url, 308);
-  }
 
   if (
     process.env.VERCEL_ENV === "production" &&

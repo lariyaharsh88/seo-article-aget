@@ -109,8 +109,8 @@ export async function POST(request: Request) {
     searchItemCount > 20
       ? "2000–4000+"
       : searchItemCount > 8
-        ? "1500–3000"
-        : "1200–2500";
+        ? "2000–3200"
+        : "2000–2500";
 
   const coverageBlock =
     searchItemCount === 0

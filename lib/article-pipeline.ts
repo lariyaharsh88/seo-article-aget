@@ -49,12 +49,16 @@ export type ArticlePipelineCallbacks = {
   onMeta: (meta: SeoMeta | null) => void;
   onResearchTopic: (topic: string) => void;
   onResearchContext: (context: string) => void;
+  /** When set, runs POST /api/seo-enrich after audit (SEO agent visual publish HTML). */
+  onEnrichedHtml?: (html: string) => void;
 };
 
 export type ArticlePipelineResult = {
   article: string;
   meta: SeoMeta | null;
   keywords: Keyword[];
+  /** Populated when `onEnrichedHtml` was provided and enrichment succeeded. */
+  enrichedHtml?: string | null;
 };
 
 /**
@@ -377,6 +381,44 @@ export async function runArticlePipeline(
     cbs.onMeta(null);
   }
 
+  let enrichedHtml: string | null = null;
+  if (cbs.onEnrichedHtml && articleBody.trim().length >= 80) {
+    cbs.onStage("enrich");
+    pushLog("Visual enrich: sections → images, charts, tables…");
+    try {
+      const res = await fetch("/api/seo-enrich", {
+        method: "POST",
+        headers: buildHeaders(),
+        body: JSON.stringify({
+          markdown: articleBody,
+          keyword: workingTopic,
+        }),
+      });
+      const data: unknown = await res.json();
+      if (
+        res.ok &&
+        isRecord(data) &&
+        typeof data.html === "string" &&
+        data.html.trim()
+      ) {
+        enrichedHtml = data.html;
+        cbs.onEnrichedHtml(data.html);
+        markDone("enrich");
+        pushLog("Visual enrich: HTML ready.");
+      } else {
+        const err =
+          isRecord(data) && typeof data.error === "string"
+            ? data.error
+            : `HTTP ${res.status}`;
+        pushLog(`Visual enrich: skipped — ${err}`);
+      }
+    } catch (e) {
+      pushLog(
+        `Visual enrich: failed — ${e instanceof Error ? e.message : "error"}`,
+      );
+    }
+  }
+
   cbs.onStage(null);
   pushLog("Pipeline finished.");
 
@@ -384,5 +426,6 @@ export async function runArticlePipeline(
     article: articleBody,
     meta,
     keywords: keywordList,
+    enrichedHtml,
   };
 }

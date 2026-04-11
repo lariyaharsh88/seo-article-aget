@@ -48,4 +48,10 @@ export const PIPELINE_STAGES: PipelineStageDef[] = [
     description: "Meta pack + schema hints",
     color: "#f97316",
   },
+  {
+    id: "enrich",
+    label: "Visual enrich",
+    description: "H2 sections → images, charts, tables (HTML)",
+    color: "#22c55e",
+  },
 ];
