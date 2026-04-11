@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { JsonLd } from "@/components/JsonLd";
 import { listReadyRepurposedNews } from "@/lib/education-news/repurposed-news-query";
-import { buildCollectionPageSchema } from "@/lib/schema-org";
+import { buildNewsIndexSchema } from "@/lib/schema-org";
 import { buildPageMetadata } from "@/lib/seo-page";
 
 export const dynamic = "force-dynamic";
@@ -24,14 +24,9 @@ export default async function NewsIndexPage() {
     console.error("[news] list error:", e);
   }
 
-  const schema = buildCollectionPageSchema({
-    path: "/news",
-    headline: "News",
+  const schema = buildNewsIndexSchema({
     description: DESC,
-    breadcrumb: [
-      { name: "Home", path: "/" },
-      { name: "News", path: "/news" },
-    ],
+    items: items.map((it) => ({ title: it.title, slug: it.slug })),
   });
 
   return (

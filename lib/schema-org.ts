@@ -197,7 +197,9 @@ export function buildRepurposedNewsArticleSchema(
       name: post.title,
       description: desc,
       isPartOf: { "@id": websiteId },
+      about: { "@id": orgId },
       breadcrumb: { "@id": bcId },
+      mainEntity: { "@id": articleId },
     },
     {
       "@type": "BreadcrumbList",
@@ -231,15 +233,92 @@ export function buildRepurposedNewsArticleSchema(
       datePublished: published,
       dateModified: post.updatedAt.toISOString(),
       author: { "@id": orgId },
-      publisher: { "@id": orgId },
+      publisher: {
+        "@type": "Organization",
+        "@id": orgId,
+        name: SITE_NAME,
+        logo: {
+          "@type": "ImageObject",
+          url: `${base}/favicon.ico`,
+        },
+      },
+      copyrightHolder: { "@id": orgId },
+      articleSection: post.source,
+      genre: "Educational news",
+      isAccessibleForFree: true,
       mainEntityOfPage: { "@id": wpId },
       url,
       inLanguage: "en",
-      isBasedOn: post.url,
+      isBasedOn: {
+        "@type": "WebPage",
+        url: post.url,
+        name: `${post.source} (original)`,
+      },
     },
   ];
 
   return { "@context": "https://schema.org", "@graph": graph };
+}
+
+/** `/news` index — CollectionPage + ItemList of article URLs + BreadcrumbList. */
+export function buildNewsIndexSchema(opts: {
+  description: string;
+  items: Array<{ title: string; slug: string }>;
+}): Record<string, unknown> {
+  const { base, websiteId, orgId } = siteRefs();
+  const newsUrl = `${base}/news`;
+  const wpId = `${newsUrl}#webpage`;
+  const bcId = `${newsUrl}#breadcrumb`;
+  const listId = `${newsUrl}#itemlist`;
+
+  const itemListElement = opts.items.map((it, i) => ({
+    "@type": "ListItem",
+    position: i + 1,
+    name: it.title,
+    item: `${base}/news/${encodeURIComponent(it.slug)}`,
+  }));
+
+  return {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": ["WebPage", "CollectionPage"],
+        "@id": wpId,
+        url: newsUrl,
+        name: "News",
+        description: opts.description,
+        isPartOf: { "@id": websiteId },
+        about: { "@id": orgId },
+        breadcrumb: { "@id": bcId },
+        mainEntity: { "@id": listId },
+      },
+      {
+        "@type": "BreadcrumbList",
+        "@id": bcId,
+        itemListElement: [
+          {
+            "@type": "ListItem",
+            position: 1,
+            name: "Home",
+            item: base,
+          },
+          {
+            "@type": "ListItem",
+            position: 2,
+            name: "News",
+            item: newsUrl,
+          },
+        ],
+      },
+      {
+        "@type": "ItemList",
+        "@id": listId,
+        name: "News articles",
+        numberOfItems: opts.items.length,
+        itemListElement,
+      },
+    ],
+  };
 }
 
 type WebPageType = "WebPage" | "AboutPage";

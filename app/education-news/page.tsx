@@ -6,6 +6,7 @@ import {
   fetchAllSitemaps,
   getUniqueSources,
 } from "@/lib/education-news/fetchSitemaps";
+import { runAutoRepurposeAfterSync } from "@/lib/education-news/auto-repurpose-after-sync";
 import { syncEducationNewsArticles } from "@/lib/education-news/sync-stored";
 import type { StoredEducationNewsListItem } from "@/lib/education-news/stored-types";
 import { prisma } from "@/lib/prisma";
@@ -16,6 +17,8 @@ import { getToolExplainerMarkdown } from "@/lib/tool-explainer";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 export const runtime = "nodejs";
+/** Auto-repurpose after sync can run several Gemini calls; allow headroom on Vercel. */
+export const maxDuration = 300;
 
 const ED_NEWS_DESC =
   "Education articles from Shiksha, CollegeDunia, Careers360, Jagran Josh, and Testbook — updated from sitemaps (today in IST).";
@@ -40,7 +43,8 @@ export default async function EducationNewsPage() {
 
   let storedRows: StoredEducationNewsListItem[] = [];
   try {
-    await syncEducationNewsArticles(articles);
+    const { newPendingIds } = await syncEducationNewsArticles(articles);
+    await runAutoRepurposeAfterSync(newPendingIds);
     const rows = await prisma.educationNewsArticle.findMany({
       orderBy: { updatedAt: "desc" },
       take: 50,
@@ -55,6 +59,7 @@ export default async function EducationNewsPage() {
         repurposedMarkdown: true,
         repurposedSlug: true,
         repurposedCanonicalUrl: true,
+        updatedAt: true,
       },
     });
     storedRows = rows.map((r) => ({
@@ -63,6 +68,7 @@ export default async function EducationNewsPage() {
       title: r.title,
       source: r.source,
       lastmod: r.lastmod,
+      updatedAt: r.updatedAt.toISOString(),
       repurposeStatus: r.repurposeStatus,
       repurposedAt: r.repurposedAt?.toISOString() ?? null,
       repurposedExcerpt: r.repurposedMarkdown

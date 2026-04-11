@@ -50,6 +50,7 @@ export async function GET(request: Request) {
       repurposedMarkdown: true,
       repurposedSlug: true,
       repurposedCanonicalUrl: true,
+      updatedAt: true,
     },
   });
 
@@ -59,6 +60,7 @@ export async function GET(request: Request) {
     title: r.title,
     source: r.source,
     lastmod: r.lastmod,
+    updatedAt: r.updatedAt.toISOString(),
     repurposeStatus: r.repurposeStatus,
     repurposedAt: r.repurposedAt?.toISOString() ?? null,
     repurposedExcerpt: r.repurposedMarkdown

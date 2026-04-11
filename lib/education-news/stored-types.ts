@@ -8,6 +8,8 @@ export type StoredEducationNewsListItem = {
   title: string;
   source: string;
   lastmod: string;
+  /** ISO timestamp — list is ordered by this descending (newest row activity first). */
+  updatedAt: string;
   repurposeStatus: string;
   repurposedAt: string | null;
   repurposedExcerpt: string | null;

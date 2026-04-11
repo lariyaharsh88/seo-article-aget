@@ -242,7 +242,13 @@ export function StoredRepurposePanel({ initialItems, syncKey = 0 }: Props) {
             <Link href="/news" className="text-accent underline-offset-2 hover:underline">
               /news/
             </Link>{" "}
-            with slug and canonical URL stored in the database.
+            with slug and canonical URL stored in the database.             Rows are listed{" "}
+            <strong className="text-text-primary">newest first</strong> by database{" "}
+            <span className="font-mono text-text-muted">updatedAt</span> (sitemap sync,
+            repurpose, or any row change). New rows from sync are{" "}
+            <strong className="text-text-primary">repurposed automatically</strong> up
+            to the configured limit when <span className="font-mono text-text-muted">GEMINI_API_KEY</span>{" "}
+            is set (see <span className="font-mono text-text-muted">.env.example</span>).
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -308,11 +314,14 @@ export function StoredRepurposePanel({ initialItems, syncKey = 0 }: Props) {
       ) : null}
 
       <div className="overflow-x-auto rounded-xl border border-border">
-        <table className="w-full min-w-[720px] border-collapse text-left font-mono text-[11px] sm:text-xs">
+        <table className="w-full min-w-[820px] border-collapse text-left font-mono text-[11px] sm:text-xs">
           <thead className="border-b border-border bg-background/80 text-text-muted">
             <tr>
               <th className="px-3 py-2 font-normal">Title</th>
               <th className="px-3 py-2 font-normal">Source</th>
+              <th className="px-3 py-2 font-normal" title="Most recently touched rows first">
+                Updated ↓
+              </th>
               <th className="px-3 py-2 font-normal">Status</th>
               <th className="px-3 py-2 font-normal">On site</th>
               <th className="px-3 py-2 font-normal">Actions</th>
@@ -328,6 +337,15 @@ export function StoredRepurposePanel({ initialItems, syncKey = 0 }: Props) {
                 </td>
                 <td className="whitespace-nowrap px-3 py-2 text-text-secondary">
                   {row.source}
+                </td>
+                <td className="whitespace-nowrap px-3 py-2 align-top text-[10px] text-text-muted sm:text-[11px]">
+                  {new Date(row.updatedAt).toLocaleString("en-IN", {
+                    year: "numeric",
+                    month: "short",
+                    day: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
                 </td>
                 <td className="whitespace-nowrap px-3 py-2 text-text-muted">
                   {row.repurposeStatus}

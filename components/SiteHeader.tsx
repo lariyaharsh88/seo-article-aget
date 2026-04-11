@@ -6,6 +6,7 @@ import { useState } from "react";
 const nav = [
   { href: "/", label: "Home" },
   { href: "/blogs", label: "Blog" },
+  { href: "/news", label: "News" },
   { href: "/seo-agent", label: "Article pipeline" },
   { href: "/ai-seo-toolkit", label: "AI SEO Toolkit" },
   { href: "/off-page-seo", label: "Off-page SEO" },

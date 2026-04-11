@@ -1,17 +1,12 @@
+import type { MetadataRoute } from "next";
 import { prisma } from "@/lib/prisma";
 import { getSiteUrl } from "@/lib/site-url";
 
-function escapeXml(s: string): string {
-  return s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&apos;");
-}
-
-/** `/news` index + repurposed article URLs for `/news/sitemap.xml`. */
-export async function buildNewsSitemapXml(): Promise<string> {
+/**
+ * URLs for `/news` index and each published repurposed article.
+ * Consumed by `app/news/sitemap.ts` (Next serves `/news/sitemap.xml`).
+ */
+export async function getNewsSitemap(): Promise<MetadataRoute.Sitemap> {
   const base = getSiteUrl().replace(/\/$/, "");
 
   let articles: { slug: string; updatedAt: Date }[] = [];
@@ -41,31 +36,23 @@ export async function buildNewsSitemapXml(): Promise<string> {
       ? new Date(Math.max(...articles.map((a) => a.updatedAt.getTime())))
       : new Date();
 
-  const entries: { loc: string; lastmod: Date; priority: number }[] = [
-    { loc: `${base}/news`, lastmod: latest, priority: 0.72 },
+  const routes: MetadataRoute.Sitemap = [
+    {
+      url: `${base}/news`,
+      lastModified: latest,
+      changeFrequency: "daily",
+      priority: 0.72,
+    },
   ];
 
   for (const a of articles) {
-    entries.push({
-      loc: `${base}/news/${encodeURIComponent(a.slug)}`,
-      lastmod: a.updatedAt,
+    routes.push({
+      url: `${base}/news/${encodeURIComponent(a.slug)}`,
+      lastModified: a.updatedAt,
+      changeFrequency: "weekly",
       priority: 0.64,
     });
   }
 
-  const body = entries
-    .map(
-      (e) => `  <url>
-    <loc>${escapeXml(e.loc)}</loc>
-    <lastmod>${e.lastmod.toISOString()}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>${e.priority}</priority>
-  </url>`,
-    )
-    .join("\n");
-
-  return `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${body}
-</urlset>`;
+  return routes;
 }
