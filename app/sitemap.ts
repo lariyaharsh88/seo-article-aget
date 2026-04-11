@@ -37,6 +37,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.85,
     },
     {
+      url: `${base}/news`,
+      lastModified: now,
+      changeFrequency: "daily",
+      priority: 0.72,
+    },
+    {
       url: `${base}/education-trends`,
       lastModified: now,
       changeFrequency: "daily",
@@ -62,7 +68,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
   ];
 
-  /* Blog listing + posts: `/blogs/sitemap.xml` (see robots.txt). */
+  /* Blog: `/blogs/sitemap.xml`. Repurposed news: `/news/sitemap.xml`. See robots.ts. */
 
   return routes;
 }

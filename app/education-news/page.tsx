@@ -53,6 +53,8 @@ export default async function EducationNewsPage() {
         repurposeStatus: true,
         repurposedAt: true,
         repurposedMarkdown: true,
+        repurposedSlug: true,
+        repurposedCanonicalUrl: true,
       },
     });
     storedRows = rows.map((r) => ({
@@ -66,6 +68,10 @@ export default async function EducationNewsPage() {
       repurposedExcerpt: r.repurposedMarkdown
         ? r.repurposedMarkdown.slice(0, 200).trim()
         : null,
+      repurposedPath: r.repurposedSlug?.trim()
+        ? `/news/${r.repurposedSlug.trim()}`
+        : null,
+      repurposedCanonicalUrl: r.repurposedCanonicalUrl?.trim() || null,
     }));
   } catch (e) {
     console.error("[education-news] DB sync / list:", e);

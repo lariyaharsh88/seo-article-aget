@@ -21,13 +21,19 @@ export async function GET(request: Request) {
         repurposeStatus: true,
         repurposedAt: true,
         repurposedMarkdown: true,
+        repurposedSlug: true,
+        repurposedCanonicalUrl: true,
         errorMessage: true,
       },
     });
     if (!row) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
-    return NextResponse.json(row);
+    const slug = row.repurposedSlug?.trim();
+    return NextResponse.json({
+      ...row,
+      repurposedPath: slug ? `/news/${slug}` : null,
+    });
   }
 
   const rows = await prisma.educationNewsArticle.findMany({
@@ -42,6 +48,8 @@ export async function GET(request: Request) {
       repurposeStatus: true,
       repurposedAt: true,
       repurposedMarkdown: true,
+      repurposedSlug: true,
+      repurposedCanonicalUrl: true,
     },
   });
 
@@ -56,6 +64,10 @@ export async function GET(request: Request) {
     repurposedExcerpt: r.repurposedMarkdown
       ? r.repurposedMarkdown.slice(0, 200).trim()
       : null,
+    repurposedPath: r.repurposedSlug?.trim()
+      ? `/news/${r.repurposedSlug.trim()}`
+      : null,
+    repurposedCanonicalUrl: r.repurposedCanonicalUrl?.trim() || null,
   }));
 
   return NextResponse.json({ items: list });

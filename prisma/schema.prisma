@@ -59,6 +59,9 @@ model EducationNewsArticle {
   rawFetchedAt       DateTime?
   repurposedMarkdown String?   @db.Text
   repurposedAt       DateTime?
+  // URL on this site: /news/{repurposedSlug}; full URL stored for sharing / SEO.
+  repurposedSlug          String? @unique
+  repurposedCanonicalUrl  String?
   // pending | processing | ready | error
   repurposeStatus    String    @default("pending")
   errorMessage       String?   @db.Text

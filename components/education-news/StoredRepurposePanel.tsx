@@ -1,7 +1,76 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import type { StoredEducationNewsListItem } from "@/lib/education-news/stored-types";
+
+type RepurposeProgress = {
+  percent: number;
+  step: string;
+  articleIndex?: number;
+  articleTotal?: number;
+};
+
+async function consumeRepurposeNdjson(
+  response: Response,
+  onProgress: (p: RepurposeProgress) => void,
+): Promise<void> {
+  const reader = response.body?.getReader();
+  if (!reader) {
+    throw new Error("No response body");
+  }
+  const dec = new TextDecoder();
+  let buf = "";
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buf += dec.decode(value, { stream: true });
+    const parts = buf.split("\n");
+    buf = parts.pop() ?? "";
+    for (const line of parts) {
+      if (!line.trim()) continue;
+      let e: Record<string, unknown>;
+      try {
+        e = JSON.parse(line) as Record<string, unknown>;
+      } catch {
+        throw new Error("Invalid progress stream");
+      }
+      const t = e.type;
+      if (t === "progress") {
+        onProgress({
+          percent: typeof e.percent === "number" ? e.percent : 0,
+          step: typeof e.step === "string" ? e.step : "",
+          articleIndex:
+            typeof e.articleIndex === "number" ? e.articleIndex : undefined,
+          articleTotal:
+            typeof e.articleTotal === "number" ? e.articleTotal : undefined,
+        });
+      } else if (t === "complete") {
+        return;
+      } else if (t === "error") {
+        const msg =
+          typeof e.message === "string" ? e.message : "Repurpose failed";
+        throw new Error(msg);
+      }
+    }
+  }
+  if (buf.trim()) {
+    let e: Record<string, unknown>;
+    try {
+      e = JSON.parse(buf) as Record<string, unknown>;
+    } catch {
+      throw new Error("Invalid progress stream");
+    }
+    if (e.type === "error") {
+      throw new Error(
+        typeof e.message === "string" ? e.message : "Repurpose failed",
+      );
+    }
+    if (e.type !== "complete") {
+      throw new Error("Stream ended without completion");
+    }
+  }
+}
 
 type Props = {
   initialItems: StoredEducationNewsListItem[];
@@ -18,6 +87,8 @@ export function StoredRepurposePanel({ initialItems, syncKey = 0 }: Props) {
     markdown: string;
   } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [repurposeProgress, setRepurposeProgress] =
+    useState<RepurposeProgress | null>(null);
 
   const refreshList = useCallback(async () => {
     try {
@@ -44,13 +115,55 @@ export function StoredRepurposePanel({ initialItems, syncKey = 0 }: Props) {
   const repurposeOne = useCallback(
     async (id: string) => {
       setError(null);
+      setRepurposeProgress(null);
       setBusyId(id);
       try {
         const res = await fetch("/api/education-news/repurpose", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ id }),
+          body: JSON.stringify({ id, stream: true }),
         });
+        const ct = res.headers.get("content-type") ?? "";
+        if (res.ok && ct.includes("ndjson")) {
+          await consumeRepurposeNdjson(res, setRepurposeProgress);
+        } else {
+          const data: unknown = await res.json();
+          if (!res.ok) {
+            const msg =
+              typeof data === "object" &&
+              data !== null &&
+              "error" in data &&
+              typeof (data as { error: unknown }).error === "string"
+                ? (data as { error: string }).error
+                : `HTTP ${res.status}`;
+            throw new Error(msg);
+          }
+        }
+        await refreshList();
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Repurpose failed");
+      } finally {
+        setBusyId(null);
+        setRepurposeProgress(null);
+      }
+    },
+    [refreshList],
+  );
+
+  const repurposePending = useCallback(async () => {
+    setError(null);
+    setRepurposeProgress(null);
+    setBatchBusy(true);
+    try {
+      const res = await fetch("/api/education-news/repurpose", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ processPending: true, limit: 2, stream: true }),
+      });
+      const ct = res.headers.get("content-type") ?? "";
+      if (res.ok && ct.includes("ndjson")) {
+        await consumeRepurposeNdjson(res, setRepurposeProgress);
+      } else {
         const data: unknown = await res.json();
         if (!res.ok) {
           const msg =
@@ -62,41 +175,13 @@ export function StoredRepurposePanel({ initialItems, syncKey = 0 }: Props) {
               : `HTTP ${res.status}`;
           throw new Error(msg);
         }
-        await refreshList();
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "Repurpose failed");
-      } finally {
-        setBusyId(null);
-      }
-    },
-    [refreshList],
-  );
-
-  const repurposePending = useCallback(async () => {
-    setError(null);
-    setBatchBusy(true);
-    try {
-      const res = await fetch("/api/education-news/repurpose", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ processPending: true, limit: 2 }),
-      });
-      const data: unknown = await res.json();
-      if (!res.ok) {
-        const msg =
-          typeof data === "object" &&
-          data !== null &&
-          "error" in data &&
-          typeof (data as { error: unknown }).error === "string"
-            ? (data as { error: string }).error
-            : `HTTP ${res.status}`;
-        throw new Error(msg);
       }
       await refreshList();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Batch repurpose failed");
     } finally {
       setBatchBusy(false);
+      setRepurposeProgress(null);
     }
   }, [refreshList]);
 
@@ -153,6 +238,11 @@ export function StoredRepurposePanel({ initialItems, syncKey = 0 }: Props) {
             <strong className="text-text-primary">Repurpose</strong> to rewrite in the same
             RankFlowHQ / seo-agent style, capped at{" "}
             <strong className="text-text-primary">800–1000 words</strong> (Gemini, server key).
+            Ready drafts get a stable URL under{" "}
+            <Link href="/news" className="text-accent underline-offset-2 hover:underline">
+              /news/
+            </Link>{" "}
+            with slug and canonical URL stored in the database.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -174,6 +264,40 @@ export function StoredRepurposePanel({ initialItems, syncKey = 0 }: Props) {
         </div>
       </div>
 
+      {repurposeProgress ? (
+        <div
+          className="mb-4 rounded-lg border border-border bg-background/80 px-3 py-3"
+          aria-live="polite"
+        >
+          <div className="flex flex-wrap items-baseline justify-between gap-2 font-mono text-xs text-text-secondary">
+            <span className="text-text-primary">
+              {repurposeProgress.articleTotal != null &&
+              repurposeProgress.articleIndex != null
+                ? `Article ${repurposeProgress.articleIndex}/${repurposeProgress.articleTotal} · `
+                : null}
+              {repurposeProgress.step}
+            </span>
+            <span className="tabular-nums text-accent">
+              {Math.min(100, Math.max(0, repurposeProgress.percent))}%
+            </span>
+          </div>
+          <div
+            className="mt-2 h-1.5 overflow-hidden rounded-full bg-border"
+            role="progressbar"
+            aria-valuenow={repurposeProgress.percent}
+            aria-valuemin={0}
+            aria-valuemax={100}
+          >
+            <div
+              className="h-full rounded-full bg-accent transition-[width] duration-300 ease-out"
+              style={{
+                width: `${Math.min(100, Math.max(0, repurposeProgress.percent))}%`,
+              }}
+            />
+          </div>
+        </div>
+      ) : null}
+
       {error ? (
         <div
           role="alert"
@@ -184,12 +308,13 @@ export function StoredRepurposePanel({ initialItems, syncKey = 0 }: Props) {
       ) : null}
 
       <div className="overflow-x-auto rounded-xl border border-border">
-        <table className="w-full min-w-[640px] border-collapse text-left font-mono text-[11px] sm:text-xs">
+        <table className="w-full min-w-[720px] border-collapse text-left font-mono text-[11px] sm:text-xs">
           <thead className="border-b border-border bg-background/80 text-text-muted">
             <tr>
               <th className="px-3 py-2 font-normal">Title</th>
               <th className="px-3 py-2 font-normal">Source</th>
               <th className="px-3 py-2 font-normal">Status</th>
+              <th className="px-3 py-2 font-normal">On site</th>
               <th className="px-3 py-2 font-normal">Actions</th>
             </tr>
           </thead>
@@ -211,6 +336,22 @@ export function StoredRepurposePanel({ initialItems, syncKey = 0 }: Props) {
                       {new Date(row.repurposedAt).toLocaleString("en-IN")}
                     </span>
                   ) : null}
+                </td>
+                <td className="max-w-[140px] px-3 py-2 align-top text-[10px] text-text-secondary">
+                  {row.repurposedPath ? (
+                    <Link
+                      href={row.repurposedPath}
+                      className="line-clamp-2 break-all text-accent underline-offset-2 hover:underline"
+                      title={
+                        row.repurposedCanonicalUrl ??
+                        `Open ${row.repurposedPath} on this site`
+                      }
+                    >
+                      {row.repurposedPath}
+                    </Link>
+                  ) : (
+                    <span className="text-text-muted/70">—</span>
+                  )}
                 </td>
                 <td className="whitespace-nowrap px-3 py-2">
                   <div className="flex flex-wrap gap-1">

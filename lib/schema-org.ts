@@ -1,4 +1,4 @@
-import type { BlogPost } from "@prisma/client";
+import type { BlogPost, EducationNewsArticle } from "@prisma/client";
 import { SITE_DESCRIPTION, SITE_NAME } from "@/lib/seo-site";
 import { getSiteUrl } from "@/lib/site-url";
 
@@ -22,6 +22,7 @@ export function buildHomePageSchema(): Record<string, unknown> {
     { name: "Off-page SEO & outreach", path: "/off-page-seo" },
     { name: "Education Google Trends", path: "/education-trends" },
     { name: "Education news digest", path: "/education-news" },
+    { name: "News", path: "/news" },
   ];
 
   return {
@@ -160,6 +161,81 @@ export function buildBlogPostingSchema(post: BlogPost): Record<string, unknown> 
       mainEntityOfPage: { "@id": wpId },
       url,
       inLanguage: "en",
+    },
+  ];
+
+  return { "@context": "https://schema.org", "@graph": graph };
+}
+
+/** Repurposed education news — NewsArticle + WebPage + BreadcrumbList. */
+export function buildRepurposedNewsArticleSchema(
+  post: Pick<
+    EducationNewsArticle,
+    | "title"
+    | "source"
+    | "url"
+    | "repurposedSlug"
+    | "repurposedAt"
+    | "updatedAt"
+  >,
+): Record<string, unknown> {
+  const { base, websiteId, orgId } = siteRefs();
+  const slug = post.repurposedSlug?.trim() ?? "";
+  const path = `/news/${slug}`;
+  const url = `${base}${path}`;
+  const wpId = `${url}#webpage`;
+  const articleId = `${url}#article`;
+  const bcId = `${url}#breadcrumb`;
+  const desc = `${post.title} — ${post.source}`.slice(0, 500);
+  const published = post.repurposedAt?.toISOString() ?? post.updatedAt.toISOString();
+
+  const graph: Record<string, unknown>[] = [
+    {
+      "@type": "WebPage",
+      "@id": wpId,
+      url,
+      name: post.title,
+      description: desc,
+      isPartOf: { "@id": websiteId },
+      breadcrumb: { "@id": bcId },
+    },
+    {
+      "@type": "BreadcrumbList",
+      "@id": bcId,
+      itemListElement: [
+        {
+          "@type": "ListItem",
+          position: 1,
+          name: "Home",
+          item: base,
+        },
+        {
+          "@type": "ListItem",
+          position: 2,
+          name: "News",
+          item: `${base}/news`,
+        },
+        {
+          "@type": "ListItem",
+          position: 3,
+          name: post.title,
+          item: url,
+        },
+      ],
+    },
+    {
+      "@type": "NewsArticle",
+      "@id": articleId,
+      headline: post.title,
+      description: desc,
+      datePublished: published,
+      dateModified: post.updatedAt.toISOString(),
+      author: { "@id": orgId },
+      publisher: { "@id": orgId },
+      mainEntityOfPage: { "@id": wpId },
+      url,
+      inLanguage: "en",
+      isBasedOn: post.url,
     },
   ];
 
