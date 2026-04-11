@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { Prisma } from "@prisma/client";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth-options";
@@ -110,6 +110,7 @@ export async function POST(request: Request) {
       revalidatePath("/blogs");
       revalidatePath("/blogs/sitemap.xml");
       revalidatePath(`/blogs/${post.slug}`);
+      revalidateTag("blog-posts");
       return NextResponse.json(post);
     } catch (e) {
       if (

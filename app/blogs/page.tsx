@@ -1,7 +1,6 @@
 import Link from "next/link";
-import { unstable_noStore as noStore } from "next/cache";
 import { JsonLd } from "@/components/JsonLd";
-import { listPublishedBlogPosts } from "@/lib/blog-post-query";
+import { getCachedPublishedBlogPosts } from "@/lib/cached-blog-posts";
 import { buildPageMetadata } from "@/lib/seo-page";
 import { buildBlogsIndexSchema } from "@/lib/schema-org";
 
@@ -14,11 +13,10 @@ export const metadata = buildPageMetadata({
 export const dynamic = "force-dynamic";
 
 export default async function BlogsIndexPage() {
-  noStore();
-  let posts: Awaited<ReturnType<typeof listPublishedBlogPosts>> = [];
+  let posts: Awaited<ReturnType<typeof getCachedPublishedBlogPosts>> = [];
   let listError = false;
   try {
-    posts = await listPublishedBlogPosts();
+    posts = await getCachedPublishedBlogPosts();
   } catch (err) {
     console.error("[blogs] listPublishedBlogPosts:", err);
     listError = true;
