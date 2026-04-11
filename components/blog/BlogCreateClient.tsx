@@ -4,7 +4,7 @@ import type { BlogPost } from "@prisma/client";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArticleRenderer } from "@/components/ArticleRenderer";
 import { ArticleSeoScorecard } from "@/components/ArticleSeoScorecard";
 import { LiveLog } from "@/components/LiveLog";
@@ -49,6 +49,8 @@ export function BlogCreateClient({ initialPosts, loadError }: Props) {
   const [published, setPublished] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  /** Blocks double-submit before React re-renders `saving`. */
+  const publishInFlight = useRef(false);
 
   const topicFirstLine = topic.trim().split("\n")[0]?.trim() ?? "";
   const primaryKeyword = topicFirstLine;
@@ -141,11 +143,14 @@ export function BlogCreateClient({ initialPosts, loadError }: Props) {
   async function onPublish(e: React.FormEvent) {
     e.preventDefault();
     if (!article.trim() || !pubTitle.trim()) return;
+    if (publishInFlight.current || saving) return;
+    publishInFlight.current = true;
     setSaveError(null);
     setSaving(true);
     try {
       const res = await fetch("/api/blog", {
         method: "POST",
+        credentials: "same-origin",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: pubTitle.trim(),
@@ -179,6 +184,7 @@ export function BlogCreateClient({ initialPosts, loadError }: Props) {
     } catch (err) {
       setSaveError(err instanceof Error ? err.message : "Save failed");
     } finally {
+      publishInFlight.current = false;
       setSaving(false);
     }
   }
@@ -186,7 +192,7 @@ export function BlogCreateClient({ initialPosts, loadError }: Props) {
   const showPublish = !running && article.trim().length >= 10;
 
   return (
-    <div className="mx-auto max-w-6xl space-y-10 px-4 py-10 md:px-6">
+    <div className="mx-auto min-w-0 max-w-6xl space-y-10 px-4 py-8 sm:py-10 md:px-6">
       {loadError ? (
         <div
           role="alert"
@@ -195,8 +201,8 @@ export function BlogCreateClient({ initialPosts, loadError }: Props) {
           {loadError}
         </div>
       ) : null}
-      <div className="flex flex-wrap items-start justify-between gap-4 border-b border-border pb-6">
-        <div>
+      <div className="flex flex-col gap-4 border-b border-border pb-6 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
+        <div className="min-w-0">
           <p className="font-mono text-xs uppercase tracking-[0.2em] text-accent">
             Blog CMS · Article generator
           </p>
@@ -209,7 +215,7 @@ export function BlogCreateClient({ initialPosts, loadError }: Props) {
             Then publish to the blog.
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 sm:shrink-0">
           <Link
             href="/blogs"
             className="rounded-lg border border-border px-3 py-2 font-mono text-xs text-text-secondary hover:border-accent hover:text-accent"
@@ -232,7 +238,7 @@ export function BlogCreateClient({ initialPosts, loadError }: Props) {
         </div>
       </div>
 
-      <section className="space-y-4 rounded-xl border border-border bg-surface/40 p-6">
+      <section className="space-y-4 rounded-xl border border-border bg-surface/40 p-4 sm:p-6">
         <h2 className="font-display text-lg text-text-primary">1. Topic</h2>
         <label className="block space-y-2">
           <span className="font-mono text-xs uppercase text-text-muted">
@@ -266,7 +272,7 @@ export function BlogCreateClient({ initialPosts, loadError }: Props) {
           type="button"
           onClick={() => void runGenerator()}
           disabled={running || !topic.trim()}
-          className="rounded-lg bg-accent px-6 py-2.5 font-mono text-sm font-semibold text-background transition-opacity enabled:hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+          className="w-full rounded-lg bg-accent px-6 py-2.5 font-mono text-sm font-semibold text-background transition-opacity enabled:hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto"
         >
           {running ? "Generating article…" : "Run full article pipeline"}
         </button>
@@ -293,7 +299,7 @@ export function BlogCreateClient({ initialPosts, loadError }: Props) {
           <h2 className="font-display text-lg text-text-primary">
             {running ? "Draft (streaming)" : "Draft preview"}
           </h2>
-          <div className="custom-scrollbar max-h-[55vh] overflow-y-auto rounded-xl border border-border bg-surface/60 p-4">
+          <div className="custom-scrollbar max-h-[min(55vh,32rem)] overflow-y-auto rounded-xl border border-border bg-surface/60 p-3 sm:p-4">
             <ArticleRenderer markdown={article} streaming={running} />
           </div>
         </section>
@@ -302,7 +308,7 @@ export function BlogCreateClient({ initialPosts, loadError }: Props) {
       {showPublish && (
         <>
           <ArticleSeoScorecard result={seoScoreResult} compact />
-          <section className="space-y-4 rounded-xl border border-accent/30 bg-accent/5 p-6">
+          <section className="space-y-4 rounded-xl border border-accent/30 bg-accent/5 p-4 sm:p-6">
             <h2 className="font-display text-lg text-text-primary">
               2. Publish to blog
             </h2>
@@ -360,7 +366,7 @@ export function BlogCreateClient({ initialPosts, loadError }: Props) {
               <button
                 type="submit"
                 disabled={saving || !article.trim()}
-                className="rounded-lg bg-accent px-6 py-2.5 font-mono text-sm font-semibold text-background transition-opacity enabled:hover:opacity-90 disabled:opacity-40"
+                className="w-full rounded-lg bg-accent px-6 py-2.5 font-mono text-sm font-semibold text-background transition-opacity enabled:hover:opacity-90 disabled:opacity-40 sm:w-auto"
               >
                 {saving ? "Publishing…" : "Publish blog post"}
               </button>
@@ -378,23 +384,25 @@ export function BlogCreateClient({ initialPosts, loadError }: Props) {
             posts.map((p) => (
               <li
                 key={p.id}
-                className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-surface/60 px-4 py-3"
+                className="flex flex-col gap-2 rounded-lg border border-border bg-surface/60 px-3 py-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:px-4"
               >
-                <div>
-                  <span className="font-display text-text-primary">{p.title}</span>
-                  <span className="ml-2 font-mono text-xs text-text-muted">
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-baseline gap-2">
+                    <span className="font-display text-text-primary">{p.title}</span>
+                    {!p.published && (
+                      <span className="rounded border border-amber-500/40 px-1.5 py-0.5 font-mono text-[10px] text-amber-400">
+                        draft
+                      </span>
+                    )}
+                  </div>
+                  <span className="mt-1 block font-mono text-[11px] text-text-muted break-all">
                     /blogs/{p.slug}
                   </span>
-                  {!p.published && (
-                    <span className="ml-2 rounded border border-amber-500/40 px-1.5 py-0.5 font-mono text-[10px] text-amber-400">
-                      draft
-                    </span>
-                  )}
                 </div>
                 {p.published && (
                   <Link
                     href={`/blogs/${p.slug}`}
-                    className="font-mono text-xs text-accent hover:underline"
+                    className="shrink-0 font-mono text-xs text-accent hover:underline sm:self-center"
                   >
                     View →
                   </Link>

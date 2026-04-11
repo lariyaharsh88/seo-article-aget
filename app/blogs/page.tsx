@@ -37,12 +37,12 @@ export default async function BlogsIndexPage() {
   }
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-10 md:px-6">
+    <main className="mx-auto min-w-0 max-w-3xl px-4 py-8 sm:py-10 md:px-6">
       <header className="mb-10 border-b border-border pb-8">
         <p className="font-mono text-xs uppercase tracking-[0.2em] text-accent">
           Blog
         </p>
-        <h1 className="font-display text-4xl text-text-primary md:text-5xl">
+        <h1 className="font-display text-3xl text-text-primary sm:text-4xl md:text-5xl">
           Articles
         </h1>
         <p className="mt-3 max-w-xl font-serif text-text-secondary">
@@ -65,7 +65,7 @@ export default async function BlogsIndexPage() {
         ) : (
           posts.map((post) => (
             <li key={post.id}>
-              <article className="group rounded-xl border border-border bg-surface/50 p-6 transition-colors hover:border-accent/40">
+              <article className="group rounded-xl border border-border bg-surface/50 p-4 transition-colors hover:border-accent/40 sm:p-6">
                 <time
                   className="font-mono text-xs text-text-muted"
                   dateTime={post.createdAt.toISOString()}

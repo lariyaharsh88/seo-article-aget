@@ -1,7 +1,8 @@
+import type { BlogPost } from "@prisma/client";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { marked } from "marked";
-import { prisma } from "@/lib/prisma";
+import { findPublishedBlogPostBySlug } from "@/lib/blog-post-query";
 import { buildPageMetadata } from "@/lib/seo-page";
 import { SITE_NAME } from "@/lib/seo-site";
 
@@ -13,16 +14,13 @@ export async function generateMetadata({ params }: Props) {
   let title = "Blog post";
   let description = SITE_NAME;
   try {
-    const post = await prisma.blogPost.findFirst({
-      where: { slug: params.slug, published: true },
-      select: { title: true, excerpt: true },
-    });
+    const post = await findPublishedBlogPostBySlug(params.slug);
     if (post) {
       title = post.title;
       description = (post.excerpt?.slice(0, 160) || post.title) ?? SITE_NAME;
     }
   } catch {
-    /* DB unavailable */
+    /* DB unavailable after retries */
   }
   return buildPageMetadata({
     title,
@@ -32,11 +30,13 @@ export async function generateMetadata({ params }: Props) {
 }
 
 export default async function BlogPostPage({ params }: Props) {
-  const post = await prisma.blogPost
-    .findFirst({
-      where: { slug: params.slug, published: true },
-    })
-    .catch(() => null);
+  let post: BlogPost | null;
+  try {
+    post = await findPublishedBlogPostBySlug(params.slug);
+  } catch (err) {
+    console.error("[blogs/[slug]] database error:", err);
+    throw err;
+  }
 
   if (!post) {
     notFound();
@@ -46,7 +46,7 @@ export default async function BlogPostPage({ params }: Props) {
   const html = await marked.parse(post.content);
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-10 md:px-6">
+    <main className="mx-auto min-w-0 max-w-3xl px-4 py-8 sm:py-10 md:px-6">
       <p className="font-mono text-xs">
         <Link
           href="/blogs"
@@ -66,11 +66,11 @@ export default async function BlogPostPage({ params }: Props) {
             day: "numeric",
           })}
         </time>
-        <h1 className="mt-3 font-display text-4xl text-text-primary md:text-5xl">
+        <h1 className="mt-3 font-display text-3xl text-text-primary sm:text-4xl md:text-5xl">
           {post.title}
         </h1>
         {post.excerpt && (
-          <p className="mt-4 font-serif text-lg text-text-secondary">
+          <p className="mt-4 font-serif text-base text-text-secondary sm:text-lg">
             {post.excerpt}
           </p>
         )}

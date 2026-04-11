@@ -10,7 +10,7 @@ export default function AuthErrorPage({
   const configuration = code === "Configuration";
 
   return (
-    <main className="mx-auto max-w-md px-4 py-16 md:px-6">
+    <main className="mx-auto min-w-0 max-w-md px-4 py-12 sm:py-16 md:px-6">
       <h1 className="font-display text-2xl text-text-primary">
         {configuration
           ? "Auth not configured"
@@ -18,7 +18,7 @@ export default function AuthErrorPage({
             ? "Access denied"
             : "Sign-in error"}
       </h1>
-      <p className="mt-3 font-serif text-sm text-text-secondary">
+      <p className="mt-3 break-words font-serif text-sm text-text-secondary">
         {configuration ? (
           <>
             The server is missing NextAuth environment variables (usually{" "}
