@@ -3,6 +3,7 @@ import { Abril_Fatface, Lora, Space_Mono } from "next/font/google";
 import Script from "next/script";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
+import { Providers } from "@/app/providers";
 import { StructuredData } from "@/components/StructuredData";
 import { ADSENSE_CLIENT_ID } from "@/lib/adsense-config";
 import { SITE_DESCRIPTION, SITE_NAME } from "@/lib/seo-site";
@@ -130,11 +131,13 @@ export default function RootLayout({
           crossOrigin="anonymous"
         />
         <StructuredData />
-        <div className="relative z-10 flex min-h-screen flex-col">
-          <SiteHeader />
-          <div className="flex-1">{children}</div>
-          <SiteFooter />
-        </div>
+        <Providers>
+          <div className="relative z-10 flex min-h-screen flex-col">
+            <SiteHeader />
+            <div className="flex-1">{children}</div>
+            <SiteFooter />
+          </div>
+        </Providers>
       </body>
     </html>
   );

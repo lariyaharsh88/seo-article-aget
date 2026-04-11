@@ -35,3 +35,15 @@ model OptimizedContent {
   score            Int
   createdAt        DateTime @default(now())
 }
+
+model BlogPost {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  title       String
+  excerpt     String?  @db.Text
+  content     String   @db.Text
+  published   Boolean  @default(false)
+  authorEmail String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}

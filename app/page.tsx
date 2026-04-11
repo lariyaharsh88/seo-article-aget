@@ -7,11 +7,18 @@ import { SITE_DESCRIPTION } from "@/lib/seo-site";
 
 export const metadata: Metadata = buildPageMetadata({
   title: "Tools",
-  description: `Browse RankFlowHQ tools: article pipeline, AI SEO Toolkit, off-page outreach, education Google Trends, and education news. ${SITE_DESCRIPTION}`,
+  description: `Browse RankFlowHQ tools: blog, article pipeline, AI SEO Toolkit, off-page outreach, education Google Trends, and education news. ${SITE_DESCRIPTION}`,
   path: "/",
 });
 
 const tools = [
+  {
+    href: "/blogs",
+    title: "Blog",
+    tag: "Articles",
+    description:
+      "Product updates and SEO tooling notes. New posts are published from the admin CMS.",
+  },
   {
     href: "/seo-agent",
     title: "SEO article pipeline",
