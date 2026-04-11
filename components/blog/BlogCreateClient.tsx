@@ -32,6 +32,24 @@ function parseTopics(raw: string): string[] {
     .filter(Boolean);
 }
 
+function postFromApiJson(data: unknown): BlogPost {
+  if (typeof data !== "object" || data === null) {
+    throw new Error("Invalid post response from server.");
+  }
+  const o = data as Record<string, unknown>;
+  return {
+    id: String(o.id ?? ""),
+    slug: String(o.slug ?? ""),
+    title: String(o.title ?? ""),
+    excerpt: typeof o.excerpt === "string" ? o.excerpt : null,
+    content: String(o.content ?? ""),
+    published: Boolean(o.published),
+    authorEmail: String(o.authorEmail ?? ""),
+    createdAt: new Date(String(o.createdAt ?? Date.now())),
+    updatedAt: new Date(String(o.updatedAt ?? Date.now())),
+  };
+}
+
 export function BlogCreateClient({ initialPosts, loadError }: Props) {
   const router = useRouter();
   const [posts, setPosts] = useState(initialPosts);
@@ -94,10 +112,11 @@ export function BlogCreateClient({ initialPosts, loadError }: Props) {
       excerpt?: string;
       content: string;
       published: boolean;
-    }) => {
+    }): Promise<BlogPost> => {
       const res = await fetch("/api/blog", {
         method: "POST",
         credentials: "same-origin",
+        cache: "no-store",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: payload.title.trim(),
@@ -130,7 +149,7 @@ export function BlogCreateClient({ initialPosts, loadError }: Props) {
             : `HTTP ${res.status}`;
         throw new Error(msg);
       }
-      return data;
+      return postFromApiJson(data);
     },
     [],
   );
@@ -251,17 +270,27 @@ export function BlogCreateClient({ initialPosts, loadError }: Props) {
             "Post";
           const title = m?.metaTitle || firstLine;
           const excerpt = m?.metaDescription || "";
-          const slug = slugify(m?.urlSlug || m?.metaTitle || firstLine);
+          const baseSlug = slugify(m?.urlSlug || m?.metaTitle || firstLine);
+          /** Disambiguate slugs inside one batch (same meta titles / collisions). */
+          const slug = `${baseSlug}-p${i + 1}`;
 
-          await postBlogToApi({
+          pushLog(
+            `[Batch ${i + 1}/${topics.length}] Saving to database…`,
+          );
+          const saved = await postBlogToApi({
             title,
             slug,
             excerpt: excerpt || undefined,
             content: result.article,
             published,
           });
-          pushLog(`[Batch ${i + 1}/${topics.length}] Saved: ${title}`);
-          router.refresh();
+          setPosts((prev) => {
+            const rest = prev.filter((p) => p.id !== saved.id);
+            return [saved, ...rest];
+          });
+          pushLog(
+            `[Batch ${i + 1}/${topics.length}] Saved: ${saved.title} → /blogs/${saved.slug}`,
+          );
         } catch (err) {
           const msg =
             err instanceof Error ? err.message : String(err);
@@ -276,6 +305,7 @@ export function BlogCreateClient({ initialPosts, loadError }: Props) {
         );
       }
       setPostBatchDraftOk(true);
+      router.refresh();
     } catch (e) {
       setGenError(
         e instanceof Error ? e.message : "Article pipeline failed unexpectedly.",
@@ -308,12 +338,16 @@ export function BlogCreateClient({ initialPosts, loadError }: Props) {
     setSaveError(null);
     setSaving(true);
     try {
-      await postBlogToApi({
+      const saved = await postBlogToApi({
         title: pubTitle.trim(),
         slug: pubSlug.trim() || undefined,
         excerpt: pubExcerpt.trim() || undefined,
         content: article,
         published,
+      });
+      setPosts((prev) => {
+        const rest = prev.filter((p) => p.id !== saved.id);
+        return [saved, ...rest];
       });
       router.refresh();
       setTopic("");
