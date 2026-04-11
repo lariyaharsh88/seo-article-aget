@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Abril_Fatface, Lora, Space_Mono } from "next/font/google";
+import Script from "next/script";
 import { SiteHeader } from "@/components/SiteHeader";
 import { StructuredData } from "@/components/StructuredData";
 import { SITE_DESCRIPTION, SITE_NAME } from "@/lib/seo-site";
@@ -27,6 +28,15 @@ const spaceMono = Space_Mono({
 });
 
 const siteUrl = getSiteUrl();
+
+/** GA4 Measurement ID — override with NEXT_PUBLIC_GA_MEASUREMENT_ID if needed. */
+const GA_MEASUREMENT_ID =
+  process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID?.trim() || "G-19XWBZXT88";
+
+/** AdSense publisher ID — override with NEXT_PUBLIC_ADSENSE_CLIENT_ID if needed. */
+const ADSENSE_CLIENT_ID =
+  process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID?.trim() ||
+  "ca-pub-7494206891190273";
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -98,6 +108,25 @@ export default function RootLayout({
       <body
         className={`${abril.variable} ${lora.variable} ${spaceMono.variable} page-grid`}
       >
+        <Script
+          src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics-gtag" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', '${GA_MEASUREMENT_ID}');
+          `}
+        </Script>
+        <Script
+          src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${encodeURIComponent(
+            ADSENSE_CLIENT_ID,
+          )}`}
+          strategy="afterInteractive"
+          crossOrigin="anonymous"
+        />
         <StructuredData />
         <div className="relative z-10">
           <SiteHeader />
