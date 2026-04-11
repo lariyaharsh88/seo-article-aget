@@ -11,11 +11,34 @@ interface ArticleBody {
   researchContext?: string;
   outlineText?: string;
   paas?: string[];
+  /** Real queries from Search Console (when user fetched them). */
+  searchConsoleQueries?: string[];
+  /** Google autocomplete suggestions for the primary phrase. */
+  googleSuggestions?: string[];
 }
 
 function encodeSseChunk(text: string): Uint8Array {
   const encoder = new TextEncoder();
   return encoder.encode(`data: ${JSON.stringify({ text })}\n\n`);
+}
+
+/** Dedupe case-insensitively; keeps first casing. */
+function dedupeQueryLines(queries: string[]): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const q of queries) {
+    const t = q.trim();
+    if (!t) continue;
+    const k = t.toLowerCase();
+    if (seen.has(k)) continue;
+    seen.add(k);
+    out.push(t);
+  }
+  return out;
+}
+
+function numberedLines(queries: string[]): string {
+  return queries.map((q, i) => `${i + 1}. ${q}`).join("\n");
 }
 
 export async function POST(request: Request) {
@@ -57,8 +80,52 @@ export async function POST(request: Request) {
   );
   const outlineText = capPromptText(body.outlineText?.trim() || "", 12_000);
   const paas = body.paas ?? [];
+  const gscQueries = dedupeQueryLines(
+    Array.isArray(body.searchConsoleQueries)
+      ? body.searchConsoleQueries.filter(
+          (q): q is string => typeof q === "string" && q.trim().length > 0,
+        )
+      : [],
+  );
+  const autoSuggest = dedupeQueryLines(
+    Array.isArray(body.googleSuggestions)
+      ? body.googleSuggestions.filter(
+          (q): q is string => typeof q === "string" && q.trim().length > 0,
+        )
+      : [],
+  );
 
-  const userPrompt = `Write a COMPLETE, detailed, 1000-1500-word SEO-optimised article.
+  const gscBlock =
+    gscQueries.length > 0
+      ? capPromptText(numberedLines(gscQueries), 16_000)
+      : "";
+  const suggestBlock =
+    autoSuggest.length > 0
+      ? capPromptText(numberedLines(autoSuggest), 16_000)
+      : "";
+
+  const searchItemCount = gscQueries.length + autoSuggest.length;
+  const wordTarget =
+    searchItemCount > 20
+      ? "2000–4000+"
+      : searchItemCount > 8
+        ? "1500–3000"
+        : "1200–2500";
+
+  const coverageBlock =
+    searchItemCount === 0
+      ? ""
+      : `
+MANDATORY — COVER **EVERY** SEARCH LINE BELOW (NONE MAY BE SKIPPED):
+- **Search Console list:** every numbered line must appear in the article: either woven into the outline sections (heading, paragraph, or bullet that clearly matches that query) **OR** as its own FAQ entry.
+- **Autocomplete list:** same rule — every numbered line must appear in the body **OR** as FAQ.
+- If a query does not fit naturally inside an outline section, add it under **## Search-related questions** (or expand **## Frequently asked questions**) using **###** with the query text as the heading (fix only tiny grammar if needed), then 2–4 sentence answer matching that exact intent.
+- **Do not merge** two different queries into one FAQ unless they are identical text. Do not skip queries to save length.
+- Total FAQ items = at least (PAA questions below) **plus** every GSC/autocomplete line you did not fully answer in the body (use one FAQ pair per remaining query).
+
+`;
+
+  const userPrompt = `Write a COMPLETE, detailed, ${wordTarget}-word SEO-optimised article (extend length when needed so coverage rules are met — do not cut off early).
 
 TOPIC: ${topic}
 PRIMARY KEYWORD: ${primary}
@@ -72,22 +139,28 @@ ${outlineText}
 RESEARCH FACTS AND DATA TO INCLUDE:
 ${researchContext}
 
-USER QUESTIONS TO ANSWER IN FAQ SECTION:
+PEOPLE-ALSO-ASK / SERP QUESTIONS (use in FAQ; minimum 5 if this list has enough lines):
 ${paas.join("\n") || "(derive from topic)"}
 
+GOOGLE SEARCH CONSOLE QUERIES — numbered; must ALL be addressed in article body OR as FAQ (see rules):
+${gscQueries.length > 0 ? gscBlock : "(none — skip GSC coverage rules)"}
+
+GOOGLE AUTOCOMPLETE SUGGESTIONS — numbered; must ALL be addressed in article body OR as FAQ (see rules):
+${autoSuggest.length > 0 ? suggestBlock : "(none — skip autocomplete coverage rules)"}
+${coverageBlock}
 STRICT REQUIREMENTS:
 1. Open with # H1 heading — must contain primary keyword
 2. Follow every H2 (##) and H3 (###) from the outline above exactly
-3. Write 220-320 words per H2 section (concise, no fluff)
+3. Write substantial paragraphs per H2 section; if search lists are long, add the **## Search-related questions** section before the conclusion as needed
 4. Cite statistics inline as [Source: domain.com]
-5. Keyword density 1.5-2.5% (natural, never stuffed)
-6. FAQ section: 5 questions with 2-3 sentence answers each
+5. Keyword density 1.5-2.5% for primary (natural, never stuffed)
+6. **FAQ:** At least **5** questions from PAA when available; **plus** one FAQ pair (question + answer) for **each** Search Console query and autocomplete line not already clearly answered in the body sections above
 7. Conclusion: key takeaways + single clear CTA
 8. Use at least one markdown table and multiple bullet/numbered lists for scanability
 9. Add 1-2 data-visual placeholders in markdown image format with clear alt text and source note (for example charts/infographics based on cited stats)
 10. Keep introduction short and relevant (about 90-130 words)
 11. Active voice, short paragraphs (2-3 sentences max), simple sentence structure
-12. Keep each paragraph concise and meaningful; do not stretch text just to increase word count
+12. Keep each paragraph concise and meaningful; do not add fluff, but **do** add extra FAQ/subsections when needed to satisfy every numbered search line
 13. LANGUAGE FOR INDIAN READERS (English): Write so everyday Indian readers can follow easily — many read English as a second language.
     - Use **short sentences** (often 10–18 words). One main idea per sentence.
     - Choose **common everyday words** over fancy or rare synonyms (say “use” not “utilise”, “buy” not “procure”, “end” not “terminate”).
@@ -95,7 +168,7 @@ STRICT REQUIREMENTS:
     - **Avoid** heavy idioms, slang, riddles, and culture-specific US/UK jokes or references.
     - Prefer **British/Indian English spelling** where natural (e.g. colour, organisation, behaviour) — stay consistent.
     - Do not sound textbook-dry: stay friendly and direct, but never patronising.
-14. Do NOT truncate. Write every section in full.
+14. Do NOT truncate. Write every section in full — including every required FAQ/search query answer.
 15. Use markdown formatting throughout
 
 Write the complete article now:`;
@@ -107,6 +180,8 @@ Your default reader is a **typical Indian English reader**: comfortable with Eng
 ${userPrompt}`;
 
   const encoder = new TextEncoder();
+  const maxOutputTokens =
+    searchItemCount > 0 ? 16_384 : 8_192;
 
   const stream = new ReadableStream({
     async start(controller) {
@@ -117,7 +192,7 @@ ${userPrompt}`;
             controller.enqueue(encodeSseChunk(chunk));
           },
           geminiKey,
-          { temperature: 0.7, maxOutputTokens: 8192 },
+          { temperature: 0.7, maxOutputTokens },
         );
         controller.enqueue(encoder.encode("data: [DONE]\n\n"));
       } catch (e) {

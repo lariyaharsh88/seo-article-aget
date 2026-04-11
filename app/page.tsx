@@ -433,6 +433,8 @@ export default function Home() {
             researchContext,
             outlineText,
             paas: paasList,
+            searchConsoleQueries: gscRows.map((r) => r.query),
+            googleSuggestions,
           }),
         });
         if (!res.ok) {
