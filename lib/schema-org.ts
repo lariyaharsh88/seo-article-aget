@@ -1,4 +1,5 @@
 import type { BlogPost, EducationNewsArticle } from "@prisma/client";
+import { DEFAULT_ARTICLE_AUTHOR_NAME } from "@/lib/article-author";
 import { SITE_DESCRIPTION, SITE_NAME } from "@/lib/seo-site";
 import { getSiteUrl } from "@/lib/site-url";
 
@@ -156,7 +157,10 @@ export function buildBlogPostingSchema(post: BlogPost): Record<string, unknown> 
       ...(post.excerpt?.trim() ? { description: post.excerpt.trim() } : {}),
       datePublished: post.createdAt.toISOString(),
       dateModified: post.updatedAt.toISOString(),
-      author: { "@id": orgId },
+      author: {
+        "@type": "Person",
+        name: post.authorName?.trim() || DEFAULT_ARTICLE_AUTHOR_NAME,
+      },
       publisher: { "@id": orgId },
       mainEntityOfPage: { "@id": wpId },
       url,
@@ -178,6 +182,7 @@ export function buildRepurposedNewsArticleSchema(
     | "repurposedAt"
     | "updatedAt"
     | "repurposedImageUrl"
+    | "authorName"
   >,
 ): Record<string, unknown> {
   const { base, websiteId, orgId } = siteRefs();
@@ -242,7 +247,10 @@ export function buildRepurposedNewsArticleSchema(
       description: desc,
       datePublished: published,
       dateModified: post.updatedAt.toISOString(),
-      author: { "@id": orgId },
+      author: {
+        "@type": "Person",
+        name: post.authorName?.trim() || DEFAULT_ARTICLE_AUTHOR_NAME,
+      },
       publisher: {
         "@type": "Organization",
         "@id": orgId,

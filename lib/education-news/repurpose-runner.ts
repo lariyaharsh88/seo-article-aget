@@ -1,4 +1,5 @@
 import { revalidatePath } from "next/cache";
+import { DEFAULT_ARTICLE_AUTHOR_NAME } from "@/lib/article-author";
 import { slugify } from "@/lib/blog-slug";
 import { geminiText } from "@/lib/gemini";
 import { fetchArticlePlainText } from "@/lib/education-news/fetch-article-text";
@@ -109,6 +110,7 @@ export async function runRepurposeForArticleId(
         errorMessage: null,
         repurposedSlug,
         repurposedCanonicalUrl,
+        authorName: DEFAULT_ARTICLE_AUTHOR_NAME,
       },
     });
 

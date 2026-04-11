@@ -6,6 +6,7 @@ import { unstable_noStore as noStore } from "next/cache";
 import { notFound } from "next/navigation";
 import { marked } from "marked";
 import { ContentInterlinks } from "@/components/ContentInterlinks";
+import { DEFAULT_ARTICLE_AUTHOR_NAME } from "@/lib/article-author";
 import { JsonLd } from "@/components/JsonLd";
 import {
   findReadyRepurposedNewsBySlug,
@@ -100,6 +101,10 @@ export default async function RepurposedNewsArticlePage({ params }: Props) {
         <article className="mt-6">
           <p className="font-mono text-xs text-text-muted">
             <span className="text-text-secondary">{post.source}</span>
+            <span className="mx-2 text-text-muted/60">·</span>
+            <span className="text-text-secondary">
+              By {post.authorName?.trim() || DEFAULT_ARTICLE_AUTHOR_NAME}
+            </span>
             {post.repurposedAt ? (
               <>
                 {" · "}

@@ -1,3 +1,4 @@
+import { DEFAULT_ARTICLE_AUTHOR_NAME } from "@/lib/article-author";
 import type { NewsArticle } from "@/lib/education-news/types";
 import { prisma } from "@/lib/prisma";
 
@@ -23,6 +24,7 @@ export async function syncEducationNewsArticles(
         title: a.title.slice(0, 500),
         source: a.source.slice(0, 120),
         lastmod: a.lastmod.slice(0, 80),
+        authorName: DEFAULT_ARTICLE_AUTHOR_NAME,
         repurposeStatus: "pending",
       },
       update: {

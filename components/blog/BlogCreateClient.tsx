@@ -11,6 +11,7 @@ import { LiveLog } from "@/components/LiveLog";
 import { PipelineProgress } from "@/components/PipelineProgress";
 import { runArticlePipeline } from "@/lib/article-pipeline";
 import { computeArticleSeoScore } from "@/lib/article-seo-score";
+import { DEFAULT_ARTICLE_AUTHOR_NAME } from "@/lib/article-author";
 import { slugify } from "@/lib/blog-slug";
 import { PIPELINE_STAGES } from "@/lib/pipeline-stages";
 import type { Keyword, SeoMeta } from "@/lib/types";
@@ -49,6 +50,10 @@ function postFromApiJson(data: unknown): BlogPost {
     content: String(o.content ?? ""),
     published: Boolean(o.published),
     authorEmail: String(o.authorEmail ?? ""),
+    authorName:
+      typeof o.authorName === "string" && o.authorName.trim()
+        ? String(o.authorName)
+        : DEFAULT_ARTICLE_AUTHOR_NAME,
     createdAt: new Date(String(o.createdAt ?? Date.now())),
     updatedAt: new Date(String(o.updatedAt ?? Date.now())),
   };

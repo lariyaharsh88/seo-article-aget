@@ -44,6 +44,7 @@ model BlogPost {
   content     String   @db.Text
   published   Boolean  @default(false)
   authorEmail String
+  authorName  String   @default("Harsh")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
@@ -55,6 +56,7 @@ model EducationNewsArticle {
   title              String
   source             String
   lastmod            String
+  authorName         String    @default("Harsh")
   rawArticleText     String?   @db.Text
   rawFetchedAt       DateTime?
   repurposedMarkdown String?   @db.Text

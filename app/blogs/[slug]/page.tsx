@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { marked } from "marked";
 import { ContentInterlinks } from "@/components/ContentInterlinks";
 import { JsonLd } from "@/components/JsonLd";
+import { DEFAULT_ARTICLE_AUTHOR_NAME } from "@/lib/article-author";
 import {
   findPublishedBlogPostBySlug,
   listPublishedBlogPostsExceptSlug,
@@ -89,16 +90,19 @@ export default async function BlogPostPage({ params }: Props) {
         </Link>
       </p>
       <article className="mt-6">
-        <time
-          className="font-mono text-xs text-text-muted"
-          dateTime={post.createdAt.toISOString()}
-        >
-          {post.createdAt.toLocaleDateString("en-IN", {
-            year: "numeric",
-            month: "long",
-            day: "numeric",
-          })}
-        </time>
+        <p className="font-mono text-xs text-text-muted">
+          <time dateTime={post.createdAt.toISOString()}>
+            {post.createdAt.toLocaleDateString("en-IN", {
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+            })}
+          </time>
+          <span className="mx-2 text-text-muted/60">·</span>
+          <span className="text-text-secondary">
+            By {post.authorName?.trim() || DEFAULT_ARTICLE_AUTHOR_NAME}
+          </span>
+        </p>
         <h1 className="mt-3 font-display text-3xl text-text-primary sm:text-4xl md:text-5xl">
           {post.title}
         </h1>

@@ -4,6 +4,7 @@ import { Prisma } from "@prisma/client";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth-options";
 import { BLOG_ADMIN_EMAIL } from "@/lib/blog-constants";
+import { DEFAULT_ARTICLE_AUTHOR_NAME } from "@/lib/article-author";
 import { ensureUniqueSlug, slugify } from "@/lib/blog-slug";
 import { prisma } from "@/lib/prisma";
 
@@ -49,6 +50,7 @@ export async function POST(request: Request) {
     excerpt?: string;
     content?: string;
     published?: boolean;
+    authorName?: string;
   };
   try {
     body = (await request.json()) as typeof body;
@@ -77,6 +79,11 @@ export async function POST(request: Request) {
       ? body.excerpt.trim()
       : null;
 
+  const authorName =
+    typeof body.authorName === "string" && body.authorName.trim()
+      ? body.authorName.trim().slice(0, 120)
+      : DEFAULT_ARTICLE_AUTHOR_NAME;
+
   let slug = await ensureUniqueSlug(baseSlug);
   for (let attempt = 0; attempt < 8; attempt++) {
     try {
@@ -92,6 +99,7 @@ export async function POST(request: Request) {
                 content,
                 published: Boolean(body.published),
                 authorEmail: adminEmail!,
+                authorName,
               },
             });
           } catch (e) {
