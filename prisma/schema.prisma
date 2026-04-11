@@ -47,3 +47,21 @@ model BlogPost {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
+
+// Sitemap-backed education news: persisted + optional AI repurposed draft (SEO-style).
+model EducationNewsArticle {
+  id                 String    @id @default(cuid())
+  url                String    @unique
+  title              String
+  source             String
+  lastmod            String
+  rawArticleText     String?   @db.Text
+  rawFetchedAt       DateTime?
+  repurposedMarkdown String?   @db.Text
+  repurposedAt       DateTime?
+  // pending | processing | ready | error
+  repurposeStatus    String    @default("pending")
+  errorMessage       String?   @db.Text
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+}

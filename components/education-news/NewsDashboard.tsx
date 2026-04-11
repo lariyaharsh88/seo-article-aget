@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { NewsArticle } from "@/lib/education-news/types";
+import type { StoredEducationNewsListItem } from "@/lib/education-news/stored-types";
+import { StoredRepurposePanel } from "./StoredRepurposePanel";
 import { EducationNewsArticlePreviewModal } from "./ArticlePreviewModal";
 import { EducationNewsCard } from "./NewsCard";
 import { EducationNewsEmptyState } from "./EmptyState";
@@ -10,11 +12,13 @@ import { EducationNewsLoadingSkeleton } from "./LoadingSkeleton";
 interface NewsDashboardProps {
   initialArticles: NewsArticle[];
   initialSources: string[];
+  initialStoredRows?: StoredEducationNewsListItem[];
 }
 
 export function EducationNewsDashboard({
   initialArticles,
   initialSources,
+  initialStoredRows = [],
 }: NewsDashboardProps) {
   const [articles, setArticles] = useState<NewsArticle[]>(initialArticles);
   const [allArticles, setAllArticles] =
@@ -34,6 +38,7 @@ export function EducationNewsDashboard({
   const [selectedArticle, setSelectedArticle] = useState<NewsArticle | null>(
     null,
   );
+  const [storedSyncKey, setStoredSyncKey] = useState(0);
 
   useEffect(() => {
     setMounted(true);
@@ -99,6 +104,7 @@ export function EducationNewsDashboard({
       }, 5000);
       setSources(data.sources);
       setLastRefresh(new Date());
+      setStoredSyncKey((k) => k + 1);
     } catch (error) {
       console.error("Error refreshing news:", error);
     } finally {
@@ -284,6 +290,11 @@ export function EducationNewsDashboard({
           onClose={() => setSelectedArticle(null)}
         />
       ) : null}
+
+      <StoredRepurposePanel
+        initialItems={initialStoredRows}
+        syncKey={storedSyncKey}
+      />
     </div>
   );
 }

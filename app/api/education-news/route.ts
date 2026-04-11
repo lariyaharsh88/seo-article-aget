@@ -3,6 +3,7 @@ import {
   fetchAllSitemaps,
   getUniqueSources,
 } from "@/lib/education-news/fetchSitemaps";
+import { syncEducationNewsArticles } from "@/lib/education-news/sync-stored";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -12,6 +13,12 @@ export async function GET() {
   try {
     const articles = await fetchAllSitemaps();
     const sources = getUniqueSources(articles);
+
+    try {
+      await syncEducationNewsArticles(articles);
+    } catch (syncErr) {
+      console.error("[education-news] sync to DB:", syncErr);
+    }
 
     return NextResponse.json({
       articles,
