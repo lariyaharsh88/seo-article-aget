@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { unstable_cache } from "next/cache";
 import Link from "next/link";
 import { InterestOverTimeChart } from "@/components/InterestOverTimeChart";
+import { JsonLd } from "@/components/JsonLd";
 import { ToolExplainerSection } from "@/components/ToolExplainerSection";
 import {
   fetchEducationTrends,
@@ -13,12 +14,22 @@ import {
   type ExploreQueryRow,
 } from "@/lib/education-trends";
 import { buildPageMetadata } from "@/lib/seo-page";
+import { buildToolWebApplicationSchema } from "@/lib/schema-org";
 import { getToolExplainerMarkdown } from "@/lib/tool-explainer";
+
+const ED_TRENDS_DESC =
+  "Education Top / Rising queries and interest-over-time charts — India-focused seeds, geo presets, and downloadable signals.";
+
+const educationTrendsSchema = buildToolWebApplicationSchema({
+  path: "/education-trends",
+  name: "Education Google Trends",
+  headline: "Explore education searches",
+  description: ED_TRENDS_DESC,
+});
 
 export const metadata: Metadata = buildPageMetadata({
   title: "Education Google Trends",
-  description:
-    "Education Top / Rising queries and interest-over-time charts — India-focused seeds, geo presets, and downloadable signals.",
+  description: ED_TRENDS_DESC,
   path: "/education-trends",
 });
 
@@ -120,6 +131,8 @@ export default async function EducationTrendsPage({
 
   if (!data) {
     return (
+      <>
+        <JsonLd data={educationTrendsSchema} />
       <main className="mx-auto max-w-4xl px-4 py-10 md:px-6">
         <div className="rounded-xl border border-amber-500/40 bg-amber-950/20 p-5">
           <h1 className="font-display text-2xl text-amber-100">
@@ -149,10 +162,13 @@ export default async function EducationTrendsPage({
         </div>
         <ToolExplainerSection markdown={explainerMd} />
       </main>
+      </>
     );
   }
 
   return (
+    <>
+      <JsonLd data={educationTrendsSchema} />
     <main className="mx-auto max-w-6xl px-4 py-8 md:px-6 md:py-10">
       <div className="mb-8 space-y-3 border-b border-border pb-8">
         <p className="font-mono text-xs uppercase tracking-[0.2em] text-accent">
@@ -470,6 +486,7 @@ export default async function EducationTrendsPage({
 
       <ToolExplainerSection markdown={explainerMd} />
     </main>
+    </>
   );
 }
 

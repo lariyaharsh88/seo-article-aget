@@ -3,8 +3,10 @@ import Link from "next/link";
 import { unstable_noStore as noStore } from "next/cache";
 import { notFound } from "next/navigation";
 import { marked } from "marked";
+import { JsonLd } from "@/components/JsonLd";
 import { findPublishedBlogPostBySlug } from "@/lib/blog-post-query";
 import { buildPageMetadata } from "@/lib/seo-page";
+import { buildBlogPostingSchema } from "@/lib/schema-org";
 import { SITE_NAME } from "@/lib/seo-site";
 
 type Props = { params: { slug: string } };
@@ -14,11 +16,18 @@ export const dynamic = "force-dynamic";
 export async function generateMetadata({ params }: Props) {
   let title = "Blog post";
   let description = SITE_NAME;
+  let article:
+    | { publishedTime: string; modifiedTime: string }
+    | undefined;
   try {
     const post = await findPublishedBlogPostBySlug(params.slug);
     if (post) {
       title = post.title;
       description = (post.excerpt?.slice(0, 160) || post.title) ?? SITE_NAME;
+      article = {
+        publishedTime: post.createdAt.toISOString(),
+        modifiedTime: post.updatedAt.toISOString(),
+      };
     }
   } catch {
     /* DB unavailable after retries */
@@ -27,6 +36,7 @@ export async function generateMetadata({ params }: Props) {
     title,
     description,
     path: `/blogs/${params.slug}`,
+    article,
   });
 }
 
@@ -56,6 +66,8 @@ export default async function BlogPostPage({ params }: Props) {
   }
 
   return (
+    <>
+      <JsonLd data={buildBlogPostingSchema(post)} />
     <main className="mx-auto min-w-0 max-w-3xl px-4 py-8 sm:py-10 md:px-6">
       <p className="font-mono text-xs">
         <Link
@@ -90,5 +102,6 @@ export default async function BlogPostPage({ params }: Props) {
         />
       </article>
     </main>
+    </>
   );
 }

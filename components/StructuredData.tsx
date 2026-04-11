@@ -27,6 +27,10 @@ export function StructuredData() {
         "@id": `${url}/#organization`,
         name: SITE_NAME,
         url,
+        logo: {
+          "@type": "ImageObject",
+          url: `${url}/favicon.ico`,
+        },
       },
       {
         "@type": "SoftwareApplication",
@@ -47,10 +51,11 @@ export function StructuredData() {
     ],
   };
 
+  const json = JSON.stringify(graph).replace(/</g, "\\u003c");
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(graph) }}
+      dangerouslySetInnerHTML={{ __html: json }}
     />
   );
 }

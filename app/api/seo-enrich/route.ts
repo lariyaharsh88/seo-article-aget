@@ -1,15 +1,15 @@
 import { NextResponse } from "next/server";
 import { marked } from "marked";
-import { resolveGeminiKey, resolveOpenAIKey } from "@/lib/api-keys";
+import { resolveGeminiKey } from "@/lib/api-keys";
 import { classifySection } from "@/lib/seo-enrichment/classify-section";
 import { extractH1AndSections } from "@/lib/seo-enrichment/extract-sections";
 import { extractNumericSeries } from "@/lib/seo-enrichment/extract-numeric-series";
 import {
   geminiComparisonTableHtml,
   geminiImagePrompt,
-  openAiGenerateImageUrl,
 } from "@/lib/seo-enrichment/llm-helpers";
 import { mockSectionImageUrl } from "@/lib/seo-enrichment/mock-image-url";
+import { buildPollinationsImageUrl } from "@/lib/seo-enrichment/pollinations-url";
 import { buildBarChartUrl } from "@/lib/seo-enrichment/quickchart-url";
 import type { EnrichedSectionLog, VisualKind } from "@/lib/seo-enrichment/types";
 
@@ -19,7 +19,6 @@ const MAX_SECTIONS = 10;
 
 export async function POST(request: Request) {
   const geminiKey = resolveGeminiKey(request);
-  const openaiKey = resolveOpenAIKey(request);
 
   let body: { markdown?: string; keyword?: string };
   try {
@@ -106,9 +105,9 @@ export async function POST(request: Request) {
       });
     }
 
-    /** Hero image under every H2 (DALL·E when configured; else placeholder). */
+    /** Hero image under every H2 — Gemini prompt + Pollinations (free URL, no OpenAI). */
     let heroUrl: string;
-    if (geminiKey && openaiKey) {
+    if (geminiKey) {
       try {
         const prompt = await geminiImagePrompt(
           sec.title,
@@ -116,11 +115,11 @@ export async function POST(request: Request) {
           keyword,
           geminiKey,
         );
-        heroUrl = await openAiGenerateImageUrl(prompt, openaiKey);
+        heroUrl = buildPollinationsImageUrl(prompt);
         logs.push({
           title: sec.title,
           kind: "illustration",
-          detail: "OpenAI + Gemini prompt",
+          detail: "Pollinations image (Gemini prompt)",
         });
       } catch (e) {
         heroUrl = mockSectionImageUrl(sec.title, i);
@@ -136,7 +135,7 @@ export async function POST(request: Request) {
         logs.push({
           title: sec.title,
           kind: "illustration",
-          detail: "Placeholder image (set GEMINI_API_KEY + OPENAI_API_KEY)",
+          detail: "Placeholder image (set GEMINI_API_KEY for AI prompts)",
         });
       }
     }
@@ -171,8 +170,9 @@ export async function POST(request: Request) {
     html,
     sections: slice.length,
     logs,
-    hasOpenAI: Boolean(openaiKey),
     hasGemini: Boolean(geminiKey),
+    /** Section heroes use Pollinations when Gemini is configured (no paid image API). */
+    heroImageSource: geminiKey ? "pollinations" : "placeholder",
   });
 }
 

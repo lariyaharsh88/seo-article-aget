@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { AdSenseSlot } from "@/components/AdSenseSlot";
+import { JsonLd } from "@/components/JsonLd";
 import { buildPageMetadata } from "@/lib/seo-page";
 import { ADSENSE_SLOTS } from "@/lib/adsense-config";
+import { buildHomePageSchema } from "@/lib/schema-org";
 import { SITE_DESCRIPTION } from "@/lib/seo-site";
 
 export const metadata: Metadata = buildPageMetadata({
@@ -58,6 +60,8 @@ const tools = [
 
 export default function HomePage() {
   return (
+    <>
+      <JsonLd data={buildHomePageSchema()} />
     <main className="mx-auto max-w-6xl px-4 py-10 md:px-6">
       <header className="mb-12 space-y-4 border-b border-border pb-10">
         <p className="font-mono text-xs uppercase tracking-[0.2em] text-accent">
@@ -109,5 +113,6 @@ export default function HomePage() {
         ))}
       </ul>
     </main>
+    </>
   );
 }

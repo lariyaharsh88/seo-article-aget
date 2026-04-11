@@ -6,7 +6,7 @@ export async function geminiImagePrompt(
   keyword: string,
   apiKey: string,
 ): Promise<string> {
-  const prompt = `Write ONE English DALL·E 3 image prompt (max 900 characters) for a professional editorial illustration.
+  const prompt = `Write ONE English image prompt (max 900 characters) for a professional editorial illustration.
 Topic keyword: ${keyword}
 Section heading: ${sectionTitle}
 Section excerpt (for context only):
@@ -46,36 +46,4 @@ Output ONLY the <table>...</table> HTML. No markdown, no code fences, no explana
     throw new Error("Model did not return a table");
   }
   return html;
-}
-
-export async function openAiGenerateImageUrl(
-  prompt: string,
-  apiKey: string,
-): Promise<string> {
-  const res = await fetch("https://api.openai.com/v1/images/generations", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: "dall-e-3",
-      prompt: prompt.slice(0, 4000),
-      n: 1,
-      size: "1024x1024",
-      quality: "standard",
-    }),
-  });
-  const data = (await res.json()) as {
-    data?: { url?: string }[];
-    error?: { message?: string };
-  };
-  if (!res.ok) {
-    throw new Error(data.error?.message || `OpenAI images HTTP ${res.status}`);
-  }
-  const url = data.data?.[0]?.url;
-  if (!url) {
-    throw new Error("OpenAI returned no image URL");
-  }
-  return url;
 }

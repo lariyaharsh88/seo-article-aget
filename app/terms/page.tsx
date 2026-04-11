@@ -1,15 +1,31 @@
 import type { Metadata } from "next";
+import { JsonLd } from "@/components/JsonLd";
 import { buildPageMetadata } from "@/lib/seo-page";
+import { buildStaticWebPageSchema } from "@/lib/schema-org";
 import { SITE_NAME } from "@/lib/seo-site";
+
+const TERMS_DESC = `Terms of use for ${SITE_NAME} websites and tools: disclaimers, acceptable use, and limitations.`;
 
 export const metadata: Metadata = buildPageMetadata({
   title: "Terms of Service",
-  description: `Terms of use for ${SITE_NAME} websites and tools: disclaimers, acceptable use, and limitations.`,
+  description: TERMS_DESC,
   path: "/terms",
 });
 
 export default function TermsPage() {
   return (
+    <>
+      <JsonLd
+        data={buildStaticWebPageSchema({
+          path: "/terms",
+          name: "Terms of Service",
+          description: TERMS_DESC,
+          breadcrumb: [
+            { name: "Home", path: "/" },
+            { name: "Terms of Service", path: "/terms" },
+          ],
+        })}
+      />
     <main className="mx-auto max-w-3xl px-4 py-12 md:px-6">
       <p className="font-mono text-xs uppercase tracking-[0.2em] text-accent">
         Legal
@@ -99,5 +115,6 @@ export default function TermsPage() {
         </section>
       </div>
     </main>
+    </>
   );
 }

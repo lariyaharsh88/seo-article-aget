@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { unstable_noStore as noStore } from "next/cache";
+import { JsonLd } from "@/components/JsonLd";
 import { listPublishedBlogPosts } from "@/lib/blog-post-query";
 import { buildPageMetadata } from "@/lib/seo-page";
+import { buildBlogsIndexSchema } from "@/lib/schema-org";
 
 export const metadata = buildPageMetadata({
   title: "Blog",
@@ -23,6 +25,8 @@ export default async function BlogsIndexPage() {
   }
 
   return (
+    <>
+      <JsonLd data={buildBlogsIndexSchema()} />
     <main className="mx-auto min-w-0 max-w-3xl px-4 py-8 sm:py-10 md:px-6">
       {listError ? (
         <div
@@ -94,5 +98,6 @@ export default async function BlogsIndexPage() {
         )}
       </ul>
     </main>
+    </>
   );
 }

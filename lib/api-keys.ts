@@ -16,7 +16,7 @@ export function resolveSerperKey(request: Request): string | undefined {
   return process.env.SERPER_API_KEY?.trim() || undefined;
 }
 
-/** OpenAI (DALL·E) — optional; enrichment falls back to placeholders without it. */
+/** OpenAI — optional if you add tools that call OpenAI APIs. */
 export function resolveOpenAIKey(request: Request): string | undefined {
   const header = request.headers.get("x-openai-key")?.trim();
   if (header) return header;

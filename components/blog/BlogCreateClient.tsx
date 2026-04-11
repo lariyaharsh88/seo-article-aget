@@ -293,15 +293,13 @@ export function BlogCreateClient({ initialPosts, loadError }: Props) {
           const title = m?.metaTitle || firstLine;
           const excerpt = m?.metaDescription || "";
           const baseSlug = slugify(m?.urlSlug || m?.metaTitle || firstLine);
-          /** Per-item unique slug (batch order + time) to avoid collisions and duplicate rows on retry. */
-          const slug = `${baseSlug}-p${i + 1}-t${Date.now()}`;
 
           pushLog(
             `[Batch ${i + 1}/${topics.length}] Saving to database…`,
           );
           const saved = await postBlogToApi({
             title,
-            slug,
+            slug: baseSlug,
             excerpt: excerpt || undefined,
             content: result.article,
             published,

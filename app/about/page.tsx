@@ -1,16 +1,33 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { JsonLd } from "@/components/JsonLd";
 import { buildPageMetadata } from "@/lib/seo-page";
+import { buildStaticWebPageSchema } from "@/lib/schema-org";
 import { SITE_NAME } from "@/lib/seo-site";
+
+const ABOUT_DESC = `${SITE_NAME} is a suite of SEO tools for content pipelines, off-page outreach, and education-focused research signals.`;
 
 export const metadata: Metadata = buildPageMetadata({
   title: "About",
-  description: `${SITE_NAME} is a suite of SEO tools for content pipelines, off-page outreach, and education-focused research signals.`,
+  description: ABOUT_DESC,
   path: "/about",
 });
 
 export default function AboutPage() {
   return (
+    <>
+      <JsonLd
+        data={buildStaticWebPageSchema({
+          path: "/about",
+          name: `About ${SITE_NAME}`,
+          description: ABOUT_DESC,
+          pageType: "AboutPage",
+          breadcrumb: [
+            { name: "Home", path: "/" },
+            { name: "About", path: "/about" },
+          ],
+        })}
+      />
     <main className="mx-auto max-w-3xl px-4 py-12 md:px-6">
       <p className="font-mono text-xs uppercase tracking-[0.2em] text-accent">
         About
@@ -46,5 +63,6 @@ export default function AboutPage() {
         </p>
       </div>
     </main>
+    </>
   );
 }

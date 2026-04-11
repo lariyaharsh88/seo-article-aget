@@ -1,4 +1,5 @@
 import type { BlogPost } from "@prisma/client";
+import type { Metadata } from "next";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { BlogCreateClient } from "@/components/blog/BlogCreateClient";
@@ -7,12 +8,15 @@ import { BLOG_ADMIN_EMAIL } from "@/lib/blog-constants";
 import { prisma } from "@/lib/prisma";
 import { buildPageMetadata } from "@/lib/seo-page";
 
-export const metadata = buildPageMetadata({
-  title: "Blog CMS",
-  description:
-    "Run the article generator from one or comma-separated topics; batch runs save to the blog (admin only).",
-  path: "/blog-create",
-});
+export const metadata: Metadata = {
+  ...buildPageMetadata({
+    title: "Blog CMS",
+    description:
+      "Run the article generator from one or comma-separated topics; batch runs save to the blog (admin only).",
+    path: "/blog-create",
+  }),
+  robots: { index: false, follow: false },
+};
 
 export default async function BlogCreatePage() {
   const session = await getServerSession(authOptions);

@@ -4,3 +4,4 @@ export { classifySection } from "./classify-section";
 export { extractNumericSeries } from "./extract-numeric-series";
 export { buildBarChartUrl } from "./quickchart-url";
 export { mockSectionImageUrl } from "./mock-image-url";
+export { buildPollinationsImageUrl } from "./pollinations-url";

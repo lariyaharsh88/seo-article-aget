@@ -108,6 +108,7 @@ export async function POST(request: Request) {
         throw new Error("createBlogPost: unreachable");
       })();
       revalidatePath("/blogs");
+      revalidatePath("/blogs/sitemap.xml");
       revalidatePath(`/blogs/${post.slug}`);
       return NextResponse.json(post);
     } catch (e) {
@@ -116,9 +117,7 @@ export async function POST(request: Request) {
         e.code === "P2002" &&
         attempt < 7
       ) {
-        slug = await ensureUniqueSlug(
-          `${baseSlug}-${attempt + 1}-${Date.now()}`,
-        );
+        slug = await ensureUniqueSlug(baseSlug);
         continue;
       }
       throw e;

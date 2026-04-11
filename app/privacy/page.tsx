@@ -1,15 +1,31 @@
 import type { Metadata } from "next";
+import { JsonLd } from "@/components/JsonLd";
 import { buildPageMetadata } from "@/lib/seo-page";
+import { buildStaticWebPageSchema } from "@/lib/schema-org";
 import { SITE_NAME } from "@/lib/seo-site";
+
+const PRIVACY_DESC = `How ${SITE_NAME} handles information, analytics (Google Analytics 4), and ads (Google AdSense).`;
 
 export const metadata: Metadata = buildPageMetadata({
   title: "Privacy Policy",
-  description: `How ${SITE_NAME} handles information, analytics (Google Analytics 4), and ads (Google AdSense).`,
+  description: PRIVACY_DESC,
   path: "/privacy",
 });
 
 export default function PrivacyPage() {
   return (
+    <>
+      <JsonLd
+        data={buildStaticWebPageSchema({
+          path: "/privacy",
+          name: "Privacy Policy",
+          description: PRIVACY_DESC,
+          breadcrumb: [
+            { name: "Home", path: "/" },
+            { name: "Privacy Policy", path: "/privacy" },
+          ],
+        })}
+      />
     <main className="mx-auto max-w-3xl px-4 py-12 md:px-6">
       <p className="font-mono text-xs uppercase tracking-[0.2em] text-accent">
         Legal
@@ -115,5 +131,6 @@ export default function PrivacyPage() {
         </section>
       </div>
     </main>
+    </>
   );
 }

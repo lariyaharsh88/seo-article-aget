@@ -1,5 +1,4 @@
 import type { MetadataRoute } from "next";
-import { prisma } from "@/lib/prisma";
 import { getSiteUrl } from "@/lib/site-url";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -44,12 +43,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.85,
     },
     {
-      url: `${base}/blogs`,
-      lastModified: now,
-      changeFrequency: "weekly",
-      priority: 0.75,
-    },
-    {
       url: `${base}/about`,
       lastModified: now,
       changeFrequency: "monthly",
@@ -69,22 +62,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
   ];
 
-  try {
-    const posts = await prisma.blogPost.findMany({
-      where: { published: true },
-      select: { slug: true, updatedAt: true },
-    });
-    for (const p of posts) {
-      routes.push({
-        url: `${base}/blogs/${p.slug}`,
-        lastModified: p.updatedAt,
-        changeFrequency: "monthly",
-        priority: 0.65,
-      });
-    }
-  } catch {
-    /* DB unavailable at build time */
-  }
+  /* Blog listing + posts: `/blogs/sitemap.xml` (see robots.txt). */
 
   return routes;
 }
