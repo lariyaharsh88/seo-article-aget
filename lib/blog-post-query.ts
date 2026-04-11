@@ -98,3 +98,39 @@ export async function findPublishedBlogPostBySlug(
   }
   throw new Error("findPublishedBlogPostBySlug: unreachable");
 }
+
+/** Other published posts for bottom-of-article internal links (newest first). */
+export async function listPublishedBlogPostsExceptSlug(
+  rawExcludeSlug: string,
+  take = 6,
+): Promise<PublishedBlogListItem[]> {
+  const excludeSlug = normalizeBlogSlugParam(rawExcludeSlug);
+  if (!excludeSlug) {
+    const all = await listPublishedBlogPosts();
+    return all.slice(0, take);
+  }
+
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    try {
+      return await prisma.blogPost.findMany({
+        where: { published: true, slug: { not: excludeSlug } },
+        orderBy: { updatedAt: "desc" },
+        take,
+        select: {
+          id: true,
+          slug: true,
+          title: true,
+          excerpt: true,
+          createdAt: true,
+        },
+      });
+    } catch (err) {
+      if (attempt < MAX_ATTEMPTS && isRetryablePrismaError(err)) {
+        await sleep(Math.min(120 * 2 ** (attempt - 1), 2000));
+        continue;
+      }
+      throw err;
+    }
+  }
+  throw new Error("listPublishedBlogPostsExceptSlug: unreachable");
+}

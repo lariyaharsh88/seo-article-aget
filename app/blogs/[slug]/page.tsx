@@ -3,8 +3,12 @@ import Link from "next/link";
 import { unstable_noStore as noStore } from "next/cache";
 import { notFound } from "next/navigation";
 import { marked } from "marked";
+import { ContentInterlinks } from "@/components/ContentInterlinks";
 import { JsonLd } from "@/components/JsonLd";
-import { findPublishedBlogPostBySlug } from "@/lib/blog-post-query";
+import {
+  findPublishedBlogPostBySlug,
+  listPublishedBlogPostsExceptSlug,
+} from "@/lib/blog-post-query";
 import { buildPageMetadata } from "@/lib/seo-page";
 import { buildBlogPostingSchema } from "@/lib/schema-org";
 import { SITE_NAME } from "@/lib/seo-site";
@@ -55,6 +59,13 @@ export default async function BlogPostPage({ params }: Props) {
     notFound();
   }
 
+  let peerPosts: Awaited<ReturnType<typeof listPublishedBlogPostsExceptSlug>> = [];
+  try {
+    peerPosts = await listPublishedBlogPostsExceptSlug(post.slug, 6);
+  } catch (e) {
+    console.error("[blogs/[slug]] peer posts:", e);
+  }
+
   marked.setOptions({ gfm: true });
   let html: string;
   try {
@@ -101,6 +112,17 @@ export default async function BlogPostPage({ params }: Props) {
           dangerouslySetInnerHTML={{ __html: html }}
         />
       </article>
+      <ContentInterlinks
+        headingId="more-blog-posts"
+        heading="More posts"
+        items={peerPosts.map((p) => ({
+          href: `/blogs/${encodeURIComponent(p.slug)}`,
+          title: p.title,
+          description: p.excerpt?.trim() || null,
+        }))}
+        seeAllHref="/blogs"
+        seeAllLabel="All posts"
+      />
     </main>
     </>
   );

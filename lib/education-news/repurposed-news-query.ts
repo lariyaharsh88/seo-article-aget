@@ -98,3 +98,54 @@ export async function findReadyRepurposedNewsBySlug(
   }
   throw new Error("findReadyRepurposedNewsBySlug: unreachable");
 }
+
+/** Other ready news articles for bottom-of-page internal links (newest first). */
+export async function listReadyRepurposedNewsExceptSlug(
+  rawExcludeSlug: string,
+  take = 6,
+): Promise<RepurposedNewsListItem[]> {
+  const excludeSlug = normalizeNewsSlugParam(rawExcludeSlug);
+  if (!excludeSlug) {
+    const all = await listReadyRepurposedNews();
+    return all.slice(0, take);
+  }
+
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    try {
+      const rows = await prisma.educationNewsArticle.findMany({
+        where: {
+          repurposeStatus: "ready",
+          repurposedMarkdown: { not: null },
+          repurposedAt: { not: null },
+          repurposedSlug: { not: null },
+          NOT: { repurposedSlug: excludeSlug },
+        },
+        orderBy: { updatedAt: "desc" },
+        take,
+        select: {
+          id: true,
+          repurposedSlug: true,
+          title: true,
+          source: true,
+          repurposedAt: true,
+        },
+      });
+      return rows
+        .filter((r) => Boolean(r.repurposedSlug?.trim()))
+        .map((r) => ({
+          id: r.id,
+          slug: r.repurposedSlug as string,
+          title: r.title,
+          source: r.source,
+          repurposedAt: r.repurposedAt as Date,
+        }));
+    } catch (err) {
+      if (attempt < MAX_ATTEMPTS && isRetryablePrismaError(err)) {
+        await sleep(Math.min(120 * 2 ** (attempt - 1), 2000));
+        continue;
+      }
+      throw err;
+    }
+  }
+  throw new Error("listReadyRepurposedNewsExceptSlug: unreachable");
+}

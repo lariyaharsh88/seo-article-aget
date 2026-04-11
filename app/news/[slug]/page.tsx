@@ -5,9 +5,11 @@ import Link from "next/link";
 import { unstable_noStore as noStore } from "next/cache";
 import { notFound } from "next/navigation";
 import { marked } from "marked";
+import { ContentInterlinks } from "@/components/ContentInterlinks";
 import { JsonLd } from "@/components/JsonLd";
 import {
   findReadyRepurposedNewsBySlug,
+  listReadyRepurposedNewsExceptSlug,
   normalizeNewsSlugParam,
 } from "@/lib/education-news/repurposed-news-query";
 import { buildRepurposedNewsArticleSchema } from "@/lib/schema-org";
@@ -63,6 +65,14 @@ export default async function RepurposedNewsArticlePage({ params }: Props) {
 
   if (!post?.repurposedSlug?.trim() || !post.repurposedMarkdown?.trim()) {
     notFound();
+  }
+
+  const currentSlug = post.repurposedSlug.trim();
+  let peerNews: Awaited<ReturnType<typeof listReadyRepurposedNewsExceptSlug>> = [];
+  try {
+    peerNews = await listReadyRepurposedNewsExceptSlug(currentSlug, 6);
+  } catch (e) {
+    console.error("[news/[slug]] peer articles:", e);
   }
 
   marked.setOptions({ gfm: true });
@@ -143,6 +153,21 @@ export default async function RepurposedNewsArticlePage({ params }: Props) {
             dangerouslySetInnerHTML={{ __html: html }}
           />
         </article>
+        <ContentInterlinks
+          headingId="more-news-articles"
+          heading="More news"
+          items={peerNews.map((n) => ({
+            href: `/news/${encodeURIComponent(n.slug)}`,
+            title: n.title,
+            description: `${n.source} · ${n.repurposedAt.toLocaleDateString("en-IN", {
+              year: "numeric",
+              month: "short",
+              day: "numeric",
+            })}`,
+          }))}
+          seeAllHref="/news"
+          seeAllLabel="All news"
+        />
       </main>
     </>
   );
