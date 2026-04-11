@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
-import { buildResearchChartAssets } from "@/lib/research-chart-from-text";
+import { buildResearchInfographicAssets } from "@/lib/research-infographic-from-text";
 
 interface Body {
   topic?: string;
   audience?: string;
   researchContext?: string;
-  /** Max chart images to build (1–6). */
+  /** Max infographic images to build (1–6). */
   count?: number;
 }
 
@@ -26,7 +26,7 @@ export async function POST(request: Request) {
       Math.max(1, Math.floor(Number(body.count)) || 4),
     );
 
-    const images = buildResearchChartAssets(
+    const images = buildResearchInfographicAssets(
       researchContext,
       topic,
       maxImages,
@@ -36,7 +36,7 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           error:
-            "No chart could be built: research text needs at least two numeric values in the same sentence or line (e.g. percentages or figures to compare).",
+            "No infographic could be built: research text needs at least two numeric values in the same sentence or line (e.g. percentages or figures to compare).",
         },
         { status: 422 },
       );

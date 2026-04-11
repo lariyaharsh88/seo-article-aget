@@ -18,7 +18,7 @@ export function appendResearchImagesSection(
 ): string {
   if (assets.length === 0) return article;
   const body = assets.map(researchImageToMarkdownBlock).join("\n\n");
-  const section = `\n\n## Data points illustrated\n\n${body}\n`;
+  const section = `\n\n## Infographics from research data\n\n${body}\n`;
   const base = article.trimEnd();
   return base ? `${base}${section}` : section.trimStart();
 }

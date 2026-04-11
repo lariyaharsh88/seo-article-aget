@@ -59,13 +59,13 @@ export interface ServerKeyStatus {
   serper: boolean;
 }
 
-/** Chart image URL plus caption from research (see /api/research-images — QuickChart templates). */
+/** SVG infographic data URL plus caption from research (see /api/research-images). */
 export interface ResearchImageAsset {
   url: string;
   /** Short excerpt from research that supplied the numeric values. */
   dataPoint: string;
   alt: string;
   insight: string;
-  /** Fixed template id, e.g. "QuickChart · bar". */
+  /** Template id, e.g. "SVG infographic · comparison". */
   templateLabel: string;
 }

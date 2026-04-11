@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { unstable_cache } from "next/cache";
 import Link from "next/link";
 import { InterestOverTimeChart } from "@/components/InterestOverTimeChart";
+import { ToolExplainerSection } from "@/components/ToolExplainerSection";
 import {
   fetchEducationTrends,
   parseEducationFetchScope,
@@ -11,12 +12,15 @@ import {
   type EducationTrendRow,
   type ExploreQueryRow,
 } from "@/lib/education-trends";
+import { buildPageMetadata } from "@/lib/seo-page";
+import { getToolExplainerMarkdown } from "@/lib/tool-explainer";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata({
   title: "Education Google Trends",
   description:
-    "Education Top / Rising queries and interest-over-time charts (India-focused seeds).",
-};
+    "Education Top / Rising queries and interest-over-time charts — India-focused seeds, geo presets, and downloadable signals.",
+  path: "/education-trends",
+});
 
 const GEO_PRESETS = ["IN", "US", "GB", "AU", "CA"] as const;
 
@@ -94,6 +98,7 @@ export default async function EducationTrendsPage({
   const geo = rawGeo.trim().toUpperCase() || "IN";
   const timeframe = parseEducationTimeframe(sp.tf);
   const scope = parseEducationFetchScope(sp.scope);
+  const explainerMd = await getToolExplainerMarkdown("education-trends");
   let data:
     | Awaited<ReturnType<typeof getCachedEducationTrends>>
     | null = null;
@@ -142,6 +147,7 @@ export default async function EducationTrendsPage({
             </Link>
           </div>
         </div>
+        <ToolExplainerSection markdown={explainerMd} />
       </main>
     );
   }
@@ -461,6 +467,8 @@ export default async function EducationTrendsPage({
       <p className="mt-8 font-mono text-[10px] leading-relaxed text-text-muted">
         Sources: {data.dataSourcesUsed.join(", ") || "—"}
       </p>
+
+      <ToolExplainerSection markdown={explainerMd} />
     </main>
   );
 }

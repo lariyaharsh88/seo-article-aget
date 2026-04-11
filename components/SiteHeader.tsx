@@ -1,7 +1,9 @@
 import Link from "next/link";
 
 const nav = [
-  { href: "/", label: "SEO Agent" },
+  { href: "/", label: "Home" },
+  { href: "/seo-agent", label: "Article pipeline" },
+  { href: "/off-page-seo", label: "Off-page SEO" },
   { href: "/education-trends", label: "Education trends" },
   { href: "/education-news", label: "Education news" },
 ];

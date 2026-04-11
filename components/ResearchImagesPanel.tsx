@@ -113,7 +113,7 @@ export function ResearchImagesPanel({
     <div className="mb-4 space-y-3 rounded-lg border border-border bg-background/40 p-4">
       <div className="flex flex-wrap items-center gap-2">
         <span className="font-mono text-[10px] uppercase tracking-wide text-text-muted">
-          Charts from data (QuickChart — no AI image API)
+          Data infographics (SVG — no chart API)
         </span>
         <label className="flex items-center gap-1.5 font-mono text-xs text-text-secondary">
           Max
@@ -136,14 +136,14 @@ export function ResearchImagesPanel({
           disabled={loading || !hasContext}
           className="rounded-lg border border-accent/40 bg-accent/10 px-3 py-1.5 font-mono text-xs text-accent transition-colors hover:bg-accent/20 disabled:cursor-not-allowed disabled:opacity-40"
         >
-          {loading ? "Building…" : "Build charts from numbers"}
+          {loading ? "Building…" : "Build infographics from numbers"}
         </button>
       </div>
       {!hasContext && (
         <p className="font-mono text-xs text-text-muted">
-          Run the pipeline through the research step. We parse numbers from the
-          notes and fill bar / pie templates (QuickChart). No Gemini tokens for
-          images.
+          Run the pipeline through the research step. Numbers in the notes are
+          turned into SVG infographic layouts (comparison, stat strip, grid) —
+          no external chart API and no AI image model.
         </p>
       )}
       {error && (
