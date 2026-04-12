@@ -36,32 +36,50 @@ export type RepurposedNewsListItem = {
   repurposedAt: Date;
 };
 
+const readyRepurposedNewsWhere = {
+  repurposeStatus: "ready" as const,
+  repurposedSlug: { not: null },
+  repurposedMarkdown: { not: null },
+  repurposedAt: { not: null },
+};
+
+const readyRepurposedNewsSelect = {
+  id: true,
+  repurposedSlug: true,
+  title: true,
+  source: true,
+  repurposedAt: true,
+} as const;
+
+function mapReadyNewsRows(
+  rows: Array<{
+    id: string;
+    repurposedSlug: string | null;
+    title: string;
+    source: string;
+    repurposedAt: Date | null;
+  }>,
+): RepurposedNewsListItem[] {
+  return rows
+    .filter((r) => Boolean(r.repurposedSlug?.trim()))
+    .map((r) => ({
+      id: r.id,
+      slug: r.repurposedSlug as string,
+      title: r.title,
+      source: r.source,
+      repurposedAt: r.repurposedAt as Date,
+    }));
+}
+
 export async function listReadyRepurposedNews(): Promise<RepurposedNewsListItem[]> {
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     try {
       const rows = await prisma.educationNewsArticle.findMany({
-        where: {
-          repurposeStatus: "ready",
-          repurposedSlug: { not: null },
-          repurposedMarkdown: { not: null },
-          repurposedAt: { not: null },
-        },
+        where: readyRepurposedNewsWhere,
         orderBy: { repurposedAt: "desc" },
-        select: {
-          id: true,
-          repurposedSlug: true,
-          title: true,
-          source: true,
-          repurposedAt: true,
-        },
+        select: readyRepurposedNewsSelect,
       });
-      return rows.map((r) => ({
-        id: r.id,
-        slug: r.repurposedSlug as string,
-        title: r.title,
-        source: r.source,
-        repurposedAt: r.repurposedAt as Date,
-      }));
+      return mapReadyNewsRows(rows);
     } catch (err) {
       if (attempt < MAX_ATTEMPTS && isRetryablePrismaError(err)) {
         await sleep(Math.min(120 * 2 ** (attempt - 1), 2000));
@@ -71,6 +89,40 @@ export async function listReadyRepurposedNews(): Promise<RepurposedNewsListItem[
     }
   }
   throw new Error("listReadyRepurposedNews: unreachable");
+}
+
+/**
+ * Paginated list for `/news` index (newest repurposed articles first).
+ */
+export async function listReadyRepurposedNewsPage(
+  page: number,
+  pageSize: number,
+): Promise<{ items: RepurposedNewsListItem[]; total: number }> {
+  const safePage = Math.max(1, Math.floor(page));
+  const skip = (safePage - 1) * pageSize;
+
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    try {
+      const [total, rows] = await Promise.all([
+        prisma.educationNewsArticle.count({ where: readyRepurposedNewsWhere }),
+        prisma.educationNewsArticle.findMany({
+          where: readyRepurposedNewsWhere,
+          orderBy: { repurposedAt: "desc" },
+          skip,
+          take: pageSize,
+          select: readyRepurposedNewsSelect,
+        }),
+      ]);
+      return { items: mapReadyNewsRows(rows), total };
+    } catch (err) {
+      if (attempt < MAX_ATTEMPTS && isRetryablePrismaError(err)) {
+        await sleep(Math.min(120 * 2 ** (attempt - 1), 2000));
+        continue;
+      }
+      throw err;
+    }
+  }
+  throw new Error("listReadyRepurposedNewsPage: unreachable");
 }
 
 export async function findReadyRepurposedNewsBySlug(

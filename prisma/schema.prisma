@@ -49,6 +49,22 @@ model BlogPost {
   updatedAt   DateTime @updatedAt
 }
 
+/// Lead form submissions from /blogs/[slug] and /news/[slug].
+model LeadInquiry {
+  id            String   @id @default(cuid())
+  source        String
+  articleSlug   String
+  articleTitle  String
+  name          String
+  email         String
+  phone         String?
+  message       String?  @db.Text
+  createdAt     DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([source, articleSlug])
+}
+
 // Sitemap-backed education news: persisted + optional AI repurposed draft (SEO-style).
 model EducationNewsArticle {
   id                 String    @id @default(cuid())

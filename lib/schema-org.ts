@@ -294,16 +294,19 @@ export function buildRepurposedNewsArticleSchema(
 export function buildNewsIndexSchema(opts: {
   description: string;
   items: Array<{ title: string; slug: string }>;
+  /** First ListItem position on this page (e.g. `(page - 1) * pageSize + 1`). Default 1. */
+  itemPositionStart?: number;
 }): Record<string, unknown> {
   const { base, websiteId, orgId } = siteRefs();
   const newsUrl = `${base}/news`;
   const wpId = `${newsUrl}#webpage`;
   const bcId = `${newsUrl}#breadcrumb`;
   const listId = `${newsUrl}#itemlist`;
+  const start = opts.itemPositionStart ?? 1;
 
   const itemListElement = opts.items.map((it, i) => ({
     "@type": "ListItem",
-    position: i + 1,
+    position: start + i,
     name: it.title,
     item: `${base}/news/${encodeURIComponent(it.slug)}`,
   }));

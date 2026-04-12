@@ -44,6 +44,14 @@ export type PublishedBlogListItem = {
   createdAt: Date;
 };
 
+const publishedBlogSelect = {
+  id: true,
+  slug: true,
+  title: true,
+  excerpt: true,
+  createdAt: true,
+} as const;
+
 /**
  * List published posts for /blogs. Retries on transient DB errors so cold
  * starts and pool blips do not yield an empty list.
@@ -54,13 +62,7 @@ export async function listPublishedBlogPosts(): Promise<PublishedBlogListItem[]>
       return await prisma.blogPost.findMany({
         where: { published: true },
         orderBy: { createdAt: "desc" },
-        select: {
-          id: true,
-          slug: true,
-          title: true,
-          excerpt: true,
-          createdAt: true,
-        },
+        select: publishedBlogSelect,
       });
     } catch (err) {
       if (attempt < MAX_ATTEMPTS && isRetryablePrismaError(err)) {
@@ -71,6 +73,40 @@ export async function listPublishedBlogPosts(): Promise<PublishedBlogListItem[]>
     }
   }
   throw new Error("listPublishedBlogPosts: unreachable");
+}
+
+/**
+ * Paginated list for `/blogs` index. Retries on transient DB errors.
+ */
+export async function listPublishedBlogPostsPage(
+  page: number,
+  pageSize: number,
+): Promise<{ items: PublishedBlogListItem[]; total: number }> {
+  const safePage = Math.max(1, Math.floor(page));
+  const skip = (safePage - 1) * pageSize;
+
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    try {
+      const [total, items] = await Promise.all([
+        prisma.blogPost.count({ where: { published: true } }),
+        prisma.blogPost.findMany({
+          where: { published: true },
+          orderBy: { createdAt: "desc" },
+          skip,
+          take: pageSize,
+          select: publishedBlogSelect,
+        }),
+      ]);
+      return { items, total };
+    } catch (err) {
+      if (attempt < MAX_ATTEMPTS && isRetryablePrismaError(err)) {
+        await sleep(Math.min(120 * 2 ** (attempt - 1), 2000));
+        continue;
+      }
+      throw err;
+    }
+  }
+  throw new Error("listPublishedBlogPostsPage: unreachable");
 }
 
 /**

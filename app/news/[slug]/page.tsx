@@ -4,6 +4,10 @@ import Link from "next/link";
 import { unstable_noStore as noStore } from "next/cache";
 import { notFound } from "next/navigation";
 import { markdownToArticleBodyHtml } from "@/lib/markdown-to-html";
+import {
+  ArticleLeadCapture,
+  ArticleLeadCtaStrip,
+} from "@/components/ArticleLeadCapture";
 import { ContentInterlinks } from "@/components/ContentInterlinks";
 import { DEFAULT_ARTICLE_AUTHOR_NAME } from "@/lib/article-author";
 import { NewsArticleTransientFailure } from "@/components/education-news/NewsArticleTransientFailure";
@@ -160,9 +164,15 @@ export default async function RepurposedNewsArticlePage({ params }: Props) {
               </>
             ) : null}
           </p>
+          <ArticleLeadCtaStrip className="mt-4" />
           <div
             className="blog-prose mt-10 overflow-x-auto font-serif text-text-primary"
             dangerouslySetInnerHTML={{ __html: html }}
+          />
+          <ArticleLeadCapture
+            source="news"
+            articleSlug={currentSlug}
+            articleTitle={post.title}
           />
         </article>
         <ContentInterlinks

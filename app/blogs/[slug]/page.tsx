@@ -3,6 +3,10 @@ import Link from "next/link";
 import { unstable_noStore as noStore } from "next/cache";
 import { notFound } from "next/navigation";
 import { markdownToArticleBodyHtml } from "@/lib/markdown-to-html";
+import {
+  ArticleLeadCapture,
+  ArticleLeadCtaStrip,
+} from "@/components/ArticleLeadCapture";
 import { ContentInterlinks } from "@/components/ContentInterlinks";
 import { JsonLd } from "@/components/JsonLd";
 import { DEFAULT_ARTICLE_AUTHOR_NAME } from "@/lib/article-author";
@@ -110,9 +114,15 @@ export default async function BlogPostPage({ params }: Props) {
             {post.excerpt}
           </p>
         )}
+        <ArticleLeadCtaStrip className="mt-4" />
         <div
           className="blog-prose mt-10 overflow-x-auto font-serif text-text-primary"
           dangerouslySetInnerHTML={{ __html: html }}
+        />
+        <ArticleLeadCapture
+          source="blog"
+          articleSlug={post.slug}
+          articleTitle={post.title}
         />
       </article>
       <ContentInterlinks
