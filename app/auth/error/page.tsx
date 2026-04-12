@@ -1,4 +1,12 @@
+import type { Metadata } from "next";
 import Link from "next/link";
+import { SITE_NAME } from "@/lib/seo-site";
+
+export const metadata: Metadata = {
+  title: "Sign-in error",
+  description: `Sign-in could not complete on ${SITE_NAME}. Check configuration or credentials, then try again (not indexed).`,
+  robots: { index: false, follow: false },
+};
 
 export default function AuthErrorPage({
   searchParams,

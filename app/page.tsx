@@ -5,12 +5,19 @@ import { JsonLd } from "@/components/JsonLd";
 import { buildPageMetadata } from "@/lib/seo-page";
 import { ADSENSE_SLOTS } from "@/lib/adsense-config";
 import { buildHomePageSchema } from "@/lib/schema-org";
-import { SITE_DESCRIPTION } from "@/lib/seo-site";
-
 export const metadata: Metadata = buildPageMetadata({
-  title: "Tools",
-  description: `Browse RankFlowHQ tools: blog, article pipeline, AI SEO Toolkit, off-page outreach, education Google Trends, and education news. ${SITE_DESCRIPTION}`,
+  title: "SEO Tools for Content, SERP Research & Outreach",
+  description:
+    "RankFlowHQ: SERP research, AI SEO articles, backlink outreach, education Google Trends, and news digests—research keywords, draft content, and plan links in one toolkit.",
   path: "/",
+  keywords: [
+    "SEO tools",
+    "AI article writer",
+    "SERP research",
+    "backlink outreach",
+    "education trends",
+    "content SEO",
+  ],
 });
 
 const tools = [

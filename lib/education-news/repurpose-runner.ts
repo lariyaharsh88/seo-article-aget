@@ -8,6 +8,7 @@ import { ensureUniqueRepurposedSlug } from "@/lib/education-news/repurpose-news-
 import { createAndStoreNewsHeroImage } from "@/lib/education-news/upload-news-hero-image";
 import { prisma } from "@/lib/prisma";
 import { getSiteUrl } from "@/lib/site-url";
+import { notifyTelegramNewsRepurposed } from "@/lib/telegram-channel";
 
 /** 0–100 for one article; optional article index when batching. */
 export type RepurposeProgressUpdate = {
@@ -112,6 +113,12 @@ export async function runRepurposeForArticleId(
         repurposedCanonicalUrl,
         authorName: DEFAULT_ARTICLE_AUTHOR_NAME,
       },
+    });
+
+    notifyTelegramNewsRepurposed({
+      title: row.title,
+      repurposedMarkdown: md,
+      slug: repurposedSlug,
     });
 
     emit(96, "Publishing hero image to images CDN…");

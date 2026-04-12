@@ -10,10 +10,11 @@ import { buildPageMetadata } from "@/lib/seo-page";
 
 export const metadata: Metadata = {
   ...buildPageMetadata({
-    title: "Blog CMS",
+    title: "Blog CMS — Admin Article Generator",
     description:
-      "Run the article generator from one or comma-separated topics; batch runs save to the blog (admin only).",
+      "Password-protected RankFlowHQ blog admin: run the article pipeline from one or many topics, review drafts, and publish posts (noindex; for authorized editors only).",
     path: "/blog-create",
+    keywords: ["blog admin", "RankFlowHQ CMS"],
   }),
   robots: { index: false, follow: false },
 };

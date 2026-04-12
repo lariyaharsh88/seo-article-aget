@@ -18,19 +18,26 @@ import { buildToolWebApplicationSchema } from "@/lib/schema-org";
 import { getToolExplainerMarkdown } from "@/lib/tool-explainer";
 
 const ED_TRENDS_DESC =
-  "Education Top / Rising queries and interest-over-time charts — India-focused seeds, geo presets, and downloadable signals.";
+  "Education Google Trends: top and rising queries, interest-over-time charts, India-focused seeds, geo presets (IN, US, GB, AU, CA), and exportable signals for editorial planning.";
 
 const educationTrendsSchema = buildToolWebApplicationSchema({
   path: "/education-trends",
-  name: "Education Google Trends",
+  name: "Education Google Trends explorer",
   headline: "Explore education searches",
   description: ED_TRENDS_DESC,
 });
 
 export const metadata: Metadata = buildPageMetadata({
-  title: "Education Google Trends",
+  title: "Education Google Trends — Top & Rising Queries",
   description: ED_TRENDS_DESC,
   path: "/education-trends",
+  keywords: [
+    "education Google Trends",
+    "keyword research India",
+    "rising searches",
+    "interest over time",
+    "education keywords",
+  ],
 });
 
 const GEO_PRESETS = ["IN", "US", "GB", "AU", "CA"] as const;

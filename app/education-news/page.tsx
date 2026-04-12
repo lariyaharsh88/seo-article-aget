@@ -21,19 +21,26 @@ export const runtime = "nodejs";
 export const maxDuration = 300;
 
 const ED_NEWS_DESC =
-  "Education articles from Shiksha, CollegeDunia, Careers360, Jagran Josh, and Testbook — updated from sitemaps (today in IST).";
+  "Education news scanner: today’s headlines from Shiksha, CollegeDunia, Careers360, Jagran Josh, and Testbook via sitemaps (IST)—quick discovery for editors and SEO teams.";
 
 const educationNewsSchema = buildToolWebApplicationSchema({
   path: "/education-news",
-  name: "Education news",
+  name: "Education news digest",
   headline: "Latest education news",
   description: ED_NEWS_DESC,
 });
 
 export const metadata: Metadata = buildPageMetadata({
-  title: "Education news",
+  title: "Education News Digest — Today’s Headlines",
   description: ED_NEWS_DESC,
   path: "/education-news",
+  keywords: [
+    "education news",
+    "India education headlines",
+    "exam news",
+    "university news",
+    "education journalism",
+  ],
 });
 
 export default async function EducationNewsPage() {

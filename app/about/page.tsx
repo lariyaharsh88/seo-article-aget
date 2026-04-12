@@ -5,12 +5,19 @@ import { buildPageMetadata } from "@/lib/seo-page";
 import { buildStaticWebPageSchema } from "@/lib/schema-org";
 import { SITE_NAME } from "@/lib/seo-site";
 
-const ABOUT_DESC = `${SITE_NAME} is a suite of SEO tools for content pipelines, off-page outreach, and education-focused research signals.`;
+const ABOUT_DESC =
+  "What is RankFlowHQ? SEO and content software for SERP research, AI-assisted drafts, outreach planning, and India-focused education trends—built for marketers and publishers.";
 
 export const metadata: Metadata = buildPageMetadata({
-  title: "About",
+  title: "About RankFlowHQ — SEO & Content Tools",
   description: ABOUT_DESC,
   path: "/about",
+  keywords: [
+    "RankFlowHQ",
+    "SEO software",
+    "content marketing tools",
+    "about RankFlowHQ",
+  ],
 });
 
 export default function AboutPage() {
@@ -19,7 +26,7 @@ export default function AboutPage() {
       <JsonLd
         data={buildStaticWebPageSchema({
           path: "/about",
-          name: `About ${SITE_NAME}`,
+          name: `About ${SITE_NAME} — SEO & content tools`,
           description: ABOUT_DESC,
           pageType: "AboutPage",
           breadcrumb: [

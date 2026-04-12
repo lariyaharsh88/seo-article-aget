@@ -7,6 +7,7 @@ import { BLOG_ADMIN_EMAIL } from "@/lib/blog-constants";
 import { DEFAULT_ARTICLE_AUTHOR_NAME } from "@/lib/article-author";
 import { ensureUniqueSlug, slugify } from "@/lib/blog-slug";
 import { prisma } from "@/lib/prisma";
+import { notifyTelegramNewBlogPost } from "@/lib/telegram-channel";
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -119,6 +120,14 @@ export async function POST(request: Request) {
       revalidatePath("/blogs/sitemap.xml");
       revalidatePath(`/blogs/${post.slug}`);
       revalidateTag("blog-posts");
+      if (post.published) {
+        notifyTelegramNewBlogPost({
+          title: post.title,
+          excerpt: post.excerpt,
+          content: post.content,
+          slug: post.slug,
+        });
+      }
       return NextResponse.json(post);
     } catch (e) {
       if (

@@ -8,12 +8,18 @@ import { buildPageMetadata } from "@/lib/seo-page";
 export const dynamic = "force-dynamic";
 
 const DESC =
-  "Repurposed education news articles — SEO-friendly drafts published under /news.";
+  "Repurposed education news on RankFlowHQ—SEO-friendly articles on exams, boards, and higher ed. Browse the index and open full stories under /news.";
 
 export const metadata: Metadata = buildPageMetadata({
-  title: "News",
+  title: "Education News Articles — Repurposed SEO Stories",
   description: DESC,
   path: "/news",
+  keywords: [
+    "education news articles",
+    "repurposed news SEO",
+    "exam updates",
+    "India education news",
+  ],
 });
 
 export default async function NewsIndexPage() {

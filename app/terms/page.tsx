@@ -4,12 +4,13 @@ import { buildPageMetadata } from "@/lib/seo-page";
 import { buildStaticWebPageSchema } from "@/lib/schema-org";
 import { SITE_NAME } from "@/lib/seo-site";
 
-const TERMS_DESC = `Terms of use for ${SITE_NAME} websites and tools: disclaimers, acceptable use, and limitations.`;
+const TERMS_DESC = `RankFlowHQ Terms of Service: acceptable use of our SEO tools, disclaimers, liability limits, and how third-party APIs (search, AI) affect generated output.`;
 
 export const metadata: Metadata = buildPageMetadata({
-  title: "Terms of Service",
+  title: "Terms of Service — RankFlowHQ",
   description: TERMS_DESC,
   path: "/terms",
+  keywords: ["terms of service", "RankFlowHQ terms", "acceptable use"],
 });
 
 export default function TermsPage() {

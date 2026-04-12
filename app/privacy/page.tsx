@@ -4,12 +4,13 @@ import { buildPageMetadata } from "@/lib/seo-page";
 import { buildStaticWebPageSchema } from "@/lib/schema-org";
 import { SITE_NAME } from "@/lib/seo-site";
 
-const PRIVACY_DESC = `How ${SITE_NAME} handles information, analytics (Google Analytics 4), and ads (Google AdSense).`;
+const PRIVACY_DESC = `RankFlowHQ Privacy Policy: what we collect when you use our tools, Google Analytics 4 and AdSense, cookies, and your privacy choices—plain-language summary.`;
 
 export const metadata: Metadata = buildPageMetadata({
-  title: "Privacy Policy",
+  title: "Privacy Policy — Analytics, Ads & Data",
   description: PRIVACY_DESC,
   path: "/privacy",
+  keywords: ["privacy policy", "RankFlowHQ privacy", "Google Analytics", "AdSense"],
 });
 
 export default function PrivacyPage() {

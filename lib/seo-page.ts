@@ -4,9 +4,13 @@ import { getSiteUrl } from "@/lib/site-url";
 
 /** Shared Open Graph / Twitter for internal pages. */
 export function buildPageMetadata(opts: {
+  /** `<title>` segment before the root `template` suffix (e.g. ` · RankFlowHQ`). */
   title: string;
+  /** Meta description; aim for ~150–160 characters, primary keyword early. */
   description: string;
   path: string;
+  /** Optional `<meta name="keywords">` (lightweight signal; keep focused). */
+  keywords?: string[];
   /** When set, Open Graph uses `type: article` with published/modified times (blog posts). */
   article?: {
     publishedTime: string;
@@ -27,6 +31,7 @@ export function buildPageMetadata(opts: {
   return {
     title: opts.title,
     description: opts.description,
+    ...(opts.keywords?.length ? { keywords: opts.keywords } : {}),
     alternates: { canonical: path },
     openGraph: {
       title: opts.title,

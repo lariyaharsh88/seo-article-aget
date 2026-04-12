@@ -5,7 +5,7 @@ import { buildPageMetadata } from "@/lib/seo-page";
 import { buildToolWebApplicationSchema } from "@/lib/schema-org";
 
 const SEO_AGENT_DESC =
-  "Run the full pipeline: SERP + Tavily research, Gemini outline and draft, citations, SEO meta pack, and data infographics.";
+  "SEO article pipeline: topic → researched long-form draft. Serper + Tavily signals, Gemini outline and body, citations, meta title and description, and SVG infographics.";
 
 const seoAgentSchema = buildToolWebApplicationSchema({
   path: "/seo-agent",
@@ -15,9 +15,17 @@ const seoAgentSchema = buildToolWebApplicationSchema({
 });
 
 export const metadata: Metadata = buildPageMetadata({
-  title: "SEO article pipeline",
+  title: "SEO Article Generator — SERP Research to Published Draft",
   description: SEO_AGENT_DESC,
   path: "/seo-agent",
+  keywords: [
+    "SEO article generator",
+    "AI long-form content",
+    "SERP research",
+    "Tavily",
+    "Gemini writing",
+    "SEO meta tags",
+  ],
 });
 
 export default function SeoAgentLayout({ children }: { children: ReactNode }) {
