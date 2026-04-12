@@ -382,10 +382,11 @@ export async function runArticlePipeline(
   }
 
   let enrichedHtml: string | null = null;
-  const enrichRequested = Boolean(cbs.onEnrichedHtml);
+  const onEnrichedHtml = cbs.onEnrichedHtml;
+  const enrichRequested = onEnrichedHtml != null;
   const enrichEligible = articleBody.trim().length >= 80;
 
-  if (enrichRequested && enrichEligible) {
+  if (onEnrichedHtml && enrichEligible) {
     cbs.onStage("enrich");
     pushLog("Visual enrich: sections → images, charts, tables…");
     try {
@@ -405,7 +406,7 @@ export async function runArticlePipeline(
         data.html.trim()
       ) {
         enrichedHtml = data.html;
-        cbs.onEnrichedHtml(data.html);
+        onEnrichedHtml(data.html);
         pushLog("Visual enrich: HTML ready.");
       } else {
         const err =
