@@ -1,5 +1,6 @@
 import { resolveGeminiKey } from "@/lib/api-keys";
 import { geminiStream } from "@/lib/gemini";
+import { buildInternalLinkingInstructionBlock } from "@/lib/internal-linking-prompt";
 import { capPromptText } from "@/lib/prompt-truncate";
 import type { Keyword, PipelineInput } from "@/lib/types";
 
@@ -148,6 +149,7 @@ ${gscQueries.length > 0 ? gscBlock : "(none — skip GSC coverage rules)"}
 GOOGLE AUTOCOMPLETE SUGGESTIONS — numbered; must ALL be addressed in article body OR as FAQ (see rules):
 ${autoSuggest.length > 0 ? suggestBlock : "(none — skip autocomplete coverage rules)"}
 ${coverageBlock}
+${buildInternalLinkingInstructionBlock({ mode: "long-form" })}
 STRICT REQUIREMENTS:
 1. Open with # H1 heading — must contain primary keyword
 2. Follow every H2 (##) and H3 (###) from the outline above exactly
@@ -171,6 +173,7 @@ STRICT REQUIREMENTS:
 14. Do NOT truncate. Write every section in full — including every required FAQ/search query answer.
 15. Use markdown formatting throughout
 16. Outbound markdown links: use **sparingly**; link only to **authoritative official** sources (government, regulator, board, university) when relevant. Do **not** link to competitor homepages, news aggregators, or ed-tech brands unless the topic truly requires it.
+17. **Internal links:** follow the INTERNAL LINKS section above — same-site markdown links to this website’s hubs where the topic is genuinely related.
 
 Write the complete article now:`;
 

@@ -1,3 +1,4 @@
+import { buildInternalLinkingInstructionBlock } from "@/lib/internal-linking-prompt";
 import { capPromptText } from "@/lib/prompt-truncate";
 
 /**
@@ -33,6 +34,7 @@ LINKS (strict — avoid boosting competitors):
 - Add **at most 1–3** outbound markdown links in the whole article, and **only** to **official** sources when you are sure of the URL: government sites (Indian gov.in / nic.in and similar), official board/university/NTA/exam-board domains, or statutory bodies.
 - Do **not** link to news aggregators, ed-tech blogs, or commercial test-prep sites. Do **not** markdown-link the original story URL or any competitor homepage in the body.
 - If no official URL is certain, **omit the link** and tell readers to verify on the official board or university website.
+${buildInternalLinkingInstructionBlock({ mode: "news-repurpose" })}
 
 SEO + STYLE (match RankFlowHQ / seo-agent article rules, but **total length 800–1000 words** — strict):
 1. Open with one # H1 — include the main topic phrase naturally (from the headline).
@@ -42,7 +44,8 @@ SEO + STYLE (match RankFlowHQ / seo-agent article rules, but **total length 800�
 5. Conclusion with takeaways + one soft CTA (e.g. verify dates on the official site).
 6. Optional: one markdown image placeholder line describing a chart (no fake URLs).
 7. Keyword use: natural; do not stuff.
-8. Entire piece **800–1000 words** — count mentally; stay inside this band.
+8. Follow the INTERNAL LINKS rules above where topics align (same-site hubs).
+9. Entire piece **800–1000 words** — count mentally; stay inside this band.
 
 Output **only** valid Markdown (no code fences, no preamble).`;
 }

@@ -1,8 +1,10 @@
 import { prisma } from "@/lib/prisma";
+import { toAbsoluteHttpsImageUrl } from "@/lib/images-cdn";
 import { SITE_NAME } from "@/lib/seo-site";
 import { getSiteUrl } from "@/lib/site-url";
 
 const NEWS_NS = "http://www.google.com/schemas/sitemap-news/0.9";
+const IMAGE_NS = "http://www.google.com/schemas/sitemap-image/1.1";
 const URLSET_NS = "http://www.sitemaps.org/schemas/sitemap/0.9";
 
 function escapeXml(s: string): string {
@@ -30,11 +32,12 @@ function plainTextKeywords(markdown: string | null, title: string): string {
 }
 
 /**
- * Google News sitemap XML (`/news/sitemap.xml`): `news:` namespace only (no `image:` blocks;
- * hero URLs were omitted until image locs are guaranteed absolute https URLs).
+ * Google News sitemap XML (`/news/sitemap.xml`): `news:` + optional `image:` (hero) when URL is valid.
+ * Image `<image:loc>` values are always **absolute https://** (fixes GSC “Invalid URL” for scheme-less hosts).
  * `changefreq` daily, `priority` 1 per URL.
  *
  * @see https://developers.google.com/search/docs/advanced/sitemaps/news-sitemap
+ * @see https://developers.google.com/search/docs/advanced/sitemaps/image-sitemaps
  */
 export async function buildGoogleNewsSitemapXml(): Promise<string> {
   const base = getSiteUrl().replace(/\/$/, "");
@@ -50,6 +53,7 @@ export async function buildGoogleNewsSitemapXml(): Promise<string> {
     repurposedSlug: string;
     title: string;
     repurposedMarkdown: string | null;
+    repurposedImageUrl: string | null;
     repurposedAt: Date;
     updatedAt: Date;
   }[] = [];
@@ -65,6 +69,7 @@ export async function buildGoogleNewsSitemapXml(): Promise<string> {
         repurposedSlug: true,
         title: true,
         repurposedMarkdown: true,
+        repurposedImageUrl: true,
         repurposedAt: true,
         updatedAt: true,
       },
@@ -93,6 +98,14 @@ export async function buildGoogleNewsSitemapXml(): Promise<string> {
       plainTextKeywords(r.repurposedMarkdown, r.title),
     );
     const pubName = escapeXml(publicationName);
+    const imageHttps = toAbsoluteHttpsImageUrl(r.repurposedImageUrl);
+    const imageBlock =
+      imageHttps != null
+        ? `
+    <image:image>
+      <image:loc>${escapeXml(imageHttps)}</image:loc>
+    </image:image>`
+        : "";
 
     return `  <url>
     <loc>${escapeXml(loc)}</loc>
@@ -108,7 +121,7 @@ export async function buildGoogleNewsSitemapXml(): Promise<string> {
       <news:genres>${escapeXml(genres)}</news:genres>
       <news:title>${title}</news:title>
       <news:keywords>${keywords}</news:keywords>
-    </news:news>
+    </news:news>${imageBlock}
   </url>`;
   });
 
@@ -116,7 +129,8 @@ export async function buildGoogleNewsSitemapXml(): Promise<string> {
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="${URLSET_NS}"
-        xmlns:news="${NEWS_NS}">
+        xmlns:news="${NEWS_NS}"
+        xmlns:image="${IMAGE_NS}">
 ${body}
 </urlset>`;
 }

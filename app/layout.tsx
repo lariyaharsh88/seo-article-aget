@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Abril_Fatface, Lora, Space_Mono } from "next/font/google";
 import Script from "next/script";
+import { SiteChatWidget } from "@/components/SiteChatWidget";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { Providers } from "@/app/providers";
@@ -150,6 +151,7 @@ export default function RootLayout({
             <SiteHeader />
             <div className="flex-1">{children}</div>
             <SiteFooter />
+            <SiteChatWidget />
           </div>
         </Providers>
       </body>
