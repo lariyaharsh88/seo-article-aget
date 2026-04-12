@@ -16,20 +16,22 @@ export function buildEducationNewsRepurposePrompt(opts: {
 
   return `You are a senior SEO editor repurposing a **same-day education news** item into a **new, original** article for RankFlowHQ readers.
 
-SOURCE PUBLICATION: ${opts.source}
+BACKGROUND (for you only — do **not** repeat in the article): source publication label: ${opts.source}
 ORIGINAL HEADLINE (from URL slug / sitemap): ${opts.title}
-ORIGINAL STORY URL (must be credited once, not keyword-stuffed): ${opts.originalUrl}
+ORIGINAL STORY URL (context only — **do not** paste this URL, "see original", "read more at [publisher]", or similar in the body; the site template already links out where needed): ${opts.originalUrl}
 
 SOURCE TEXT (may be partial or noisy — extract facts only; do not copy long phrases verbatim):
 ${body}
 
-LEGAL / ETHICS:
-- Do NOT paste copyrighted paragraphs. Paraphrase; attribute facts to "${opts.source}" or "reports" where appropriate.
-- Add a short editor's note near the top: "Summary based on reports from ${opts.source}; see original for full detail."
+VOICE / ETHICS:
+- Do NOT paste copyrighted paragraphs. Paraphrase all wording.
+- Write as **RankFlowHQ's own article**: confident, direct editorial voice — as if this site reported the story. Do **not** use syndication-style lines such as "Summary based on reports from…", "According to [news brand]…", "see original for full detail", or any phrasing that hands authority or credit to third-party news brands.
+- Do **not** name "${opts.source}" or other commercial news/ed-tech brands in the intro, body, or disclaimers. Prefer neutral sourcing: "Recent updates…", "Official notices…", "The board stated…", "As per the circular…".
+- Do **not** tell readers to go read the story elsewhere; the facts should read complete on this page.
 
 LINKS (strict — avoid boosting competitors):
 - Add **at most 1–3** outbound markdown links in the whole article, and **only** to **official** sources when you are sure of the URL: government sites (Indian gov.in / nic.in and similar), official board/university/NTA/exam-board domains, or statutory bodies.
-- Do **not** link to other news aggregators, ed-tech blogs, or commercial test-prep competitors by URL. Do not hyperlink competitor brand names. Name "${opts.source}" in plain text only for attribution — **no** markdown link to the original story URL or to competitor sites in the body.
+- Do **not** link to news aggregators, ed-tech blogs, or commercial test-prep sites. Do **not** markdown-link the original story URL or any competitor homepage in the body.
 - If no official URL is certain, **omit the link** and tell readers to verify on the official board or university website.
 
 SEO + STYLE (match RankFlowHQ / seo-agent article rules, but **total length 800–1000 words** — strict):
