@@ -7,6 +7,7 @@ import { buildEducationNewsRepurposePrompt } from "@/lib/education-news/repurpos
 import { ensureUniqueRepurposedSlug } from "@/lib/education-news/repurpose-news-slug";
 import { createAndStoreNewsHeroImage } from "@/lib/education-news/upload-news-hero-image";
 import { prisma } from "@/lib/prisma";
+import { notifyIndexNowIfConfigured } from "@/lib/indexnow-submit";
 import { getSiteUrl } from "@/lib/site-url";
 import { notifyTelegramNewsRepurposed } from "@/lib/telegram-channel";
 
@@ -140,6 +141,11 @@ export async function runRepurposeForArticleId(
     } catch {
       /* e.g. script context without Next cache */
     }
+
+    void notifyIndexNowIfConfigured({
+      articleUrl: repurposedCanonicalUrl,
+    });
+
     emit(100, "Done");
   } catch (e) {
     const msg = e instanceof Error ? e.message.slice(0, 2000) : "Repurpose failed";

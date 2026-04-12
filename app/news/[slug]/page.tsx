@@ -12,6 +12,7 @@ import { ContentInterlinks } from "@/components/ContentInterlinks";
 import { DEFAULT_ARTICLE_AUTHOR_NAME } from "@/lib/article-author";
 import { NewsArticleTransientFailure } from "@/components/education-news/NewsArticleTransientFailure";
 import { JsonLd } from "@/components/JsonLd";
+import { formatSourceIssueTimeIst } from "@/lib/education-news/format-source-issue-time";
 import {
   findReadyRepurposedNewsBySlug,
   listReadyRepurposedNewsExceptSlug,
@@ -95,6 +96,13 @@ export default async function RepurposedNewsArticlePage({ params }: Props) {
       '<p class="text-text-muted">This article could not be rendered. Try again later.</p>';
   }
 
+  const issuedDisplay = formatSourceIssueTimeIst(post.lastmod);
+  const issuedParsedMs = Date.parse(post.lastmod.trim());
+  const issuedIso =
+    !Number.isNaN(issuedParsedMs)
+      ? new Date(issuedParsedMs).toISOString()
+      : undefined;
+
   return (
     <>
       <JsonLd data={buildRepurposedNewsArticleSchema(post)} />
@@ -108,8 +116,16 @@ export default async function RepurposedNewsArticlePage({ params }: Props) {
           </Link>
         </p>
         <article className="mt-6">
-          <p className="font-mono text-xs text-text-muted">
+          <p className="font-mono text-xs leading-relaxed text-text-muted">
             <span className="text-text-secondary">{post.source}</span>
+            {issuedDisplay ? (
+              <>
+                <span className="mx-2 text-text-muted/60">·</span>
+                <span className="text-text-secondary">
+                  Issued <time dateTime={issuedIso}>{issuedDisplay}</time>
+                </span>
+              </>
+            ) : null}
             <span className="mx-2 text-text-muted/60">·</span>
             <span className="text-text-secondary">
               By {post.authorName?.trim() || DEFAULT_ARTICLE_AUTHOR_NAME}
@@ -117,12 +133,18 @@ export default async function RepurposedNewsArticlePage({ params }: Props) {
             {post.repurposedAt ? (
               <>
                 {" · "}
+                <span className="text-text-secondary">Repurposed</span>{" "}
                 <time dateTime={post.repurposedAt.toISOString()}>
-                  {post.repurposedAt.toLocaleDateString("en-IN", {
+                  {post.repurposedAt.toLocaleString("en-IN", {
+                    timeZone: "Asia/Kolkata",
                     year: "numeric",
                     month: "long",
                     day: "numeric",
-                  })}
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    hour12: true,
+                  })}{" "}
+                  IST
                 </time>
               </>
             ) : null}
@@ -178,15 +200,22 @@ export default async function RepurposedNewsArticlePage({ params }: Props) {
         <ContentInterlinks
           headingId="more-news-articles"
           heading="More news"
-          items={peerNews.map((n) => ({
-            href: `/news/${encodeURIComponent(n.slug)}`,
-            title: n.title,
-            description: `${n.source} · ${n.repurposedAt.toLocaleDateString("en-IN", {
+          items={peerNews.map((n) => {
+            const issued = formatSourceIssueTimeIst(n.lastmod);
+            const repurposed = n.repurposedAt.toLocaleDateString("en-IN", {
               year: "numeric",
               month: "short",
               day: "numeric",
-            })}`,
-          }))}
+            });
+            const description = issued
+              ? `${n.source} · Issued ${issued} · Repurposed ${repurposed}`
+              : `${n.source} · Repurposed ${repurposed}`;
+            return {
+              href: `/news/${encodeURIComponent(n.slug)}`,
+              title: n.title,
+              description,
+            };
+          })}
           seeAllHref="/news"
           seeAllLabel="All news"
         />

@@ -6,7 +6,9 @@ import { ListPagination } from "@/components/ListPagination";
 import { getCachedPublishedBlogPostsPage } from "@/lib/cached-blog-posts";
 import { LIST_PAGE_SIZE, parseListPageParam } from "@/lib/list-pagination";
 import { buildPageMetadata } from "@/lib/seo-page";
+import { ToolExplainerSection } from "@/components/ToolExplainerSection";
 import { buildBlogsIndexSchema } from "@/lib/schema-org";
+import { getToolExplainerMarkdown } from "@/lib/tool-explainer";
 
 type Props = { searchParams: { page?: string | string[] } };
 
@@ -29,6 +31,7 @@ export const runtime = "nodejs";
 export const maxDuration = 60;
 
 export default async function BlogsIndexPage({ searchParams }: Props) {
+  const markdown = await getToolExplainerMarkdown("blogs");
   const requestedPage = parseListPageParam(searchParams?.page);
   let posts: Awaited<
     ReturnType<typeof getCachedPublishedBlogPostsPage>
@@ -144,6 +147,7 @@ export default async function BlogsIndexPage({ searchParams }: Props) {
           />
         ) : null}
       </main>
+      <ToolExplainerSection markdown={markdown} />
     </>
   );
 }

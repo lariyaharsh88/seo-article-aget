@@ -33,6 +33,8 @@ export type RepurposedNewsListItem = {
   slug: string;
   title: string;
   source: string;
+  /** Sitemap/source last modified or publication time (stored string). */
+  lastmod: string;
   repurposedAt: Date;
 };
 
@@ -48,6 +50,7 @@ const readyRepurposedNewsSelect = {
   repurposedSlug: true,
   title: true,
   source: true,
+  lastmod: true,
   repurposedAt: true,
 } as const;
 
@@ -57,6 +60,7 @@ function mapReadyNewsRows(
     repurposedSlug: string | null;
     title: string;
     source: string;
+    lastmod: string;
     repurposedAt: Date | null;
   }>,
 ): RepurposedNewsListItem[] {
@@ -67,6 +71,7 @@ function mapReadyNewsRows(
       slug: r.repurposedSlug as string,
       title: r.title,
       source: r.source,
+      lastmod: r.lastmod,
       repurposedAt: r.repurposedAt as Date,
     }));
 }
@@ -179,6 +184,7 @@ export async function listReadyRepurposedNewsExceptSlug(
           repurposedSlug: true,
           title: true,
           source: true,
+          lastmod: true,
           repurposedAt: true,
         },
       });
@@ -189,6 +195,7 @@ export async function listReadyRepurposedNewsExceptSlug(
           slug: r.repurposedSlug as string,
           title: r.title,
           source: r.source,
+          lastmod: r.lastmod,
           repurposedAt: r.repurposedAt as Date,
         }));
     } catch (err) {

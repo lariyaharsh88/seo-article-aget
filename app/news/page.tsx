@@ -3,10 +3,13 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { JsonLd } from "@/components/JsonLd";
 import { ListPagination } from "@/components/ListPagination";
+import { formatSourceIssueTimeIst } from "@/lib/education-news/format-source-issue-time";
 import { listReadyRepurposedNewsPage } from "@/lib/education-news/repurposed-news-query";
 import { LIST_PAGE_SIZE, parseListPageParam } from "@/lib/list-pagination";
+import { ToolExplainerSection } from "@/components/ToolExplainerSection";
 import { buildNewsIndexSchema } from "@/lib/schema-org";
 import { buildPageMetadata } from "@/lib/seo-page";
+import { getToolExplainerMarkdown } from "@/lib/tool-explainer";
 
 type Props = { searchParams: { page?: string | string[] } };
 
@@ -36,6 +39,7 @@ export async function generateMetadata({
 export const dynamic = "force-dynamic";
 
 export default async function NewsIndexPage({ searchParams }: Props) {
+  const markdown = await getToolExplainerMarkdown("news");
   const requestedPage = parseListPageParam(searchParams?.page);
   let items: Awaited<
     ReturnType<typeof listReadyRepurposedNewsPage>
@@ -121,13 +125,19 @@ export default async function NewsIndexPage({ searchParams }: Props) {
                     <span className="font-display text-lg text-text-primary group-hover:text-accent">
                       {item.title}
                     </span>
-                    <span className="mt-1 block font-mono text-[11px] text-text-muted">
-                      {item.source} ·{" "}
-                      {item.repurposedAt.toLocaleDateString("en-IN", {
-                        year: "numeric",
-                        month: "short",
-                        day: "numeric",
-                      })}
+                    <span className="mt-1 block font-mono text-[11px] leading-relaxed text-text-muted">
+                      {(() => {
+                        const issued = formatSourceIssueTimeIst(item.lastmod);
+                        const repurposed =
+                          item.repurposedAt.toLocaleDateString("en-IN", {
+                            year: "numeric",
+                            month: "short",
+                            day: "numeric",
+                          });
+                        return issued
+                          ? `${item.source} · Issued ${issued} · Repurposed ${repurposed}`
+                          : `${item.source} · Repurposed ${repurposed}`;
+                      })()}
                     </span>
                   </Link>
                 </li>
@@ -143,6 +153,7 @@ export default async function NewsIndexPage({ searchParams }: Props) {
           </>
         )}
       </main>
+      <ToolExplainerSection markdown={markdown} />
     </>
   );
 }

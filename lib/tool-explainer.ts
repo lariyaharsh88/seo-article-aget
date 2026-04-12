@@ -6,6 +6,10 @@ export const TOOL_EXPLAINER_IDS = [
   "off-page-seo",
   "education-trends",
   "education-news",
+  "ai-seo-toolkit",
+  "repurpose-url",
+  "blogs",
+  "news",
 ] as const;
 
 export type ToolExplainerId = (typeof TOOL_EXPLAINER_IDS)[number];
@@ -55,6 +59,46 @@ const SPECS: Record<
       "Lets users filter by source and open previews; data is refreshed on server requests.",
       "Does not host full article text; titles and links point to original publishers.",
       "Intended as a research and monitoring aid, not a replacement for reading sources directly.",
+    ],
+  },
+  "ai-seo-toolkit": {
+    name: "AI SEO Toolkit",
+    path: "/ai-seo-toolkit",
+    facts: [
+      "Three tabs: AI visibility (brand/keyword mentions in LLM-style answers), prompt mining (Google Suggest + related queries), and AEO content optimizer with local scoring.",
+      "Uses Next.js API routes; visibility and prompts call server endpoints; optimizer scores content against a keyword in-browser.",
+      "OpenRouter may be used where configured for some AI-facing flows; SQLite or Prisma may back stored visibility logs depending on deployment.",
+      "MVP scope: research and experimentation—not a replacement for rank tracking SaaS or Search Console.",
+    ],
+  },
+  "repurpose-url": {
+    name: "Repurpose from URL",
+    path: "/repurpose-url",
+    facts: [
+      "Accepts a single public HTTPS article URL and runs the same multi-stage pipeline as /seo-agent: keywords, Tavily research, SERP, outline, streaming Gemini article, SEO audit, optional visual enrich.",
+      "Resolves topic from page title via /api/page-meta when no topic override is provided.",
+      "Does not copy source text verbatim; outputs a new draft aligned to RankFlowHQ SEO prompts.",
+      "Requires GEMINI_API_KEY, TAVILY_API_KEY, SERPER_API_KEY on the server; some publisher sites block server-side fetch.",
+    ],
+  },
+  blogs: {
+    name: "Blog index",
+    path: "/blogs",
+    facts: [
+      "Lists published BlogPost rows from PostgreSQL; only posts with published=true appear.",
+      "Supports pagination (?page=) with cached per-page lists for performance.",
+      "Individual posts live under /blogs/[slug]; creation and editing use /blog-create with NextAuth for the configured admin.",
+      "Content is editorial and product-focused for RankFlowHQ—not user-generated from anonymous visitors.",
+    ],
+  },
+  news: {
+    name: "News index (repurposed articles)",
+    path: "/news",
+    facts: [
+      "Lists EducationNewsArticle rows with repurposeStatus ready, repurposed slug, and markdown; pagination with ?page=.",
+      "Articles are AI-repurposed education headlines for SEO on this domain; each item links to /news/[slug].",
+      "Sitemap at /news/sitemap.xml for Google News-style discovery when configured.",
+      "Distinct from /education-news which scans third-party sitemaps for discovery before repurposing.",
     ],
   },
 };
@@ -130,6 +174,74 @@ Listing here does not imply endorsement. Coverage depends on sitemap freshness a
 ## Fit with the site
 
 Use alongside **Education Trends** for query demand and the **SEO article pipeline** when you turn research into long-form content.
+`,
+
+  "ai-seo-toolkit": `## What this tool does
+
+The **AI SEO Toolkit** helps you connect classic search thinking with **answer-engine** behaviour: whether a brand or topic tends to appear in AI-style answers, which prompts and questions cluster around a seed, and how well a draft scores for a target keyword in a lightweight optimizer. It is aimed at SEOs and editors experimenting with **AEO (answer engine optimisation)** alongside traditional rankings.
+
+## How to use it
+
+Use the **Visibility** tab to test a domain against a small list of keywords (server-side analysis). Use **Prompts** to expand a seed into related queries (useful for briefs and FAQs). Use **Optimize** to paste draft content and a keyword to get a score and suggested improvements—iterate in your editor, not as legal or financial advice.
+
+## Limits
+
+Results depend on APIs, models, and heuristics in this MVP. They are not a substitute for rank trackers, Search Console, or compliance review. **OpenRouter** and database features vary by how your deployment is configured.
+
+## Fit with the site
+
+Pair with the **SEO article pipeline** for long-form drafts and **Off-page SEO** when you move from content to outreach planning.
+`,
+
+  "repurpose-url": `## What this tool does
+
+**Repurpose from URL** takes a single public **page or article URL** and runs the **full RankFlowHQ article pipeline**—the same stages as the main SEO article tool: keyword signals, Tavily research, SERP context, structured outline, streaming long-form draft from Gemini, SEO meta audit, and optional **visual HTML** enrichment (H2 images, charts, tables). The goal is a **new, SEO-oriented article** for your site, not a copy of the source.
+
+## How to use it
+
+Paste an **https://** URL. Optionally add a topic line, audience, intent, or primary keyword. Leave the topic blank to use the **live page title** (resolved server-side). Enable **Auto-enrich** unless you only want Markdown. Respect the source site’s terms and copyright: this tool is for research and transformation, not republication of third-party text as-is.
+
+## Limits
+
+Some hosts block server fetches; title or research may degrade. You need valid API keys on the server (Gemini, Tavily, Serper). Very short or non-article URLs may produce weak outlines—prefer real article pages.
+
+## Fit with the site
+
+If you already have a topic in mind, use **Article pipeline**; if you start from an example URL, use this page. Finished pieces can inform **Blog** posts or internal links.
+`,
+
+  blogs: `## What this page is
+
+The **Blog** index lists **published** articles from RankFlowHQ: product notes, SEO tooling updates, and editorial content stored in the database. Each card links to a full post under **/blogs/[slug]**. Pagination keeps the list readable as the archive grows (**?page=** for older pages).
+
+## How to use it
+
+Browse by date, open posts that match your interest, and follow internal links to tools. Authors publish through the secured **Blog CMS** (\`/blog-create\`); only rows marked **published** appear here—drafts stay out of the index.
+
+## Limits
+
+This is not a community forum or user-generated feed. Update frequency depends on your team. For **education news** stories generated on-site, use the **News** section instead.
+
+## Fit with the site
+
+Use **Blog** for evergreen company and product narrative; pair with **News** for repurposed education headlines and with **Article pipeline** when drafting new long-form guides.
+`,
+
+  news: `## What this page is
+
+The **News** index lists **repurposed education news articles** published on RankFlowHQ: exam updates, boards, higher education, and related topics processed as SEO-friendly stories under **/news/[slug]**. Each line shows source metadata and the repurposed date. Pagination uses **?page=** like the blog.
+
+## How to use it
+
+Scan headlines, open full articles, and use “View original source” on article pages when you need the publisher’s wording. Content is produced for readers in India and similar markets; tone and structure follow on-site SEO prompts, not wire feeds.
+
+## Limits
+
+Only articles that finished repurposing (**ready** status) appear. Volume depends on your **Education news** digest and automation settings. This section does not replace official boards or government websites for deadlines and rules.
+
+## Fit with the site
+
+Use **Education news** (digest) to discover items to repurpose; use **News** (this index) to read finished on-domain stories. Combine with **Education Google Trends** for demand context and with the **Article pipeline** when writing original guides.
 `,
 };
 
