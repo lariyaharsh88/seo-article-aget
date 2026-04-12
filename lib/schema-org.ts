@@ -1,6 +1,6 @@
 import type { BlogPost, EducationNewsArticle } from "@prisma/client";
 import { DEFAULT_ARTICLE_AUTHOR_NAME } from "@/lib/article-author";
-import { SITE_DESCRIPTION, SITE_NAME } from "@/lib/seo-site";
+import { SITE_DESCRIPTION, SITE_LOGO_PATH, SITE_NAME } from "@/lib/seo-site";
 import { getSiteUrl } from "@/lib/site-url";
 
 export function siteRefs() {
@@ -257,7 +257,7 @@ export function buildRepurposedNewsArticleSchema(
         name: SITE_NAME,
         logo: {
           "@type": "ImageObject",
-          url: `${base}/favicon.ico`,
+          url: `${base}${SITE_LOGO_PATH}`,
         },
       },
       copyrightHolder: { "@id": orgId },

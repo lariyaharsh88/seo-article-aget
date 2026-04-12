@@ -170,6 +170,7 @@ STRICT REQUIREMENTS:
     - Do not sound textbook-dry: stay friendly and direct, but never patronising.
 14. Do NOT truncate. Write every section in full — including every required FAQ/search query answer.
 15. Use markdown formatting throughout
+16. Outbound markdown links: use **sparingly**; link only to **authoritative official** sources (government, regulator, board, university) when relevant. Do **not** link to competitor homepages, news aggregators, or ed-tech brands unless the topic truly requires it.
 
 Write the complete article now:`;
 

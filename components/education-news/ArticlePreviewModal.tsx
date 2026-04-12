@@ -112,7 +112,7 @@ export function EducationNewsArticlePreviewModal({
             <a
               href={article.url}
               target="_blank"
-              rel="noopener noreferrer"
+              rel="nofollow noopener noreferrer"
               className="rounded-lg bg-accent px-3 py-1.5 font-mono text-xs text-background transition-colors hover:bg-accent-dim"
             >
               Open original

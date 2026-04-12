@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { marked } from "marked";
+import { addExternalLinkRelToHtml } from "@/lib/html-external-links";
 import { resolveGeminiKey } from "@/lib/api-keys";
 import { classifySection } from "@/lib/seo-enrichment/classify-section";
 import { extractH1AndSections } from "@/lib/seo-enrichment/extract-sections";
@@ -50,9 +51,10 @@ export async function POST(request: Request) {
     parts.push(`<h1>${escapeHtml(h1)}</h1>`);
   }
   if (intro) {
-    parts.push(
-      `<div class="seo-enriched-intro">${await marked.parse(intro)}</div>`,
+    const introHtml = addExternalLinkRelToHtml(
+      (await marked.parse(intro)) as string,
     );
+    parts.push(`<div class="seo-enriched-intro">${introHtml}</div>`);
   }
 
   for (let i = 0; i < slice.length; i++) {
@@ -146,11 +148,13 @@ export async function POST(request: Request) {
 
     if (tableHtml) {
       parts.push(
-        `<div class="seo-enriched-table my-4 overflow-x-auto">${tableHtml}</div>`,
+        `<div class="seo-enriched-table my-4 overflow-x-auto">${addExternalLinkRelToHtml(tableHtml)}</div>`,
       );
     }
 
-    const bodyHtml = await marked.parse(sec.body);
+    const bodyHtml = addExternalLinkRelToHtml(
+      (await marked.parse(sec.body)) as string,
+    );
     parts.push(`<div class="seo-enriched-body mt-4">${bodyHtml}</div>`);
 
     if (chartUrl) {

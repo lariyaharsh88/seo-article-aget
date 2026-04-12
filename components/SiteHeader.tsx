@@ -1,7 +1,9 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
+import { SITE_LOGO_PATH, SITE_NAME } from "@/lib/seo-site";
 
 const nav = [
   { href: "/", label: "Home" },
@@ -62,10 +64,18 @@ export function SiteHeader() {
         <div className="flex items-center justify-between gap-3 py-3">
           <Link
             href="/"
-            className="font-display text-lg text-text-primary transition-colors duration-200 hover:text-accent"
+            className="flex items-center transition-opacity duration-200 hover:opacity-90"
             onClick={() => setOpen(false)}
           >
-            RankFlowHQ
+            <Image
+              src={SITE_LOGO_PATH}
+              alt={`${SITE_NAME} — AI · SEO · Growth`}
+              width={44}
+              height={44}
+              className="h-11 w-11 shrink-0 object-contain"
+              priority
+            />
+            <span className="sr-only">{SITE_NAME}</span>
           </Link>
           <button
             type="button"

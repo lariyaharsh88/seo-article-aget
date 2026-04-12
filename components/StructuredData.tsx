@@ -1,4 +1,8 @@
-import { SITE_DESCRIPTION, SITE_NAME } from "@/lib/seo-site";
+import {
+  SITE_DESCRIPTION,
+  SITE_LOGO_PATH,
+  SITE_NAME,
+} from "@/lib/seo-site";
 import { getSiteUrl } from "@/lib/site-url";
 
 /**
@@ -29,7 +33,7 @@ export function StructuredData() {
         url,
         logo: {
           "@type": "ImageObject",
-          url: `${url}/favicon.ico`,
+          url: `${url}${SITE_LOGO_PATH}`,
         },
       },
       {

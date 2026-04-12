@@ -3,11 +3,10 @@ import { EducationNewsDashboard } from "@/components/education-news/NewsDashboar
 import { JsonLd } from "@/components/JsonLd";
 import { ToolExplainerSection } from "@/components/ToolExplainerSection";
 import {
-  fetchAllSitemaps,
-  getUniqueSources,
+  formatLastModTime,
+  isToday,
 } from "@/lib/education-news/fetchSitemaps";
-import { runAutoRepurposeAfterSync } from "@/lib/education-news/auto-repurpose-after-sync";
-import { syncEducationNewsArticles } from "@/lib/education-news/sync-stored";
+import type { NewsArticle } from "@/lib/education-news/types";
 import type { StoredEducationNewsListItem } from "@/lib/education-news/stored-types";
 import { prisma } from "@/lib/prisma";
 import { buildPageMetadata } from "@/lib/seo-page";
@@ -17,8 +16,8 @@ import { getToolExplainerMarkdown } from "@/lib/tool-explainer";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 export const runtime = "nodejs";
-/** Auto-repurpose after sync can run several Gemini calls; allow headroom on Vercel. */
-export const maxDuration = 300;
+/** Sitemap fetch + sync + repurpose run in `/api/education-news` (client refresh), not here. */
+export const maxDuration = 60;
 
 const ED_NEWS_DESC =
   "Education news scanner: today’s headlines from Shiksha, CollegeDunia, Careers360, Jagran Josh, and Testbook via sitemaps (IST)—quick discovery for editors and SEO teams.";
@@ -44,17 +43,16 @@ export const metadata: Metadata = buildPageMetadata({
 });
 
 export default async function EducationNewsPage() {
-  const articles = await fetchAllSitemaps();
-  const sources = getUniqueSources(articles);
   const explainerMd = await getToolExplainerMarkdown("education-news");
 
   let storedRows: StoredEducationNewsListItem[] = [];
+  let initialArticles: NewsArticle[] = [];
+  let initialSources: string[] = [];
+
   try {
-    const { newPendingIds } = await syncEducationNewsArticles(articles);
-    await runAutoRepurposeAfterSync(newPendingIds);
     const rows = await prisma.educationNewsArticle.findMany({
       orderBy: { updatedAt: "desc" },
-      take: 50,
+      take: 120,
       select: {
         id: true,
         url: true,
@@ -69,7 +67,23 @@ export default async function EducationNewsPage() {
         updatedAt: true,
       },
     });
-    storedRows = rows.map((r) => ({
+
+    const todayRows = rows.filter((r) => isToday(r.lastmod));
+    const feedRows =
+      todayRows.length > 0 ? todayRows : rows.slice(0, 50);
+
+    initialArticles = feedRows.map((r) => ({
+      url: r.url,
+      lastmod: r.lastmod,
+      source: r.source,
+      title: r.title,
+      lastModifiedTime: formatLastModTime(r.lastmod),
+    }));
+    initialSources = Array.from(
+      new Set(initialArticles.map((a) => a.source)),
+    ).sort();
+
+    storedRows = rows.slice(0, 50).map((r) => ({
       id: r.id,
       url: r.url,
       title: r.title,
@@ -87,15 +101,15 @@ export default async function EducationNewsPage() {
       repurposedCanonicalUrl: r.repurposedCanonicalUrl?.trim() || null,
     }));
   } catch (e) {
-    console.error("[education-news] DB sync / list:", e);
+    console.error("[education-news] DB list:", e);
   }
 
   return (
     <>
       <JsonLd data={educationNewsSchema} />
       <EducationNewsDashboard
-        initialArticles={articles}
-        initialSources={sources}
+        initialArticles={initialArticles}
+        initialSources={initialSources}
         initialStoredRows={storedRows}
       />
       <ToolExplainerSection markdown={explainerMd} />

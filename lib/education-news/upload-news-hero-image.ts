@@ -13,6 +13,8 @@ export async function createAndStoreNewsHeroImage(opts: {
   articleId: string;
   slug: string;
   title: string;
+  /** Optional; also see NEWS_FEATURED_EXAM_LOGO_URL in env. */
+  examLogoUrl?: string | null;
 }): Promise<string | null> {
   const token = process.env.BLOB_READ_WRITE_TOKEN?.trim();
   if (!token) {
@@ -21,7 +23,10 @@ export async function createAndStoreNewsHeroImage(opts: {
 
   try {
     const pathname = `news/${opts.slug}.png`;
-    const buf = await getNewsHeroImageBuffer(opts.title);
+    const buf = await getNewsHeroImageBuffer({
+      title: opts.title,
+      examLogoUrl: opts.examLogoUrl,
+    });
 
     const blob = await put(pathname, buf, {
       access: "public",

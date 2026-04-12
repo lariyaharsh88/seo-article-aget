@@ -127,6 +127,7 @@ export async function runRepurposeForArticleId(
         articleId: id,
         slug: repurposedSlug,
         title: row.title,
+        examLogoUrl: row.examLogoUrl,
       });
     } catch (imgErr) {
       console.error("[education-news] hero image:", imgErr);

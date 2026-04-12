@@ -1,5 +1,9 @@
 import type { Metadata } from "next";
-import { SITE_NAME } from "@/lib/seo-site";
+import {
+  SITE_LOGO_DIMENSIONS,
+  SITE_LOGO_PATH,
+  SITE_NAME,
+} from "@/lib/seo-site";
 import { getSiteUrl } from "@/lib/site-url";
 
 /** Shared Open Graph / Twitter for internal pages. */
@@ -19,14 +23,21 @@ export function buildPageMetadata(opts: {
   /** Absolute or same-origin hero image (e.g. news CDN) for OG / Twitter large card. */
   ogImage?: string | null;
 }): Metadata {
-  const base = getSiteUrl();
+  const base = getSiteUrl().replace(/\/$/, "");
   const path = opts.path.startsWith("/") ? opts.path : `/${opts.path}`;
   const url = `${base}${path}`;
   const isArticle = Boolean(opts.article);
-  const hero = opts.ogImage?.trim();
-  const ogImages = hero
-    ? [{ url: hero, width: 1200, height: 630, alt: opts.title }]
-    : undefined;
+  const customHero = opts.ogImage?.trim();
+  const defaultHero = `${base}${SITE_LOGO_PATH}`;
+  const heroUrl = customHero || defaultHero;
+  const ogImages = [
+    {
+      url: heroUrl,
+      width: customHero ? 1200 : SITE_LOGO_DIMENSIONS.width,
+      height: customHero ? 630 : SITE_LOGO_DIMENSIONS.height,
+      alt: opts.title,
+    },
+  ];
 
   return {
     title: opts.title,
@@ -46,13 +57,13 @@ export function buildPageMetadata(opts: {
             modifiedTime: opts.article.modifiedTime,
           }
         : {}),
-      ...(ogImages ? { images: ogImages } : {}),
+      images: ogImages,
     },
     twitter: {
-      card: ogImages ? "summary_large_image" : "summary",
+      card: "summary_large_image",
       title: opts.title,
       description: opts.description,
-      ...(ogImages ? { images: [hero!] } : {}),
+      images: [heroUrl],
     },
   };
 }

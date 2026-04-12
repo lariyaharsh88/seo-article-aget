@@ -72,8 +72,8 @@ export function EducationNewsDashboard({
     }
   }, []);
 
-  const handleRefresh = useCallback(async () => {
-    setIsRefreshing(true);
+  const handleRefresh = useCallback(async (opts?: { silent?: boolean }) => {
+    if (!opts?.silent) setIsRefreshing(true);
     try {
       const response = await fetch("/api/education-news");
       const data = (await response.json()) as {
@@ -108,13 +108,17 @@ export function EducationNewsDashboard({
     } catch (error) {
       console.error("Error refreshing news:", error);
     } finally {
-      setIsRefreshing(false);
+      if (!opts?.silent) setIsRefreshing(false);
     }
   }, []);
 
   useEffect(() => {
     void fetchShikshaClientSide();
   }, [fetchShikshaClientSide]);
+
+  useEffect(() => {
+    void handleRefresh({ silent: true });
+  }, [handleRefresh]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -160,7 +164,7 @@ export function EducationNewsDashboard({
           <a
             href="https://github.com/lariyaharsh88/news-aggregator"
             target="_blank"
-            rel="noopener noreferrer"
+            rel="nofollow noopener noreferrer"
             className="text-accent hover:underline"
           >
             news-aggregator

@@ -6,7 +6,12 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { Providers } from "@/app/providers";
 import { StructuredData } from "@/components/StructuredData";
 import { ADSENSE_CLIENT_ID } from "@/lib/adsense-config";
-import { SITE_DESCRIPTION, SITE_NAME } from "@/lib/seo-site";
+import {
+  SITE_DESCRIPTION,
+  SITE_LOGO_DIMENSIONS,
+  SITE_LOGO_PATH,
+  SITE_NAME,
+} from "@/lib/seo-site";
 import { getMetadataBaseUrl, getSiteUrl } from "@/lib/site-url";
 import "./globals.css";
 
@@ -83,11 +88,20 @@ export const metadata: Metadata = {
     siteName: SITE_NAME,
     title: SITE_NAME,
     description: SITE_DESCRIPTION,
+    images: [
+      {
+        url: SITE_LOGO_PATH,
+        width: SITE_LOGO_DIMENSIONS.width,
+        height: SITE_LOGO_DIMENSIONS.height,
+        alt: `${SITE_NAME} — AI · SEO · Growth`,
+      },
+    ],
   },
   twitter: {
-    card: "summary",
+    card: "summary_large_image",
     title: SITE_NAME,
     description: SITE_DESCRIPTION,
+    images: [SITE_LOGO_PATH],
   },
   other: {
     "google-adsense-account": ADSENSE_CLIENT_ID,

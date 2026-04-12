@@ -27,6 +27,11 @@ LEGAL / ETHICS:
 - Do NOT paste copyrighted paragraphs. Paraphrase; attribute facts to "${opts.source}" or "reports" where appropriate.
 - Add a short editor's note near the top: "Summary based on reports from ${opts.source}; see original for full detail."
 
+LINKS (strict — avoid boosting competitors):
+- Add **at most 1–3** outbound markdown links in the whole article, and **only** to **official** sources when you are sure of the URL: government sites (Indian gov.in / nic.in and similar), official board/university/NTA/exam-board domains, or statutory bodies.
+- Do **not** link to other news aggregators, ed-tech blogs, or commercial test-prep competitors by URL. Do not hyperlink competitor brand names. Name "${opts.source}" in plain text only for attribution — **no** markdown link to the original story URL or to competitor sites in the body.
+- If no official URL is certain, **omit the link** and tell readers to verify on the official board or university website.
+
 SEO + STYLE (match RankFlowHQ / seo-agent article rules, but **total length 800–1000 words** — strict):
 1. Open with one # H1 — include the main topic phrase naturally (from the headline).
 2. Use ## and ### subheads; short paragraphs (2–3 sentences); active voice; Indian English readers (clear Grade 8–10 English, British/Indian spelling where natural).

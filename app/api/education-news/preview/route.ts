@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { addExternalLinkRelToHtml } from "@/lib/html-external-links";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -35,11 +36,12 @@ export async function GET(request: Request) {
         /<div[^>]*class=["'][^"']*(?:content|article)["'][^>]*>([\s\S]*?)<\/div>/i,
       );
 
+    const rawHtml = contentMatch ? contentMatch[1] : html;
     return NextResponse.json({
       success: true,
       url: articleUrl,
       title: titleMatch ? titleMatch[1].trim() : "Untitled",
-      htmlContent: contentMatch ? contentMatch[1] : html,
+      htmlContent: addExternalLinkRelToHtml(rawHtml),
       extractedAt: new Date().toISOString(),
     });
   } catch (error) {

@@ -66,6 +66,8 @@ model EducationNewsArticle {
   repurposedCanonicalUrl  String?
   // Hero/OG image on images CDN (e.g. images.rankflowhq.com) after Vercel Blob upload.
   repurposedImageUrl String?
+  // Optional board/exam logo URL for featured image template (left slot); see NEWS_FEATURED_EXAM_LOGO_URL fallback.
+  examLogoUrl        String?
   // pending | processing | ready | error
   repurposeStatus    String    @default("pending")
   errorMessage       String?   @db.Text

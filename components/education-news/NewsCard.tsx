@@ -57,7 +57,7 @@ export function EducationNewsCard({
         <a
           href={article.url}
           target="_blank"
-          rel="noopener noreferrer"
+          rel="nofollow noopener noreferrer"
           className="font-mono text-xs text-text-muted transition-colors hover:text-accent"
         >
           Open in new tab →

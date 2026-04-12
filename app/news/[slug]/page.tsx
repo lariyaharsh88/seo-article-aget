@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { unstable_noStore as noStore } from "next/cache";
 import { notFound } from "next/navigation";
-import { marked } from "marked";
+import { markdownToArticleBodyHtml } from "@/lib/markdown-to-html";
 import { ContentInterlinks } from "@/components/ContentInterlinks";
 import { DEFAULT_ARTICLE_AUTHOR_NAME } from "@/lib/article-author";
 import { JsonLd } from "@/components/JsonLd";
@@ -76,10 +76,9 @@ export default async function RepurposedNewsArticlePage({ params }: Props) {
     console.error("[news/[slug]] peer articles:", e);
   }
 
-  marked.setOptions({ gfm: true });
   let html: string;
   try {
-    html = await marked.parse(post.repurposedMarkdown);
+    html = markdownToArticleBodyHtml(post.repurposedMarkdown);
   } catch (parseErr) {
     console.error("[news/[slug]] markdown parse error:", parseErr);
     html =

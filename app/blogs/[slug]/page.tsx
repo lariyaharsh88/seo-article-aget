@@ -2,7 +2,7 @@ import type { BlogPost } from "@prisma/client";
 import Link from "next/link";
 import { unstable_noStore as noStore } from "next/cache";
 import { notFound } from "next/navigation";
-import { marked } from "marked";
+import { markdownToArticleBodyHtml } from "@/lib/markdown-to-html";
 import { ContentInterlinks } from "@/components/ContentInterlinks";
 import { JsonLd } from "@/components/JsonLd";
 import { DEFAULT_ARTICLE_AUTHOR_NAME } from "@/lib/article-author";
@@ -67,10 +67,9 @@ export default async function BlogPostPage({ params }: Props) {
     console.error("[blogs/[slug]] peer posts:", e);
   }
 
-  marked.setOptions({ gfm: true });
   let html: string;
   try {
-    html = await marked.parse(post.content);
+    html = markdownToArticleBodyHtml(post.content);
   } catch (parseErr) {
     console.error("[blogs/[slug]] markdown parse error:", parseErr);
     html =
