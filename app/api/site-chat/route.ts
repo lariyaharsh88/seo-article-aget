@@ -4,7 +4,50 @@ import { buildSiteChatSystemPrompt } from "@/lib/site-chat-prompt";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-const DEEPSEEK_URL = "https://api.deepseek.com/chat/completions";
+/** OpenAI-compatible path (same as non-/v1 on DeepSeek; avoids rare proxy mismatches). */
+const DEEPSEEK_URL =
+  process.env.DEEPSEEK_API_BASE?.trim().replace(/\/$/, "") ||
+  "https://api.deepseek.com/v1";
+const DEEPSEEK_CHAT_PATH = `${DEEPSEEK_URL}/chat/completions`;
+
+function sanitizeApiMessage(s: string): string {
+  const t = s.replace(/\s+/g, " ").trim();
+  if (t.length > 280) return `${t.slice(0, 277)}…`;
+  return t;
+}
+
+/** Map DeepSeek HTTP errors to a short user-visible string (no stack traces). */
+function deepSeekUserFacingError(status: number, bodyText: string): string {
+  const raw = bodyText.trim();
+  if (raw.startsWith("{")) {
+    try {
+      const j = JSON.parse(raw) as {
+        error?: { message?: string } | string;
+        message?: string;
+      };
+      if (typeof j.error === "object" && j.error?.message) {
+        return sanitizeApiMessage(j.error.message);
+      }
+      if (typeof j.error === "string") return sanitizeApiMessage(j.error);
+      if (typeof j.message === "string") return sanitizeApiMessage(j.message);
+    } catch {
+      /* use status fallbacks */
+    }
+  }
+  if (status === 401) {
+    return "Chat API key rejected. Set a valid DEEPSEEK_API_KEY on the server.";
+  }
+  if (status === 402) {
+    return "DeepSeek account needs balance. Add credits at platform.deepseek.com.";
+  }
+  if (status === 429) {
+    return "DeepSeek rate limit. Wait a minute and try again.";
+  }
+  if (status >= 500) {
+    return "DeepSeek service error. Try again shortly.";
+  }
+  return "Assistant could not respond. Try again shortly.";
+}
 
 const MAX_MESSAGES = 24;
 const MAX_CONTENT_LEN = 12_000;
@@ -104,34 +147,41 @@ export async function POST(request: Request) {
   const model =
     process.env.DEEPSEEK_MODEL?.trim() || "deepseek-chat";
 
-  const upstream = await fetch(DEEPSEEK_URL, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model,
-      messages: [
-        { role: "system", content: buildSiteChatSystemPrompt() },
-        ...messages,
-      ],
-      stream: true,
-      max_tokens: 1500,
-      temperature: 0.5,
-    }),
-  });
+  let upstream: Response;
+  try {
+    upstream = await fetch(DEEPSEEK_CHAT_PATH, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model,
+        messages: [
+          { role: "system", content: buildSiteChatSystemPrompt() },
+          ...messages,
+        ],
+        stream: true,
+        max_tokens: 1500,
+        temperature: 0.5,
+      }),
+    });
+  } catch (e) {
+    console.error("[site-chat] DeepSeek fetch failed:", e);
+    return NextResponse.json(
+      {
+        error:
+          "Could not reach the chat API. Check deployment network or try again.",
+      },
+      { status: 502 },
+    );
+  }
 
   if (!upstream.ok) {
     const errText = await upstream.text().catch(() => "");
     console.error("[site-chat] DeepSeek error:", upstream.status, errText);
-    return NextResponse.json(
-      {
-        error: "Assistant could not respond. Try again shortly.",
-        detail: upstream.status === 401 ? "Invalid API key" : undefined,
-      },
-      { status: 502 },
-    );
+    const error = deepSeekUserFacingError(upstream.status, errText);
+    return NextResponse.json({ error }, { status: 502 });
   }
 
   if (!upstream.body) {

@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { ArticleCopyBar } from "@/components/ArticleCopyBar";
 import { ArticleRenderer } from "@/components/ArticleRenderer";
 import { ResearchImagesPanel } from "@/components/ResearchImagesPanel";
@@ -12,13 +12,11 @@ import { PipelineProgress } from "@/components/PipelineProgress";
 import { SeoPackage } from "@/components/SeoPackage";
 import { SourcesList } from "@/components/SourcesList";
 import { ArticleSeoScorecard } from "@/components/ArticleSeoScorecard";
-import { TopicForm } from "@/components/TopicForm";
 import { AdSenseSlot } from "@/components/AdSenseSlot";
 import { ADSENSE_SLOTS } from "@/lib/adsense-config";
 import { runArticlePipeline } from "@/lib/article-pipeline";
 import { computeArticleSeoScore } from "@/lib/article-seo-score";
 import { PIPELINE_STAGES } from "@/lib/pipeline-stages";
-import type { GscQueryRow } from "@/lib/gsc-queries";
 import type {
   FeaturedSnippet,
   Keyword,
@@ -51,38 +49,25 @@ type TabId =
   | "log"
   | "visual";
 
-function isRecord(v: unknown): v is Record<string, unknown> {
-  return typeof v === "object" && v !== null;
+function isValidHttpUrl(raw: string): boolean {
+  const t = raw.trim();
+  if (!t) return false;
+  try {
+    const u = new URL(t);
+    return u.protocol === "http:" || u.protocol === "https:";
+  } catch {
+    return false;
+  }
 }
 
-export function SeoAgentClient() {
+export function RepurposeUrlClient() {
   const [input, setInput] = useState<PipelineInput>({
     topic: "",
-    audience: "",
+    audience: "general readers",
     intent: "informational",
     sourceUrl: "",
     primaryKeyword: "",
   });
-  const [gscRows, setGscRows] = useState<GscQueryRow[]>([]);
-  const [googleSuggestions, setGoogleSuggestions] = useState<string[]>([]);
-  const [loadingGsc, setLoadingGsc] = useState(false);
-  const [loadingSuggest, setLoadingSuggest] = useState(false);
-  const [gscError, setGscError] = useState<string | null>(null);
-  const [gscNote, setGscNote] = useState<string | null>(null);
-  const [suggestError, setSuggestError] = useState<string | null>(null);
-  const [searchConsoleConfigured, setSearchConsoleConfigured] =
-    useState(false);
-
-  useEffect(() => {
-    void fetch("/api/config")
-      .then((r) => r.json())
-      .then((d: unknown) => {
-        if (isRecord(d) && typeof d.searchConsole === "boolean") {
-          setSearchConsoleConfigured(d.searchConsole);
-        }
-      })
-      .catch(() => setSearchConsoleConfigured(false));
-  }, []);
   const [tab, setTab] = useState<TabId>("article");
   const [running, setRunning] = useState(false);
   const [stage, setStage] = useState<string | null>(null);
@@ -97,17 +82,13 @@ export function SeoAgentClient() {
   );
   const [meta, setMeta] = useState<SeoMeta | null>(null);
   const [error, setError] = useState<string | null>(null);
-  /** Bumps when article generation finishes so the rich editor remounts with full Markdown. */
   const [articleEditorEpoch, setArticleEditorEpoch] = useState(0);
-  /** Last pipeline research bundle (for Pollinations image prompts). */
   const [storedResearchContext, setStoredResearchContext] = useState("");
   const [storedResearchTopic, setStoredResearchTopic] = useState("");
-  /** Final-step HTML from POST /api/seo-enrich (H2 images, QuickChart, comparison tables). */
   const [enrichedHtml, setEnrichedHtml] = useState("");
   const [autoEnrich, setAutoEnrich] = useState(true);
 
-  const canRun =
-    Boolean(input.topic.trim() || input.sourceUrl.trim()) && !running;
+  const canRun = isValidHttpUrl(input.sourceUrl) && !running;
 
   const topicFirstLine =
     input.topic.trim().split("\n")[0]?.trim() ?? "";
@@ -123,98 +104,13 @@ export function SeoAgentClient() {
 
   const showSeoScore = article.trim().length >= 40 && !running;
 
-  const handleFetchSearchConsole = useCallback(async () => {
-    setLoadingGsc(true);
-    setGscError(null);
-    setGscNote(null);
-    try {
-      const pageUrl = input.sourceUrl.trim() || undefined;
-      const res = await fetch("/api/search-console-queries", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pageUrl }),
-      });
-      const data: unknown = await res.json();
-      if (!res.ok) {
-        const msg =
-          isRecord(data) && typeof data.error === "string"
-            ? data.error
-            : `HTTP ${res.status}`;
-        const hint =
-          isRecord(data) && typeof data.hint === "string" ? data.hint : "";
-        throw new Error(hint ? `${msg}\n\n${hint}` : msg);
-      }
-      const details = isRecord(data) && Array.isArray(data.details)
-        ? data.details
-        : [];
-      const rows: GscQueryRow[] = details
-        .filter(
-          (r): r is Record<string, unknown> =>
-            typeof r === "object" && r !== null,
-        )
-        .map((r) => ({
-          query: typeof r.query === "string" ? r.query : "",
-          clicks: typeof r.clicks === "number" ? r.clicks : 0,
-          impressions:
-            typeof r.impressions === "number" ? r.impressions : 0,
-        }))
-        .filter((r) => r.query.length > 0);
-      setGscRows(rows);
-      const note =
-        isRecord(data) && typeof data.note === "string" ? data.note : null;
-      setGscNote(note);
-    } catch (e) {
-      setGscError(e instanceof Error ? e.message : "Search Console failed");
-      setGscRows([]);
-      setGscNote(null);
-    } finally {
-      setLoadingGsc(false);
-    }
-  }, [input.sourceUrl]);
-
-  const handleFetchGoogleSuggestions = useCallback(async () => {
-    const q =
-      input.primaryKeyword.trim() ||
-      input.topic.trim().split("\n")[0]?.trim() ||
-      "";
-    if (q.length < 2) {
-      setSuggestError("Add a primary keyword or topic line first.");
-      return;
-    }
-    setLoadingSuggest(true);
-    setSuggestError(null);
-    try {
-      const res = await fetch(
-        `/api/google-suggest?q=${encodeURIComponent(q)}`,
-      );
-      const data: unknown = await res.json();
-      if (!res.ok) {
-        const msg =
-          isRecord(data) && typeof data.error === "string"
-            ? data.error
-            : `HTTP ${res.status}`;
-        throw new Error(msg);
-      }
-      const list =
-        isRecord(data) && Array.isArray(data.suggestions)
-          ? data.suggestions.filter((s): s is string => typeof s === "string")
-          : [];
-      setGoogleSuggestions(list);
-    } catch (e) {
-      setSuggestError(e instanceof Error ? e.message : "Suggestions failed");
-      setGoogleSuggestions([]);
-    } finally {
-      setLoadingSuggest(false);
-    }
-  }, [input.primaryKeyword, input.topic]);
-
   const pushLog = useCallback((msg: string) => {
     const line = `[${new Date().toLocaleTimeString()}] ${msg}`;
     setLogLines((prev) => [...prev, line]);
   }, []);
 
   const runPipeline = useCallback(async () => {
-    if (!input.topic.trim() && !input.sourceUrl.trim()) return;
+    if (!isValidHttpUrl(input.sourceUrl)) return;
     setRunning(true);
     setError(null);
     setLogLines([]);
@@ -238,13 +134,13 @@ export function SeoAgentClient() {
     try {
       const result = await runArticlePipeline(
         {
-          topic: input.topic,
-          audience: input.audience,
+          topic: input.topic.trim(),
+          audience: input.audience.trim() || "general readers",
           intent: input.intent,
-          sourceUrl: input.sourceUrl,
-          primaryKeyword: input.primaryKeyword,
-          searchConsoleQueries: gscRows.map((r) => r.query),
-          googleSuggestions,
+          sourceUrl: input.sourceUrl.trim(),
+          primaryKeyword: input.primaryKeyword.trim(),
+          searchConsoleQueries: [],
+          googleSuggestions: [],
         },
         {
           onStage: setStage,
@@ -275,7 +171,7 @@ export function SeoAgentClient() {
       setRunning(false);
       setStage(null);
     }
-  }, [input, pushLog, gscRows, googleSuggestions, autoEnrich]);
+  }, [input, pushLog, autoEnrich]);
 
   const tabs: { id: TabId; label: string }[] = [
     { id: "article", label: "Article" },
@@ -286,6 +182,12 @@ export function SeoAgentClient() {
     { id: "sources", label: "Sources" },
     { id: "log", label: "Live log" },
   ];
+
+  const researchLabel =
+    storedResearchTopic.trim() ||
+    topicFirstLine ||
+    input.sourceUrl.trim() ||
+    "Article";
 
   return (
     <main className="mx-auto flex min-w-0 max-w-6xl flex-col gap-6 px-4 py-8 sm:gap-8 sm:py-10 md:px-6">
@@ -299,32 +201,17 @@ export function SeoAgentClient() {
       </p>
       <header className="space-y-3 border-b border-border pb-6 sm:pb-8">
         <p className="font-mono text-xs uppercase tracking-[0.2em] text-accent">
-          Next.js · Gemini · Tavily · Serper
+          URL → full pipeline
         </p>
-        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between sm:gap-4">
-          <div className="min-w-0">
-            <h1 className="font-display text-3xl text-text-primary sm:text-4xl md:text-5xl">
-              RankFlowHQ · Article pipeline
-            </h1>
-            <p className="mt-2 max-w-2xl font-serif text-base text-text-secondary sm:text-lg">
-              From SERP signals to a streaming long-form draft, with research
-              citations and an exportable SEO pack.
-            </p>
-            <p className="mt-2 font-mono text-xs text-text-muted">
-              Have only a URL?{" "}
-              <Link
-                href="/repurpose-url"
-                className="text-accent underline-offset-2 hover:underline"
-              >
-                Repurpose from URL
-              </Link>{" "}
-              runs the same pipeline from a single link.
-            </p>
-          </div>
-          <span className="w-fit shrink-0 rounded-full border border-accent/40 bg-accent/10 px-3 py-1 font-mono text-xs text-accent">
-            Free-tier APIs
-          </span>
-        </div>
+        <h1 className="font-display text-3xl text-text-primary sm:text-4xl md:text-5xl">
+          Repurpose from URL
+        </h1>
+        <p className="max-w-2xl font-serif text-base text-text-secondary sm:text-lg">
+          Paste any public article URL. RankFlowHQ runs the same keyword →
+          research → SERP → outline → streaming article → SEO audit pipeline as
+          the main article tool, using the page title (and Tavily context) so you
+          get a fresh, SEO-oriented draft—not a verbatim copy.
+        </p>
       </header>
 
       {ADSENSE_SLOTS.toolInline ? (
@@ -342,21 +229,117 @@ export function SeoAgentClient() {
 
       <div className="grid min-w-0 gap-6 lg:grid-cols-[1fr_320px]">
         <div className="min-w-0 space-y-4">
-          <TopicForm
-            value={input}
-            onChange={setInput}
-            disabled={running}
-            gscRows={gscRows}
-            googleSuggestions={googleSuggestions}
-            onFetchSearchConsole={() => void handleFetchSearchConsole()}
-            onFetchGoogleSuggestions={() => void handleFetchGoogleSuggestions()}
-            loadingGsc={loadingGsc}
-            loadingSuggest={loadingSuggest}
-            gscError={gscError}
-            gscNote={gscNote}
-            suggestError={suggestError}
-            searchConsoleConfigured={searchConsoleConfigured}
-          />
+          <div className="space-y-4 rounded-xl border border-border bg-surface/80 p-4 sm:p-6">
+            <div>
+              <label
+                htmlFor="repurpose-source-url"
+                className="font-mono text-xs text-text-muted"
+              >
+                Article or page URL <span className="text-accent">*</span>
+              </label>
+              <input
+                id="repurpose-source-url"
+                type="url"
+                inputMode="url"
+                autoComplete="url"
+                placeholder="https://example.com/blog/your-article"
+                value={input.sourceUrl}
+                disabled={running}
+                onChange={(e) =>
+                  setInput((prev) => ({ ...prev, sourceUrl: e.target.value }))
+                }
+                className="mt-1.5 w-full rounded-lg border border-border bg-background px-3 py-2.5 font-mono text-sm text-text-primary outline-none ring-accent/30 focus:border-accent focus:ring-2"
+              />
+            </div>
+            <div>
+              <label
+                htmlFor="repurpose-topic"
+                className="font-mono text-xs text-text-muted"
+              >
+                Topic override{" "}
+                <span className="text-text-muted/80">(optional)</span>
+              </label>
+              <textarea
+                id="repurpose-topic"
+                rows={2}
+                placeholder="Leave empty to use the live page title from the URL."
+                value={input.topic}
+                disabled={running}
+                onChange={(e) =>
+                  setInput((prev) => ({ ...prev, topic: e.target.value }))
+                }
+                className="mt-1.5 w-full resize-y rounded-lg border border-border bg-background px-3 py-2 font-serif text-sm text-text-primary outline-none ring-accent/30 focus:border-accent focus:ring-2"
+              />
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label
+                  htmlFor="repurpose-audience"
+                  className="font-mono text-xs text-text-muted"
+                >
+                  Audience
+                </label>
+                <input
+                  id="repurpose-audience"
+                  type="text"
+                  value={input.audience}
+                  disabled={running}
+                  onChange={(e) =>
+                    setInput((prev) => ({ ...prev, audience: e.target.value }))
+                  }
+                  className="mt-1.5 w-full rounded-lg border border-border bg-background px-3 py-2 font-serif text-sm text-text-primary outline-none ring-accent/30 focus:border-accent focus:ring-2"
+                />
+              </div>
+              <div>
+                <label
+                  htmlFor="repurpose-intent"
+                  className="font-mono text-xs text-text-muted"
+                >
+                  Intent
+                </label>
+                <select
+                  id="repurpose-intent"
+                  value={input.intent}
+                  disabled={running}
+                  onChange={(e) =>
+                    setInput((prev) => ({
+                      ...prev,
+                      intent: e.target.value as PipelineInput["intent"],
+                    }))
+                  }
+                  className="mt-1.5 w-full rounded-lg border border-border bg-background px-3 py-2 font-mono text-sm text-text-primary outline-none ring-accent/30 focus:border-accent focus:ring-2"
+                >
+                  <option value="informational">Informational</option>
+                  <option value="commercial">Commercial</option>
+                  <option value="transactional">Transactional</option>
+                  <option value="navigational">Navigational</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <label
+                htmlFor="repurpose-pk"
+                className="font-mono text-xs text-text-muted"
+              >
+                Primary keyword{" "}
+                <span className="text-text-muted/80">(optional)</span>
+              </label>
+              <input
+                id="repurpose-pk"
+                type="text"
+                placeholder="Defaults from topic / page title if empty"
+                value={input.primaryKeyword}
+                disabled={running}
+                onChange={(e) =>
+                  setInput((prev) => ({
+                    ...prev,
+                    primaryKeyword: e.target.value,
+                  }))
+                }
+                className="mt-1.5 w-full rounded-lg border border-border bg-background px-3 py-2 font-mono text-sm text-text-primary outline-none ring-accent/30 focus:border-accent focus:ring-2"
+              />
+            </div>
+          </div>
 
           <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
             <button
@@ -365,7 +348,7 @@ export function SeoAgentClient() {
               disabled={!canRun}
               className="touch-manipulation w-full rounded-lg bg-accent px-5 py-2.5 font-mono text-sm font-semibold text-background transition-all duration-200 enabled:hover:opacity-90 enabled:focus:outline-none enabled:focus:ring-2 enabled:focus:ring-accent disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto"
             >
-              {running ? "Running pipeline…" : "Run pipeline"}
+              {running ? "Running pipeline…" : "Run full pipeline"}
             </button>
             <label className="flex cursor-pointer items-center gap-2 font-mono text-[11px] text-text-secondary sm:text-xs">
               <input
@@ -375,10 +358,10 @@ export function SeoAgentClient() {
                 disabled={running}
                 className="h-4 w-4 rounded border-border accent-accent"
               />
-              Auto-enrich (H2 images, charts, tables — last step)
+              Auto-enrich (H2 images, charts, tables)
             </label>
             <span className="font-mono text-[11px] text-text-muted sm:text-xs">
-              Using server keys from `.env.local`.
+              Same APIs as /seo-agent — keys in env.
             </span>
           </div>
 
@@ -390,14 +373,14 @@ export function SeoAgentClient() {
             />
           </div>
 
-          {error && (
+          {error ? (
             <div
               role="alert"
               className="rounded-lg border border-red-500/50 bg-red-950/40 px-4 py-3 font-mono text-sm text-red-200"
             >
               {error}
             </div>
-          )}
+          ) : null}
 
           <div className="rounded-xl border border-border bg-surface/80">
             <div
@@ -437,9 +420,7 @@ export function SeoAgentClient() {
                         Copy HTML
                       </button>
                       <p className="font-mono text-[11px] text-text-muted">
-                        Publish-ready HTML after the markdown article (images
-                        under H2, QuickChart when data is found, tables for
-                        comparisons).
+                        Publish-ready HTML from /api/seo-enrich.
                       </p>
                     </div>
                     <div
@@ -450,30 +431,22 @@ export function SeoAgentClient() {
                   </div>
                 ) : (
                   <p className="font-serif text-text-secondary">
-                    Run the pipeline with{" "}
-                    <span className="font-mono text-accent">Auto-enrich</span>{" "}
-                    enabled (default). After the article and SEO audit, the
-                    server builds visual HTML — open this tab when the run
-                    finishes, or switch here if you disabled enrich.
+                    Enable <span className="font-mono text-accent">Auto-enrich</span>{" "}
+                    and run the pipeline. Visual HTML appears here when the run
+                    completes.
                   </p>
                 ))}
               {tab === "article" && (
                 <div>
                   <ArticleCopyBar markdown={article} disabled={running} />
                   <ResearchImagesPanel
-                    topic={
-                      storedResearchTopic.trim() ||
-                      input.topic.trim().split("\n")[0]?.trim() ||
-                      "Article"
-                    }
+                    topic={researchLabel}
                     audience={input.audience}
                     researchContext={storedResearchContext}
                     article={article}
                     disableArticleMutation={running}
                     onApplyArticle={setArticle}
-                    onRemountEditor={() =>
-                      setArticleEditorEpoch((e) => e + 1)
-                    }
+                    onRemountEditor={() => setArticleEditorEpoch((e) => e + 1)}
                   />
                   {running ? (
                     <ArticleRenderer markdown={article} streaming />
@@ -496,9 +469,7 @@ export function SeoAgentClient() {
                   <ArticleSeoScorecard result={seoScoreResult} />
                 ) : (
                   <p className="font-serif text-text-secondary">
-                    Add or generate article text first (about 40+ characters). Scores
-                    use your markdown, the SEO package from the audit stage when
-                    available, and your keyword list.
+                    Generate an article first (about 40+ characters) to see scores.
                   </p>
                 ))}
               {tab === "seo" && <SeoPackage meta={meta} article={article} />}
@@ -507,8 +478,8 @@ export function SeoAgentClient() {
                   keywords={keywords}
                   paas={paas}
                   featuredSnippet={featuredSnippet}
-                  gscRows={gscRows}
-                  googleSuggestions={googleSuggestions}
+                  gscRows={[]}
+                  googleSuggestions={[]}
                 />
               )}
               {tab === "sources" && <SourcesList sources={sources} />}

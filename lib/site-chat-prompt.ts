@@ -6,6 +6,7 @@ const SITE_SECTIONS = [
   { path: "/blogs", label: "Blog — articles and product notes" },
   { path: "/news", label: "News — repurposed education news articles" },
   { path: "/seo-agent", label: "SEO article pipeline — SERP research to long-form draft" },
+  { path: "/repurpose-url", label: "Repurpose from URL — full pipeline from a single page URL" },
   { path: "/ai-seo-toolkit", label: "AI SEO Toolkit — visibility, prompts, optimizer" },
   { path: "/off-page-seo", label: "Off-page SEO & outreach — prospects and contacts" },
   { path: "/education-trends", label: "Education Google Trends" },

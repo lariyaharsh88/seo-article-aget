@@ -28,6 +28,7 @@ Hubs you may use when relevant (not exhaustive):
 - ${base}/blogs — blog index
 - ${base}/news — education news index
 - ${base}/seo-agent — SEO article pipeline
+- ${base}/repurpose-url — repurpose any article URL through the full pipeline
 - ${base}/ai-seo-toolkit — AI SEO toolkit
 - ${base}/off-page-seo — off-page SEO & outreach
 - ${base}/education-trends — Education Google Trends

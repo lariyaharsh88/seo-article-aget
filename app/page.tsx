@@ -43,6 +43,13 @@ const tools = [
       "From topic and SERP signals to a researched, cited long-form draft: keywords, outline, streaming article, SEO package, and SVG infographics from your data.",
   },
   {
+    href: "/repurpose-url",
+    title: "Repurpose from URL",
+    tag: "Same pipeline · URL in",
+    description:
+      "Paste any public article URL and run the full pipeline—title from the page, Tavily research, outline, new draft, SEO audit, and optional visual HTML.",
+  },
+  {
     href: "/ai-seo-toolkit",
     title: "AI SEO Toolkit",
     tag: "SQLite · OpenRouter",

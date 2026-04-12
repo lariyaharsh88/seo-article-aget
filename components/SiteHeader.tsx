@@ -10,6 +10,7 @@ const nav = [
   { href: "/blogs", label: "Blog" },
   { href: "/news", label: "News" },
   { href: "/seo-agent", label: "Article pipeline" },
+  { href: "/repurpose-url", label: "URL repurpose" },
   { href: "/ai-seo-toolkit", label: "AI SEO Toolkit" },
   { href: "/off-page-seo", label: "Off-page SEO" },
   { href: "/education-trends", label: "Education trends" },

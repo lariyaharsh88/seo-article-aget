@@ -19,6 +19,7 @@ export function buildHomePageSchema(): Record<string, unknown> {
   const tools: { name: string; path: string }[] = [
     { name: "Blog", path: "/blogs" },
     { name: "SEO article pipeline", path: "/seo-agent" },
+    { name: "Repurpose from URL", path: "/repurpose-url" },
     { name: "AI SEO Toolkit", path: "/ai-seo-toolkit" },
     { name: "Off-page SEO & outreach", path: "/off-page-seo" },
     { name: "Education Google Trends", path: "/education-trends" },
