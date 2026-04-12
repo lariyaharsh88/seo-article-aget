@@ -9,7 +9,11 @@ function parseMarkdownToHtmlFragment(markdown: string): string {
   const raw = markdown.trim();
   if (!raw) return "";
   const parsed = marked.parse(raw, { async: false }) as string;
-  return addExternalLinkRelToHtml(parsed);
+  try {
+    return addExternalLinkRelToHtml(parsed);
+  } catch {
+    return parsed;
+  }
 }
 
 /** Markdown body only (no wrapper); external links get nofollow + noopener + noreferrer. */

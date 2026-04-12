@@ -1,12 +1,12 @@
 import type { EducationNewsArticle } from "@prisma/client";
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
 import { unstable_noStore as noStore } from "next/cache";
 import { notFound } from "next/navigation";
 import { markdownToArticleBodyHtml } from "@/lib/markdown-to-html";
 import { ContentInterlinks } from "@/components/ContentInterlinks";
 import { DEFAULT_ARTICLE_AUTHOR_NAME } from "@/lib/article-author";
+import { NewsArticleTransientFailure } from "@/components/education-news/NewsArticleTransientFailure";
 import { JsonLd } from "@/components/JsonLd";
 import {
   findReadyRepurposedNewsBySlug,
@@ -56,12 +56,18 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function RepurposedNewsArticlePage({ params }: Props) {
   noStore();
+  const slugParam = normalizeNewsSlugParam(params.slug);
   let post: EducationNewsArticle | null = null;
+  let dbLoadFailed = false;
   try {
     post = await findReadyRepurposedNewsBySlug(params.slug);
   } catch (err) {
     console.error("[news/[slug]] database error:", err);
-    throw err instanceof Error ? err : new Error("Database error");
+    dbLoadFailed = true;
+  }
+
+  if (dbLoadFailed) {
+    return <NewsArticleTransientFailure slug={slugParam} />;
   }
 
   if (!post?.repurposedSlug?.trim() || !post.repurposedMarkdown?.trim()) {
@@ -121,21 +127,23 @@ export default async function RepurposedNewsArticlePage({ params }: Props) {
             {post.title}
           </h1>
           {post.repurposedImageUrl?.trim() ? (
-            <Image
+            // eslint-disable-next-line @next/next/no-img-element -- Blob/CDN hostnames vary; next/image can throw if host not allowlisted
+            <img
               src={post.repurposedImageUrl.trim()}
               alt={post.title}
               width={1200}
               height={630}
               className="mt-6 h-auto w-full max-w-full rounded-xl border border-border object-cover"
-              sizes="(max-width: 768px) 100vw, 720px"
-              priority
+              loading="eager"
+              decoding="async"
+              fetchPriority="high"
             />
           ) : null}
           <p className="mt-4 font-mono text-[11px] text-text-muted">
             <a
               href={post.url}
               target="_blank"
-              rel="noopener noreferrer"
+              rel="nofollow noopener noreferrer"
               className="text-accent underline-offset-2 hover:underline"
             >
               View original source
