@@ -29,6 +29,13 @@ const tools = [
       "Product updates and SEO tooling notes. New posts are published from the admin CMS.",
   },
   {
+    href: "/news",
+    title: "News",
+    tag: "Education · SEO",
+    description:
+      "Repurposed education news—exam updates, boards, and higher ed stories published as SEO-friendly articles on RankFlowHQ.",
+  },
+  {
     href: "/seo-agent",
     title: "SEO article pipeline",
     tag: "Gemini · Tavily · Serper",
