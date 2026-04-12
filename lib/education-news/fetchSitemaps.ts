@@ -1,5 +1,6 @@
 import { XMLParser } from "fast-xml-parser";
 import type { NewsArticle, SitemapSource } from "./types";
+import { shouldSkipEducationNewsSourceUrl } from "./url-filters";
 
 const SITEMAP_SOURCES: SitemapSource[] = [
   { url: "https://www.shiksha.com/NewsIndex1.xml", name: "Shiksha" },
@@ -154,12 +155,14 @@ function parseSitemapResponse(
 
     const articles: NewsArticle[] = rows
       .filter((item) => {
+        const url = String(item.loc || "").trim();
+        if (!url || shouldSkipEducationNewsSourceUrl(url)) return false;
         const lastmod =
           item.lastmod || item["news:publication_date"] || "";
         return Boolean(lastmod && isToday(lastmod));
       })
       .map((item) => {
-        const url = item.loc || "";
+        const url = String(item.loc || "").trim();
         const lastmod =
           item.lastmod || item["news:publication_date"] || "";
 

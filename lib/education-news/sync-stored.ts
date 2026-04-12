@@ -1,5 +1,6 @@
 import { DEFAULT_ARTICLE_AUTHOR_NAME } from "@/lib/article-author";
 import type { NewsArticle } from "@/lib/education-news/types";
+import { shouldSkipEducationNewsSourceUrl } from "@/lib/education-news/url-filters";
 import { prisma } from "@/lib/prisma";
 
 export type EducationNewsSyncResult = {
@@ -16,11 +17,12 @@ export async function syncEducationNewsArticles(
 ): Promise<EducationNewsSyncResult> {
   const syncStarted = new Date();
   for (const a of articles) {
-    if (!a.url?.trim()) continue;
+    const url = a.url?.trim();
+    if (!url || shouldSkipEducationNewsSourceUrl(url)) continue;
     await prisma.educationNewsArticle.upsert({
-      where: { url: a.url.trim() },
+      where: { url },
       create: {
-        url: a.url.trim(),
+        url,
         title: a.title.slice(0, 500),
         source: a.source.slice(0, 120),
         lastmod: a.lastmod.slice(0, 80),
