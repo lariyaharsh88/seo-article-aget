@@ -50,10 +50,6 @@ export default async function NewsIndexPage() {
         <h1 className="mt-6 font-display text-3xl text-text-primary sm:text-4xl">
           News
         </h1>
-        <p className="mt-3 max-w-2xl font-serif text-sm text-text-secondary sm:text-base">
-          Articles repurposed from education publishers, published on this site with
-          stable URLs under <span className="font-mono text-accent">/news/</span>.
-        </p>
 
         {items.length === 0 ? (
           <p className="mt-10 font-serif text-sm text-text-muted">
