@@ -382,7 +382,10 @@ export async function runArticlePipeline(
   }
 
   let enrichedHtml: string | null = null;
-  if (cbs.onEnrichedHtml && articleBody.trim().length >= 80) {
+  const enrichRequested = Boolean(cbs.onEnrichedHtml);
+  const enrichEligible = articleBody.trim().length >= 80;
+
+  if (enrichRequested && enrichEligible) {
     cbs.onStage("enrich");
     pushLog("Visual enrich: sections → images, charts, tables…");
     try {
@@ -403,7 +406,6 @@ export async function runArticlePipeline(
       ) {
         enrichedHtml = data.html;
         cbs.onEnrichedHtml(data.html);
-        markDone("enrich");
         pushLog("Visual enrich: HTML ready.");
       } else {
         const err =
@@ -417,6 +419,14 @@ export async function runArticlePipeline(
         `Visual enrich: failed — ${e instanceof Error ? e.message : "error"}`,
       );
     }
+    markDone("enrich");
+  } else {
+    if (enrichRequested && !enrichEligible) {
+      pushLog(
+        "Visual enrich: skipped — article body too short for this step (need ≥80 characters).",
+      );
+    }
+    markDone("enrich");
   }
 
   cbs.onStage(null);
