@@ -1,10 +1,8 @@
 import { prisma } from "@/lib/prisma";
-import { newsHeroPublicUrl } from "@/lib/images-cdn";
 import { SITE_NAME } from "@/lib/seo-site";
 import { getSiteUrl } from "@/lib/site-url";
 
 const NEWS_NS = "http://www.google.com/schemas/sitemap-news/0.9";
-const IMAGE_NS = "http://www.google.com/schemas/sitemap-image/1.1";
 const URLSET_NS = "http://www.sitemaps.org/schemas/sitemap/0.9";
 
 function escapeXml(s: string): string {
@@ -31,18 +29,9 @@ function plainTextKeywords(markdown: string | null, title: string): string {
   return combined.slice(0, 500).trim() || title;
 }
 
-function resolveNewsArticleImageLoc(
-  slug: string,
-  stored: string | null | undefined,
-): string | null {
-  if (stored?.trim()) return stored.trim();
-  const tpl = process.env.NEWS_SITEMAP_ARTICLE_IMAGE_URL_TEMPLATE?.trim();
-  if (tpl) return tpl.replace(/\{slug\}/g, encodeURIComponent(slug));
-  return newsHeroPublicUrl(slug);
-}
-
 /**
- * Google News sitemap XML (`/news/sitemap.xml`): `news:` + optional `image:` extensions,
+ * Google News sitemap XML (`/news/sitemap.xml`): `news:` namespace only (no `image:` blocks;
+ * hero URLs were omitted until image locs are guaranteed absolute https URLs).
  * `changefreq` daily, `priority` 1 per URL.
  *
  * @see https://developers.google.com/search/docs/advanced/sitemaps/news-sitemap
@@ -63,7 +52,6 @@ export async function buildGoogleNewsSitemapXml(): Promise<string> {
     repurposedMarkdown: string | null;
     repurposedAt: Date;
     updatedAt: Date;
-    repurposedImageUrl: string | null;
   }[] = [];
   try {
     const found = await prisma.educationNewsArticle.findMany({
@@ -79,7 +67,6 @@ export async function buildGoogleNewsSitemapXml(): Promise<string> {
         repurposedMarkdown: true,
         repurposedAt: true,
         updatedAt: true,
-        repurposedImageUrl: true,
       },
       orderBy: { repurposedAt: "desc" },
     });
@@ -107,15 +94,6 @@ export async function buildGoogleNewsSitemapXml(): Promise<string> {
     );
     const pubName = escapeXml(publicationName);
 
-    const imageBlock = (() => {
-      const img = resolveNewsArticleImageLoc(slug, r.repurposedImageUrl);
-      if (!img) return "";
-      return `
-  <image:image>
-    <image:loc>${escapeXml(img)}</image:loc>
-  </image:image>`;
-    })();
-
     return `  <url>
     <loc>${escapeXml(loc)}</loc>
     <lastmod>${lastmod}</lastmod>
@@ -130,7 +108,7 @@ export async function buildGoogleNewsSitemapXml(): Promise<string> {
       <news:genres>${escapeXml(genres)}</news:genres>
       <news:title>${title}</news:title>
       <news:keywords>${keywords}</news:keywords>
-    </news:news>${imageBlock}
+    </news:news>
   </url>`;
   });
 
@@ -138,8 +116,7 @@ export async function buildGoogleNewsSitemapXml(): Promise<string> {
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="${URLSET_NS}"
-        xmlns:news="${NEWS_NS}"
-        xmlns:image="${IMAGE_NS}">
+        xmlns:news="${NEWS_NS}">
 ${body}
 </urlset>`;
 }
