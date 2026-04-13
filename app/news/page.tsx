@@ -135,8 +135,8 @@ export default async function NewsIndexPage({ searchParams }: Props) {
                             day: "numeric",
                           });
                         return issued
-                          ? `${item.source} · Issued ${issued} · Repurposed ${repurposed}`
-                          : `${item.source} · Repurposed ${repurposed}`;
+                          ? `Issued ${issued} · Repurposed ${repurposed}`
+                          : `Repurposed ${repurposed}`;
                       })()}
                     </span>
                   </Link>

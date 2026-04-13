@@ -235,6 +235,15 @@ export function SeoAgentClient() {
       setDoneStages((prev) => (prev.includes(id) ? prev : [...prev, id]));
     };
 
+    const hasSourceUrl = input.sourceUrl.trim().length > 0;
+    const gscFallbackToSiteWide =
+      typeof gscNote === "string" &&
+      gscNote.toLowerCase().includes("showing site-wide top queries instead");
+    const searchConsoleQueriesForArticle =
+      hasSourceUrl && !gscFallbackToSiteWide
+        ? gscRows.map((r) => r.query)
+        : [];
+
     try {
       const result = await runArticlePipeline(
         {
@@ -243,7 +252,7 @@ export function SeoAgentClient() {
           intent: input.intent,
           sourceUrl: input.sourceUrl,
           primaryKeyword: input.primaryKeyword,
-          searchConsoleQueries: gscRows.map((r) => r.query),
+          searchConsoleQueries: searchConsoleQueriesForArticle,
           googleSuggestions,
         },
         {
@@ -275,7 +284,7 @@ export function SeoAgentClient() {
       setRunning(false);
       setStage(null);
     }
-  }, [input, pushLog, gscRows, googleSuggestions, autoEnrich]);
+  }, [input, pushLog, gscRows, gscNote, googleSuggestions, autoEnrich]);
 
   const tabs: { id: TabId; label: string }[] = [
     { id: "article", label: "Article" },

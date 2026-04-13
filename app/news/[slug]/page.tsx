@@ -117,16 +117,14 @@ export default async function RepurposedNewsArticlePage({ params }: Props) {
         </p>
         <article className="mt-6">
           <p className="font-mono text-xs leading-relaxed text-text-muted">
-            <span className="text-text-secondary">{post.source}</span>
             {issuedDisplay ? (
               <>
-                <span className="mx-2 text-text-muted/60">·</span>
                 <span className="text-text-secondary">
                   Issued <time dateTime={issuedIso}>{issuedDisplay}</time>
                 </span>
+                <span className="mx-2 text-text-muted/60">·</span>
               </>
             ) : null}
-            <span className="mx-2 text-text-muted/60">·</span>
             <span className="text-text-secondary">
               By {post.authorName?.trim() || DEFAULT_ARTICLE_AUTHOR_NAME}
             </span>
@@ -208,8 +206,8 @@ export default async function RepurposedNewsArticlePage({ params }: Props) {
               day: "numeric",
             });
             const description = issued
-              ? `${n.source} · Issued ${issued} · Repurposed ${repurposed}`
-              : `${n.source} · Repurposed ${repurposed}`;
+              ? `Issued ${issued} · Repurposed ${repurposed}`
+              : `Repurposed ${repurposed}`;
             return {
               href: `/news/${encodeURIComponent(n.slug)}`,
               title: n.title,
