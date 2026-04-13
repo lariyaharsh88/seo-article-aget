@@ -78,8 +78,20 @@ type Props = {
   syncKey?: number;
 };
 
+/** Pending = not yet successfully repurposed (ready). Repurposed = ready on site. */
+type RepurposeListFilter = "pending" | "repurposed";
+
+function rowMatchesFilter(
+  row: StoredEducationNewsListItem,
+  filter: RepurposeListFilter,
+): boolean {
+  const ready = row.repurposeStatus === "ready";
+  return filter === "repurposed" ? ready : !ready;
+}
+
 export function StoredRepurposePanel({ initialItems, syncKey = 0 }: Props) {
   const [items, setItems] = useState(initialItems);
+  const [listFilter, setListFilter] = useState<RepurposeListFilter>("pending");
   const [busyId, setBusyId] = useState<string | null>(null);
   const [batchBusy, setBatchBusy] = useState(false);
   const [detail, setDetail] = useState<{
@@ -111,6 +123,8 @@ export function StoredRepurposePanel({ initialItems, syncKey = 0 }: Props) {
   useEffect(() => {
     if (syncKey > 0) void refreshList();
   }, [syncKey, refreshList]);
+
+  const filteredItems = items.filter((row) => rowMatchesFilter(row, listFilter));
 
   const repurposeOne = useCallback(
     async (id: string) => {
@@ -251,22 +265,55 @@ export function StoredRepurposePanel({ initialItems, syncKey = 0 }: Props) {
             is set (see <span className="font-mono text-text-muted">.env.example</span>).
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={() => void refreshList()}
-            className="rounded-lg border border-border px-3 py-2 font-mono text-xs text-text-secondary hover:border-accent hover:text-accent"
+        <div className="flex flex-col items-stretch gap-3 sm:items-end">
+          <div
+            role="group"
+            aria-label="Filter by repurpose status"
+            className="flex flex-wrap items-center gap-1.5 sm:justify-end"
           >
-            Refresh list
-          </button>
-          <button
-            type="button"
-            disabled={batchBusy}
-            onClick={() => void repurposePending()}
-            className="rounded-lg border border-accent bg-accent/15 px-3 py-2 font-mono text-xs text-accent hover:bg-accent/25 disabled:opacity-40"
-          >
-            {batchBusy ? "Running AI…" : "Repurpose next pending (×2)"}
-          </button>
+            <span className="mr-1 font-mono text-[10px] uppercase tracking-wide text-text-muted">
+              Show
+            </span>
+            <button
+              type="button"
+              onClick={() => setListFilter("pending")}
+              className={`rounded-lg border px-3 py-1.5 font-mono text-xs transition-colors ${
+                listFilter === "pending"
+                  ? "border-accent bg-accent/20 text-accent"
+                  : "border-border text-text-secondary hover:border-accent/50 hover:text-text-primary"
+              }`}
+            >
+              Pending
+            </button>
+            <button
+              type="button"
+              onClick={() => setListFilter("repurposed")}
+              className={`rounded-lg border px-3 py-1.5 font-mono text-xs transition-colors ${
+                listFilter === "repurposed"
+                  ? "border-accent bg-accent/20 text-accent"
+                  : "border-border text-text-secondary hover:border-accent/50 hover:text-text-primary"
+              }`}
+            >
+              Repurposed
+            </button>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => void refreshList()}
+              className="rounded-lg border border-border px-3 py-2 font-mono text-xs text-text-secondary hover:border-accent hover:text-accent"
+            >
+              Refresh list
+            </button>
+            <button
+              type="button"
+              disabled={batchBusy}
+              onClick={() => void repurposePending()}
+              className="rounded-lg border border-accent bg-accent/15 px-3 py-2 font-mono text-xs text-accent hover:bg-accent/25 disabled:opacity-40"
+            >
+              {batchBusy ? "Running AI…" : "Repurpose next pending (×2)"}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -328,7 +375,19 @@ export function StoredRepurposePanel({ initialItems, syncKey = 0 }: Props) {
             </tr>
           </thead>
           <tbody>
-            {items.map((row) => (
+            {filteredItems.length === 0 ? (
+              <tr>
+                <td
+                  colSpan={6}
+                  className="px-3 py-8 text-center font-serif text-sm text-text-muted"
+                >
+                  {listFilter === "pending"
+                    ? "No pending rows in the latest 50 updates. Switch to Repurposed or refresh after sync."
+                    : "No repurposed (ready) rows in the latest 50 updates. Switch to Pending or run Repurpose."}
+                </td>
+              </tr>
+            ) : null}
+            {filteredItems.map((row) => (
               <tr key={row.id} className="border-b border-border/80 last:border-0">
                 <td className="max-w-[220px] px-3 py-2 align-top text-text-primary">
                   <span className="line-clamp-2" title={row.title}>
