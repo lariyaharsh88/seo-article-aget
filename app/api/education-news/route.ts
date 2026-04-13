@@ -17,8 +17,8 @@ export async function GET() {
     const sources = getUniqueSources(articles);
 
     try {
-      const { newPendingIds } = await syncEducationNewsArticles(articles);
-      await runAutoRepurposeAfterSync(newPendingIds);
+      await syncEducationNewsArticles(articles);
+      await runAutoRepurposeAfterSync();
     } catch (syncErr) {
       console.error("[education-news] sync / auto-repurpose:", syncErr);
     }

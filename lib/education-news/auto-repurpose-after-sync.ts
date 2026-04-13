@@ -17,12 +17,10 @@ function autoRepurposeLimit(): number {
 }
 
 /**
- * After sitemap sync, repurpose newly inserted `pending` rows (no button needed).
+ * After sitemap sync, process the pending/error queue (no button needed).
  * Uses `GEMINI_API_KEY`. Respects `EDUCATION_NEWS_AUTO_REPURPOSE` and `_LIMIT`.
  */
-export async function runAutoRepurposeAfterSync(
-  _newPendingIds: string[],
-): Promise<void> {
+export async function runAutoRepurposeAfterSync(): Promise<void> {
   if (!autoRepurposeEnabled()) return;
   const key = process.env.GEMINI_API_KEY?.trim();
   if (!key) return;
