@@ -260,14 +260,25 @@ Write 550–900 words. Cover: what problem it solves, who it is for, how it work
 }
 
 async function generateExplainer(id: ToolExplainerId): Promise<string> {
+  // During `next build`, never call external LLM APIs from static generation.
+  // Build workers are time-limited and repeated AI calls can trigger SSG timeouts.
+  if (process.env.NEXT_PHASE === "phase-production-build") {
+    return FALLBACK[id];
+  }
+
   const apiKey = process.env.GEMINI_API_KEY?.trim();
   if (!apiKey) return FALLBACK[id];
 
   try {
-    const raw = await geminiText(buildPrompt(id), apiKey, {
-      temperature: 0.35,
-      maxOutputTokens: 3072,
-    });
+    const raw = await Promise.race([
+      geminiText(buildPrompt(id), apiKey, {
+        temperature: 0.35,
+        maxOutputTokens: 3072,
+      }),
+      new Promise<string>((_, reject) => {
+        setTimeout(() => reject(new Error("tool-explainer timeout")), 8000);
+      }),
+    ]);
     const t = raw.trim().replace(/^```markdown\s*/i, "").replace(/```\s*$/i, "");
     if (t.length < 220) return FALLBACK[id];
     return t;
