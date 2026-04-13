@@ -165,7 +165,12 @@ export async function runRepurposePending(
   geminiKey: string,
   limit: number,
   onProgress?: (u: RepurposeProgressUpdate) => void,
-): Promise<{ processed: number; ids: string[] }> {
+): Promise<{
+  processed: number;
+  failed: number;
+  ids: string[];
+  failedIds: string[];
+}> {
   const rows = await prisma.educationNewsArticle.findMany({
     where: { repurposeStatus: { in: ["pending", "error"] } },
     orderBy: { updatedAt: "asc" },
@@ -175,37 +180,54 @@ export async function runRepurposePending(
 
   const n = rows.length;
   const ids: string[] = [];
+  const failedIds: string[] = [];
   if (n === 0) {
     onProgress?.({
       percent: 100,
       step: "No pending articles to process",
     });
-    return { processed: 0, ids: [] };
+    return { processed: 0, failed: 0, ids: [], failedIds: [] };
   }
 
   for (let i = 0; i < n; i++) {
     const r = rows[i];
     const rangeMin = (i / n) * 100;
     const rangeMax = ((i + 1) / n) * 100;
-    await runRepurposeForArticleId(
-      r.id,
-      geminiKey,
-      (u) =>
-        onProgress?.({
-          percent: u.percent,
-          step: u.step,
-          articleIndex: i + 1,
-          articleTotal: n,
-        }),
-      { min: rangeMin, max: rangeMax },
-    );
-    ids.push(r.id);
+    try {
+      await runRepurposeForArticleId(
+        r.id,
+        geminiKey,
+        (u) =>
+          onProgress?.({
+            percent: u.percent,
+            step: u.step,
+            articleIndex: i + 1,
+            articleTotal: n,
+          }),
+        { min: rangeMin, max: rangeMax },
+      );
+      ids.push(r.id);
+    } catch (e) {
+      failedIds.push(r.id);
+      onProgress?.({
+        percent: Math.round(rangeMax),
+        step: `Failed article ${i + 1}/${n}; continuing queue`,
+        articleIndex: i + 1,
+        articleTotal: n,
+      });
+      console.error("[education-news] repurpose queue item failed:", r.id, e);
+    }
   }
   onProgress?.({
     percent: 100,
-    step: `Finished ${n} article(s)`,
+    step: `Finished queue: ${ids.length} success, ${failedIds.length} failed`,
     articleIndex: n,
     articleTotal: n,
   });
-  return { processed: ids.length, ids };
+  return {
+    processed: ids.length,
+    failed: failedIds.length,
+    ids,
+    failedIds,
+  };
 }

@@ -78,8 +78,8 @@ export async function POST(request: Request) {
       if (body.processPending) {
         const limit =
           typeof body.limit === "number" && body.limit > 0
-            ? Math.min(body.limit, 5)
-            : 2;
+            ? Math.min(body.limit, 20)
+            : 5;
         const out = await runRepurposePending(geminiKey, limit, (u) =>
           send({ type: "progress", ...u }),
         );
@@ -116,8 +116,8 @@ export async function POST(request: Request) {
     if (body.processPending) {
       const limit =
         typeof body.limit === "number" && body.limit > 0
-          ? Math.min(body.limit, 5)
-          : 2;
+          ? Math.min(body.limit, 20)
+          : 5;
       const out = await runRepurposePending(geminiKey, limit);
       return new Response(
         JSON.stringify({ ok: true, mode: "batch", ...out }),

@@ -1,4 +1,4 @@
-import { runRepurposeForArticleId } from "@/lib/education-news/repurpose-runner";
+import { runRepurposePending } from "@/lib/education-news/repurpose-runner";
 
 function autoRepurposeEnabled(): boolean {
   const v = process.env.EDUCATION_NEWS_AUTO_REPURPOSE?.trim().toLowerCase();
@@ -13,7 +13,7 @@ function autoRepurposeLimit(): number {
   const raw = process.env.EDUCATION_NEWS_AUTO_REPURPOSE_LIMIT?.trim();
   const n = raw ? parseInt(raw, 10) : 2;
   if (Number.isNaN(n) || n < 1) return 0;
-  return Math.min(n, 5);
+  return Math.min(n, 20);
 }
 
 /**
@@ -21,21 +21,20 @@ function autoRepurposeLimit(): number {
  * Uses `GEMINI_API_KEY`. Respects `EDUCATION_NEWS_AUTO_REPURPOSE` and `_LIMIT`.
  */
 export async function runAutoRepurposeAfterSync(
-  newPendingIds: string[],
+  _newPendingIds: string[],
 ): Promise<void> {
-  if (!autoRepurposeEnabled() || newPendingIds.length === 0) return;
+  if (!autoRepurposeEnabled()) return;
   const key = process.env.GEMINI_API_KEY?.trim();
   if (!key) return;
 
   const limit = autoRepurposeLimit();
   if (limit === 0) return;
 
-  const slice = newPendingIds.slice(0, limit);
-  for (const id of slice) {
-    try {
-      await runRepurposeForArticleId(id, key);
-    } catch (e) {
-      console.error("[education-news] auto-repurpose failed:", id, e);
-    }
+  // Process queue (pending + retriable errors), not only newly inserted ids.
+  // This prevents old backlog rows from getting stuck forever.
+  try {
+    await runRepurposePending(key, limit);
+  } catch (e) {
+    console.error("[education-news] auto-repurpose queue failed:", e);
   }
 }

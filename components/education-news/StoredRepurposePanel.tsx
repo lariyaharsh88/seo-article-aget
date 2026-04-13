@@ -172,7 +172,7 @@ export function StoredRepurposePanel({ initialItems, syncKey = 0 }: Props) {
       const res = await fetch("/api/education-news/repurpose", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ processPending: true, limit: 2, stream: true }),
+        body: JSON.stringify({ processPending: true, limit: 5, stream: true }),
       });
       const ct = res.headers.get("content-type") ?? "";
       if (res.ok && ct.includes("ndjson")) {
@@ -311,7 +311,7 @@ export function StoredRepurposePanel({ initialItems, syncKey = 0 }: Props) {
               onClick={() => void repurposePending()}
               className="rounded-lg border border-accent bg-accent/15 px-3 py-2 font-mono text-xs text-accent hover:bg-accent/25 disabled:opacity-40"
             >
-              {batchBusy ? "Running AI…" : "Repurpose next pending (×2)"}
+              {batchBusy ? "Running AI…" : "Repurpose next pending (×5)"}
             </button>
           </div>
         </div>
