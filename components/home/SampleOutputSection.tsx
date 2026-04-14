@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 
 type SampleCard = {
   id: "keyword" | "outline" | "article";
@@ -58,8 +59,8 @@ A practical workflow starts with long-tail clustering, then moves to SERP-aware 
 export function SampleOutputSection() {
   const [open, setOpen] = useState<Record<string, boolean>>({
     keyword: true,
-    outline: false,
-    article: false,
+    outline: true,
+    article: true,
   });
 
   function toggle(id: SampleCard["id"]) {
@@ -67,7 +68,13 @@ export function SampleOutputSection() {
   }
 
   return (
-    <section className="mb-12 rounded-2xl border border-border bg-surface/60 p-5 md:p-6">
+    <motion.section
+      initial={{ opacity: 0, y: 10 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.2 }}
+      transition={{ duration: 0.45, ease: "easeOut" }}
+      className="mb-12 rounded-2xl border border-border bg-surface/60 p-5 md:p-6"
+    >
       <p className="font-mono text-xs uppercase tracking-[0.2em] text-accent">
         Sample output
       </p>
@@ -80,16 +87,22 @@ export function SampleOutputSection() {
       </p>
 
       <div className="mt-5 grid gap-4 md:grid-cols-3">
-        {SAMPLE_CARDS.map((card) => (
-          <article
+        {SAMPLE_CARDS.map((card, idx) => (
+          <motion.article
             key={card.id}
-            className="rounded-xl border border-border bg-background/70 p-4"
+            initial={{ opacity: 0, y: 18 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.25 }}
+            transition={{ delay: idx * 0.06, duration: 0.35, ease: "easeOut" }}
+            whileHover={{ y: -4, boxShadow: "0 12px 30px rgba(2, 132, 199, 0.15)" }}
+            className="flex min-h-[320px] flex-col rounded-xl border border-border bg-background/70 p-4"
           >
-            <button
+            <motion.button
               type="button"
               onClick={() => toggle(card.id)}
               className="flex w-full items-start justify-between gap-3 text-left"
               aria-expanded={open[card.id]}
+              whileTap={{ scale: 0.99 }}
             >
               <div>
                 <h3 className="font-display text-2xl text-text-primary">
@@ -99,18 +112,46 @@ export function SampleOutputSection() {
                   {card.subtitle}
                 </p>
               </div>
-              <span className="font-mono text-xs text-accent">
+              <motion.span
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.2 }}
+                className="font-mono text-xs text-accent"
+              >
                 {open[card.id] ? "Collapse" : "Expand"}
-              </span>
-            </button>
-            {open[card.id] ? (
-              <pre className="mt-4 whitespace-pre-wrap rounded-lg border border-border/70 bg-background/80 p-3 font-mono text-xs leading-relaxed text-text-secondary">
-                {card.content}
-              </pre>
-            ) : null}
-          </article>
+              </motion.span>
+            </motion.button>
+            <AnimatePresence initial={false}>
+              {open[card.id] ? (
+                <motion.div
+                  key="expanded"
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.28, ease: "easeOut" }}
+                  className="mt-4 overflow-hidden"
+                >
+                  <pre className="h-full whitespace-pre-wrap rounded-lg border border-border/70 bg-background/80 p-3 font-mono text-xs leading-relaxed text-text-secondary">
+                    {card.content}
+                  </pre>
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="collapsed"
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.22, ease: "easeOut" }}
+                  className="mt-4 overflow-hidden"
+                >
+                  <pre className="line-clamp-3 whitespace-pre-wrap rounded-lg border border-border/70 bg-background/80 p-3 font-mono text-xs leading-relaxed text-text-secondary">
+                    {card.content}
+                  </pre>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </motion.article>
         ))}
       </div>
-    </section>
+    </motion.section>
   );
 }
