@@ -9,7 +9,7 @@ const nav = [
   { href: "/", label: "Home" },
   { href: "/ai-seo-tools", label: "AI SEO Tools" },
   { href: "/blog", label: "Blog" },
-  { href: "/#tools-grid", label: "Free Tools" },
+  { href: "/pages", label: "Free Tools" },
   { href: "/pricing", label: "Pricing" },
 ] as const;
 

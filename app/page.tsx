@@ -48,7 +48,7 @@ export default function HomePage() {
               Generate Article
             </Link>
             <Link
-              href="#tools-grid"
+              href="/pages"
               className="rounded-lg border border-border px-5 py-2.5 font-mono text-sm text-text-secondary transition-colors hover:border-accent hover:text-accent"
             >
               Try Free Tools
