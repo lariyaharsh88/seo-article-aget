@@ -28,14 +28,32 @@ export async function middleware(request: NextRequest) {
     return NextResponse.rewrite(url);
   }
 
+  if (isEducationHost && path === "/sitemap.xml") {
+    const url = request.nextUrl.clone();
+    url.pathname = "/education/sitemap.xml";
+    return NextResponse.rewrite(url);
+  }
+
+  if (isEducationHost && path === "/robots.txt") {
+    const url = request.nextUrl.clone();
+    url.pathname = "/education/robots.txt";
+    return NextResponse.rewrite(url);
+  }
+
+  if (isEducationHost && (path === "/archive/news" || path.startsWith("/archive/news/"))) {
+    const url = request.nextUrl.clone();
+    url.pathname = path.replace(/^\/archive\/news/, "/news");
+    return NextResponse.redirect(url, 308);
+  }
+
+  if (isEducationHost && (path === "/archive/education" || path.startsWith("/archive/education/"))) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/education";
+    return NextResponse.redirect(url, 308);
+  }
+
   if (!isEducationHost) {
-    if (path === "/news" || path.startsWith("/news/")) {
-      const url = request.nextUrl.clone();
-      url.pathname = "/archive/news";
-      return NextResponse.redirect(url, 308);
-    }
     if (
-      path === "/education-news" ||
       path === "/education-trends" ||
       path.startsWith("/education/") ||
       path.startsWith("/exam/") ||

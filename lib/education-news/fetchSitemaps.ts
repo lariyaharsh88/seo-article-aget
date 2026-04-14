@@ -2,7 +2,21 @@ import { XMLParser } from "fast-xml-parser";
 import type { NewsArticle, SitemapSource } from "./types";
 import { shouldSkipEducationNewsSourceUrl } from "./url-filters";
 
-const SITEMAP_SOURCES: SitemapSource[] = [
+const EDUCATION_SITEMAP_SOURCES: SitemapSource[] = [
+  { url: "https://www.shiksha.com/NewsIndex1.xml", name: "Shiksha" },
+  {
+    url: "https://collegedunia.com/sitemap-news-updates.xml",
+    name: "CollegeDunia",
+  },
+  { url: "https://news.careers360.com/news-sitemap.xml", name: "Careers360" },
+  {
+    url: "https://www.jagranjosh.com/newsitemap-news-english.xml",
+    name: "Jagran Josh",
+  },
+  { url: "https://testbook.com/news/post-sitemap.xml", name: "Testbook" },
+];
+
+const SEO_SITEMAP_SOURCES: SitemapSource[] = [
   { url: "https://ahrefs.com/blog/feed/", name: "Ahrefs Blog" },
   { url: "https://rss.searchenginejournal.com/", name: "SEJ RSS" },
   { url: "https://techcrunch.com/news-sitemap.xml", name: "TechCrunch News Sitemap" },
@@ -15,6 +29,12 @@ const SITEMAP_SOURCES: SitemapSource[] = [
   { url: "https://feedpress.me/mozblog", name: "Moz Feed" },
   { url: "https://techcrunch.com/feed/", name: "TechCrunch Feed" },
 ];
+
+export type NewsSourceProfile = "education" | "seo";
+
+function sourcesForProfile(profile: NewsSourceProfile): SitemapSource[] {
+  return profile === "education" ? EDUCATION_SITEMAP_SOURCES : SEO_SITEMAP_SOURCES;
+}
 
 function getTodayIST(): string {
   const now = new Date();
@@ -309,10 +329,13 @@ function parseSitemapResponse(
   }
 }
 
-export async function fetchAllSitemaps(): Promise<NewsArticle[]> {
+export async function fetchAllSitemaps(
+  profile: NewsSourceProfile = "seo",
+): Promise<NewsArticle[]> {
+  const sources = sourcesForProfile(profile);
   try {
     const results = await Promise.allSettled(
-      SITEMAP_SOURCES.map((source) => fetchSingleSitemap(source)),
+      sources.map((source) => fetchSingleSitemap(source)),
     );
 
     const allArticles: NewsArticle[] = [];
@@ -322,7 +345,7 @@ export async function fetchAllSitemaps(): Promise<NewsArticle[]> {
         allArticles.push(...result.value);
       } else {
         console.error(
-          `Failed to fetch ${SITEMAP_SOURCES[index].name}:`,
+          `Failed to fetch ${sources[index].name}:`,
           result.reason,
         );
       }
