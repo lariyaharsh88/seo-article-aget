@@ -7,14 +7,10 @@ import { SITE_LOGO_PATH, SITE_NAME } from "@/lib/seo-site";
 
 const nav = [
   { href: "/", label: "Home" },
-  { href: "/blogs", label: "Blog" },
-  { href: "/news", label: "News" },
-  { href: "/seo-agent", label: "Article pipeline" },
-  { href: "/repurpose-url", label: "URL repurpose" },
-  { href: "/ai-seo-toolkit", label: "AI SEO Toolkit" },
-  { href: "/off-page-seo", label: "Off-page SEO" },
-  { href: "/education-trends", label: "Education trends" },
-  { href: "/education-news", label: "Education news" },
+  { href: "/ai-seo-tools", label: "AI SEO Tools" },
+  { href: "/blog", label: "Blog" },
+  { href: "/#tools-grid", label: "Free Tools" },
+  { href: "/pricing", label: "Pricing" },
 ] as const;
 
 function MenuIcon() {

@@ -68,6 +68,11 @@ export default async function BlogPostPage({ params }: Props) {
   } catch (e) {
     console.error("[blog/[slug]] peer posts:", e);
   }
+  const relatedBlogLinks = peerPosts.slice(0, 2);
+  const fallbackBlogLinks = [
+    { href: "/blog", label: "Explore all blog posts" },
+    { href: "/blogs", label: "Browse legacy blog archive" },
+  ] as const;
 
   let html: string;
   const toc = extractTocFromMarkdown(post.content);
@@ -147,7 +152,7 @@ export default async function BlogPostPage({ params }: Props) {
             />
             <section className="mt-10 rounded-2xl border border-accent/30 bg-accent/10 p-6">
               <h2 className="font-display text-2xl text-text-primary">
-                Try RankFlowHQ for your next article
+                Turn this keyword into a ranked article → Try RankFlowHQ
               </h2>
               <p className="mt-2 font-serif text-sm text-text-secondary">
                 Turn your topic, keywords, and SERP context into a complete SEO
@@ -159,6 +164,44 @@ export default async function BlogPostPage({ params }: Props) {
               >
                 Try RankFlowHQ
               </Link>
+            </section>
+            <section className="mt-8 rounded-2xl border border-border bg-surface/50 p-6">
+              <h2 className="font-display text-2xl text-text-primary">
+                Explore more AI SEO resources
+              </h2>
+              <ul className="mt-3 space-y-2 font-serif text-sm text-text-secondary">
+                <li>
+                  <Link href="/ai-seo-tools" className="text-accent hover:underline">
+                    AI SEO tools overview
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/seo-agent" className="text-accent hover:underline">
+                    SEO Article Generator tool
+                  </Link>
+                </li>
+                {relatedBlogLinks.map((item) => (
+                  <li key={item.slug}>
+                    <Link
+                      href={`/blog/${encodeURIComponent(item.slug)}`}
+                      className="text-accent hover:underline"
+                    >
+                      {item.title}
+                    </Link>
+                  </li>
+                ))}
+                {relatedBlogLinks.length < 2
+                  ? fallbackBlogLinks
+                      .slice(0, 2 - relatedBlogLinks.length)
+                      .map((item) => (
+                        <li key={item.href}>
+                          <Link href={item.href} className="text-accent hover:underline">
+                            {item.label}
+                          </Link>
+                        </li>
+                      ))
+                  : null}
+              </ul>
             </section>
             <ArticleLeadCapture
               source="blog"

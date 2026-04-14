@@ -62,11 +62,47 @@ function buildAnswerSimulation(article: string, topic: string): string {
   return `Here is a concise answer based on this page:\n\n${body}\n\nKey takeaway: follow a structured workflow, validate with evidence, and keep sections clear so both users and AI systems can interpret the content reliably.`;
 }
 
+function buildOptimizationSuggestions(article: string, keyword: string): string[] {
+  const suggestions: string[] = [];
+  const normalized = article.toLowerCase();
+  const escapedKeyword = keyword.trim().toLowerCase();
+  const keywordMentions = escapedKeyword
+    ? (normalized.match(new RegExp(escapedKeyword.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g"))?.length ?? 0)
+    : 0;
+
+  if (!/^##\s+/m.test(article)) {
+    suggestions.push("Add clear H2 sections to improve answer extraction.");
+  }
+  if (!/faq|frequently asked questions/i.test(article)) {
+    suggestions.push("Add an FAQ section for query variants and long-tail coverage.");
+  }
+  if (!/\b\d+(\.\d+)?%?\b/.test(article)) {
+    suggestions.push("Include concrete numbers, benchmarks, or percentages for credibility.");
+  }
+  if (!/\[([^\]]+)\]\((\/[^)]+)\)/.test(article)) {
+    suggestions.push("Add internal links to relevant product/tool pages.");
+  }
+  if (keywordMentions < 3) {
+    suggestions.push(
+      `Mention "${keyword}" naturally in key sections (intro, H2s, and conclusion).`,
+    );
+  }
+  if (!/^\s*[-*]\s+/m.test(article)) {
+    suggestions.push("Use bullet lists for scannability and snippet readiness.");
+  }
+
+  return suggestions.slice(0, 5);
+}
+
 export function ArticleGeoPanel({ article, topic, primaryKeyword }: Props) {
   const baseKeyword = primaryKeyword?.trim() || topic.trim();
   const score = useMemo(() => computeGeoScore(article, baseKeyword), [article, baseKeyword]);
   const snippet = useMemo(() => buildSnippet(article, topic), [article, topic]);
   const answer = useMemo(() => buildAnswerSimulation(article, topic), [article, topic]);
+  const suggestions = useMemo(
+    () => buildOptimizationSuggestions(article, baseKeyword),
+    [article, baseKeyword],
+  );
 
   if (!article.trim()) {
     return (
@@ -97,7 +133,7 @@ export function ArticleGeoPanel({ article, topic, primaryKeyword }: Props) {
       </article>
 
       <article className="rounded-xl border border-border bg-background/60 p-4">
-        <h3 className="font-display text-2xl text-text-primary">LLM Snippet Preview</h3>
+        <h3 className="font-display text-2xl text-text-primary">ChatGPT snippet preview</h3>
         <p className="mt-2 rounded-lg border border-border/70 bg-background/80 p-3 font-serif text-sm text-text-secondary">
           {snippet}
         </p>
@@ -108,6 +144,23 @@ export function ArticleGeoPanel({ article, topic, primaryKeyword }: Props) {
         <pre className="mt-2 whitespace-pre-wrap rounded-lg border border-border/70 bg-background/80 p-3 font-serif text-sm text-text-secondary">
           {answer}
         </pre>
+      </article>
+
+      <article className="rounded-xl border border-border bg-background/60 p-4">
+        <h3 className="font-display text-2xl text-text-primary">
+          Optimization suggestions
+        </h3>
+        {suggestions.length > 0 ? (
+          <ul className="mt-2 list-disc space-y-1 pl-5 font-serif text-sm text-text-secondary">
+            {suggestions.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+        ) : (
+          <p className="mt-2 rounded-lg border border-border/70 bg-background/80 p-3 font-serif text-sm text-text-secondary">
+            Great structure. Keep refining examples and freshness to maintain answer-engine performance.
+          </p>
+        )}
       </article>
     </section>
   );

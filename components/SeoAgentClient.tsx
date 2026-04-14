@@ -599,6 +599,23 @@ export function SeoAgentClient() {
                       <ArticleSeoScorecard result={seoScoreResult} compact />
                     </div>
                   ) : null}
+                  {article.trim() ? (
+                    <div className="mt-6 rounded-xl border border-border bg-surface/70 p-4">
+                      <h3 className="font-display text-2xl text-text-primary">
+                        Generative Engine Optimization panel
+                      </h3>
+                      <p className="mt-1 font-serif text-sm text-text-secondary">
+                        AI Answer Score, ChatGPT snippet preview, and optimization suggestions for this draft.
+                      </p>
+                      <div className="mt-4">
+                        <ArticleGeoPanel
+                          article={article}
+                          topic={topicFirstLine || input.topic.trim() || "this topic"}
+                          primaryKeyword={input.primaryKeyword}
+                        />
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
               )}
               {tab === "score" &&

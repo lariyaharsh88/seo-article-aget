@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { getProgrammaticKeywordPages } from "@/lib/programmatic-ai-seo";
 import { getSiteUrl } from "@/lib/site-url";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -37,22 +38,46 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.9,
     },
     {
-      url: `${base}/education-news`,
+      url: `${base}/ai-seo-tools`,
       lastModified: now,
-      changeFrequency: "daily",
-      priority: 0.85,
+      changeFrequency: "weekly",
+      priority: 0.92,
     },
     {
-      url: `${base}/news`,
+      url: `${base}/keyword-clustering-tool`,
       lastModified: now,
-      changeFrequency: "daily",
-      priority: 0.72,
+      changeFrequency: "weekly",
+      priority: 0.88,
     },
     {
-      url: `${base}/education-trends`,
+      url: `${base}/free-tools/keyword-clustering`,
       lastModified: now,
-      changeFrequency: "daily",
-      priority: 0.85,
+      changeFrequency: "weekly",
+      priority: 0.9,
+    },
+    {
+      url: `${base}/free-tools/llms-txt-generator`,
+      lastModified: now,
+      changeFrequency: "weekly",
+      priority: 0.84,
+    },
+    {
+      url: `${base}/free-tools/ai-search-grader`,
+      lastModified: now,
+      changeFrequency: "weekly",
+      priority: 0.84,
+    },
+    {
+      url: `${base}/free-tools/keyword-extractor`,
+      lastModified: now,
+      changeFrequency: "weekly",
+      priority: 0.82,
+    },
+    {
+      url: `${base}/pricing`,
+      lastModified: now,
+      changeFrequency: "monthly",
+      priority: 0.6,
     },
     {
       url: `${base}/about`,
@@ -74,7 +99,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
   ];
 
-  /* Blog: `app/blogs/sitemap.xml/route.ts`. News (Google News XML): `app/news/sitemap.xml/route.ts`. See robots.ts. */
+  const programmatic = getProgrammaticKeywordPages().map((item) => ({
+    url: `${base}/blog/ai-seo/${item.slug}`,
+    lastModified: now,
+    changeFrequency: "weekly" as const,
+    priority: 0.78,
+  }));
 
-  return routes;
+  /* Blog: `app/blogs/sitemap.xml/route.ts`. See robots.ts. */
+
+  return [...routes, ...programmatic];
 }

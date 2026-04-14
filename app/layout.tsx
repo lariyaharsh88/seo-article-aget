@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
+import Link from "next/link";
 import { Abril_Fatface, Lora, Space_Mono } from "next/font/google";
 import Script from "next/script";
+import { ExitIntentPopup } from "@/components/ExitIntentPopup";
 import { SiteChatWidget } from "@/components/SiteChatWidget";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
@@ -51,8 +53,8 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   metadataBase: getMetadataBaseUrl(),
   title: {
-    default: SITE_NAME,
-    template: `%s · ${SITE_NAME}`,
+    default: "RankFlowHQ - AI SEO Automation Platform",
+    template: `%s · RankFlowHQ - AI SEO Automation Platform`,
   },
   description: SITE_DESCRIPTION,
   keywords: [
@@ -66,8 +68,8 @@ export const metadata: Metadata = {
     "Gemini",
     "long-form article",
     "meta description",
-    "education trends",
-    "backlink outreach",
+    "seo automation",
+    "chatgpt seo",
   ],
   authors: [{ name: SITE_NAME }],
   creator: SITE_NAME,
@@ -152,6 +154,19 @@ export default function RootLayout({
             <div className="flex-1">{children}</div>
             <SiteFooter />
             <SiteChatWidget />
+            <ExitIntentPopup />
+            <Link
+              href="/seo-agent"
+              className="fixed bottom-5 left-5 z-30 rounded-full border border-accent/40 bg-accent/10 px-4 py-2 font-mono text-xs text-accent shadow-lg transition-colors hover:bg-accent/20"
+            >
+              Upgrade to full pipeline
+            </Link>
+            <Link
+              href="/seo-agent"
+              className="fixed bottom-5 right-5 z-30 rounded-full bg-accent px-4 py-2 font-mono text-xs text-background shadow-lg transition-opacity hover:opacity-90"
+            >
+              Generate SEO Article
+            </Link>
           </div>
         </Providers>
       </body>

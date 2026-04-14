@@ -253,3 +253,121 @@ Ready to implement this today?
 - Build structured SEO articles with [SEO Agent](/seo-agent)
 - Test visibility and prompt patterns with [AI SEO Toolkit](/ai-seo-toolkit)
 - Expand publishing speed with [Repurpose from URL](/repurpose-url)
+
+## 90-Day ChatGPT Search Execution Plan
+
+Most teams understand the theory of ChatGPT SEO, but they do not operationalize it. The fastest way to improve results is to run a fixed 90-day cycle with clear weekly outputs. Treat this like product shipping: every week needs an artifact, a review, and a decision.
+
+### Phase 1 (Days 1-30): Foundation
+
+In the first month, your goal is not scale. Your goal is consistency.
+
+1. Select one cluster of high-intent queries.
+2. Publish one cornerstone article and two supporting pieces.
+3. Add explicit definitions and direct answer blocks in each article.
+4. Add internal links between all three pages.
+5. Build one measurement dashboard for impressions, clicks, and assisted conversions.
+
+At the end of this phase, you should have a repeatable editorial format and clear examples of what "answer-ready" content looks like in your niche.
+
+### Phase 2 (Days 31-60): Coverage Expansion
+
+Once your format is stable, increase topical depth.
+
+1. Expand each cluster with practical subtopics.
+2. Add section-level FAQs from real sales or support questions.
+3. Tighten introductions so value appears in the first 3-5 lines.
+4. Add more specific examples and workflows.
+5. Recheck terminology consistency across all pages in the cluster.
+
+This phase helps your site move from single-page relevance to cluster-level authority, which improves both classic rankings and answer-engine usability.
+
+### Phase 3 (Days 61-90): Optimization and Refresh
+
+The final month is about upgrading existing pages.
+
+1. Rewrite weak headings to align with user questions.
+2. Add missing comparison blocks or implementation steps.
+3. Remove vague claims and replace with concrete outcomes.
+4. Improve internal links based on reader paths.
+5. Re-publish updated pages and monitor response.
+
+By the end of 90 days, your workflow should produce better first drafts and better update cycles, not just more content volume.
+
+## Prompt Design for ChatGPT SEO Content Teams
+
+Prompt quality is a hidden ranking variable because it controls draft specificity. Low-quality prompts produce generic language and weak structure. High-quality prompts produce answer-ready sections and practical depth.
+
+Use this prompt framework:
+
+- **Context:** target audience, funnel stage, and problem.
+- **Intent:** the specific user question your page must solve.
+- **Scope:** required sections, required examples, required FAQs.
+- **Constraints:** tone, paragraph length, prohibited fluff.
+- **Output checks:** ask for a self-audit against headings, clarity, and actionability.
+
+When teams use this structure repeatedly, content quality becomes predictable. That predictability is what allows scaling.
+
+## Editorial QA Checklist for AI-Generated SEO Content
+
+Before publish, run every article through a strict QA checklist:
+
+1. Does the H1 match the exact user problem?
+2. Does each H2 answer one clear question?
+3. Does the article include at least one practical implementation flow?
+4. Does every major claim include context or evidence?
+5. Are internal links present and useful?
+6. Is there a meaningful CTA connected to user intent?
+7. Would a reader complete the article and know what to do next?
+
+If three or more answers are "no," do not publish yet.
+
+## Internal Linking Pattern for ChatGPT-Focused Clusters
+
+Internal links are not just crawl tools. They are context signals.
+
+Use this pattern:
+
+- Each core page links to 2-3 supporting pages.
+- Each supporting page links back to the core page.
+- Comparison pages link to both informational and commercial pages.
+- Tool pages link from every relevant educational article.
+
+For RankFlowHQ content, a practical link set often includes:
+
+- [Home](/)
+- [Blog](/blog)
+- [SEO Agent](/seo-agent)
+- [AI SEO Tools Landing](/ai-seo-tools)
+
+This creates a topical graph that reinforces both discoverability and conversion flow.
+
+## Advanced Mistakes to Avoid
+
+### Over-optimizing for one answer format
+
+If you optimize only for short snippets, you may lose depth and hurt user trust. Balance concise answers with complete sections.
+
+### Ignoring conversion architecture
+
+Informational pages need a logical next step. Without CTA alignment, traffic does not become pipeline.
+
+### Publishing without revision cadence
+
+A static article decays. GEO and ChatGPT visibility improve when pages are refreshed with new questions and better examples.
+
+### Treating AI output as final copy
+
+AI output is draft material. Editorial judgment remains the differentiator in competitive niches.
+
+## Final Operational Model
+
+To rank in ChatGPT search consistently, run one integrated model:
+
+1. Cluster intent.
+2. Draft with structure.
+3. Audit with strict QA.
+4. Link contextually.
+5. Refresh in cycles.
+
+If you want this model in one production workflow, run your topics in [RankFlowHQ SEO Agent](/seo-agent), link related articles in the [Blog](/blog), and keep supporting tool pages discoverable through the [Homepage](/).

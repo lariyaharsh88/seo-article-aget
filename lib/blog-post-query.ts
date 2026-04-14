@@ -1,6 +1,11 @@
 import { Prisma } from "@prisma/client";
 import type { BlogPost } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import {
+  getStaticBlogPostBySlug,
+  isAllowedBlogSlug,
+  listStaticBlogPosts,
+} from "@/lib/static-blog-posts";
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -57,22 +62,27 @@ const publishedBlogSelect = {
  * starts and pool blips do not yield an empty list.
  */
 export async function listPublishedBlogPosts(): Promise<PublishedBlogListItem[]> {
+  const staticPosts = await listStaticBlogPosts();
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     try {
-      return await prisma.blogPost.findMany({
+      const dbPosts = await prisma.blogPost.findMany({
         where: { published: true },
         orderBy: { createdAt: "desc" },
         select: publishedBlogSelect,
       });
+      const allowedDbPosts = dbPosts.filter((post) => isAllowedBlogSlug(post.slug));
+      const merged = [...allowedDbPosts, ...staticPosts];
+      const deduped = Array.from(new Map(merged.map((p) => [p.slug, p])).values());
+      return deduped.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
     } catch (err) {
       if (attempt < MAX_ATTEMPTS && isRetryablePrismaError(err)) {
         await sleep(Math.min(120 * 2 ** (attempt - 1), 2000));
         continue;
       }
-      throw err;
+      return staticPosts;
     }
   }
-  throw new Error("listPublishedBlogPosts: unreachable");
+  return staticPosts;
 }
 
 /**
@@ -83,30 +93,38 @@ export async function listPublishedBlogPostsPage(
   pageSize: number,
 ): Promise<{ items: PublishedBlogListItem[]; total: number }> {
   const safePage = Math.max(1, Math.floor(page));
-  const skip = (safePage - 1) * pageSize;
+  const staticPosts = await listStaticBlogPosts();
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     try {
-      const [total, items] = await Promise.all([
-        prisma.blogPost.count({ where: { published: true } }),
-        prisma.blogPost.findMany({
+      const dbItems = await prisma.blogPost.findMany({
           where: { published: true },
           orderBy: { createdAt: "desc" },
-          skip,
-          take: pageSize,
           select: publishedBlogSelect,
-        }),
-      ]);
+        });
+      const allowedDbItems = dbItems.filter((post) => isAllowedBlogSlug(post.slug));
+      const merged = [...allowedDbItems, ...staticPosts];
+      const deduped = Array.from(new Map(merged.map((p) => [p.slug, p])).values()).sort(
+        (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
+      );
+      const total = deduped.length;
+      const skip = (safePage - 1) * pageSize;
+      const items = deduped.slice(skip, skip + pageSize);
       return { items, total };
     } catch (err) {
       if (attempt < MAX_ATTEMPTS && isRetryablePrismaError(err)) {
         await sleep(Math.min(120 * 2 ** (attempt - 1), 2000));
         continue;
       }
-      throw err;
+      const deduped = Array.from(
+        new Map(staticPosts.map((p) => [p.slug, p])).values(),
+      ).sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+      const skip = (safePage - 1) * pageSize;
+      return { items: deduped.slice(skip, skip + pageSize), total: deduped.length };
     }
   }
-  throw new Error("listPublishedBlogPostsPage: unreachable");
+  const skip = (safePage - 1) * pageSize;
+  return { items: staticPosts.slice(skip, skip + pageSize), total: staticPosts.length };
 }
 
 /**
@@ -118,21 +136,23 @@ export async function findPublishedBlogPostBySlug(
 ): Promise<BlogPost | null> {
   const slug = normalizeBlogSlugParam(rawSlug);
   if (!slug) return null;
+  if (!isAllowedBlogSlug(slug)) return null;
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     try {
-      return await prisma.blogPost.findFirst({
+      const dbPost = await prisma.blogPost.findFirst({
         where: { slug, published: true },
       });
+      return dbPost ?? (await getStaticBlogPostBySlug(slug));
     } catch (err) {
       if (attempt < MAX_ATTEMPTS && isRetryablePrismaError(err)) {
         await sleep(Math.min(120 * 2 ** (attempt - 1), 2000));
         continue;
       }
-      throw err;
+      return getStaticBlogPostBySlug(slug);
     }
   }
-  throw new Error("findPublishedBlogPostBySlug: unreachable");
+  return getStaticBlogPostBySlug(slug);
 }
 
 /** Other published posts for bottom-of-article internal links (newest first). */
@@ -141,17 +161,16 @@ export async function listPublishedBlogPostsExceptSlug(
   take = 6,
 ): Promise<PublishedBlogListItem[]> {
   const excludeSlug = normalizeBlogSlugParam(rawExcludeSlug);
-  if (!excludeSlug) {
+  if (!excludeSlug || !isAllowedBlogSlug(excludeSlug)) {
     const all = await listPublishedBlogPosts();
     return all.slice(0, take);
   }
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     try {
-      return await prisma.blogPost.findMany({
+      const dbPosts = await prisma.blogPost.findMany({
         where: { published: true, slug: { not: excludeSlug } },
         orderBy: { updatedAt: "desc" },
-        take,
         select: {
           id: true,
           slug: true,
@@ -160,13 +179,22 @@ export async function listPublishedBlogPostsExceptSlug(
           createdAt: true,
         },
       });
+      const staticPosts = await listStaticBlogPosts();
+      const allowedDbPosts = dbPosts.filter((post) => isAllowedBlogSlug(post.slug));
+      const merged = [...allowedDbPosts, ...staticPosts].filter(
+        (post) => post.slug !== excludeSlug,
+      );
+      const deduped = Array.from(new Map(merged.map((p) => [p.slug, p])).values());
+      return deduped.slice(0, take);
     } catch (err) {
       if (attempt < MAX_ATTEMPTS && isRetryablePrismaError(err)) {
         await sleep(Math.min(120 * 2 ** (attempt - 1), 2000));
         continue;
       }
-      throw err;
+      const staticPosts = await listStaticBlogPosts();
+      return staticPosts.filter((post) => post.slug !== excludeSlug).slice(0, take);
     }
   }
-  throw new Error("listPublishedBlogPostsExceptSlug: unreachable");
+  const staticPosts = await listStaticBlogPosts();
+  return staticPosts.filter((post) => post.slug !== excludeSlug).slice(0, take);
 }

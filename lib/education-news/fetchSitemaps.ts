@@ -3,17 +3,17 @@ import type { NewsArticle, SitemapSource } from "./types";
 import { shouldSkipEducationNewsSourceUrl } from "./url-filters";
 
 const SITEMAP_SOURCES: SitemapSource[] = [
-  { url: "https://www.shiksha.com/NewsIndex1.xml", name: "Shiksha" },
-  {
-    url: "https://collegedunia.com/sitemap-news-updates.xml",
-    name: "CollegeDunia",
-  },
-  { url: "https://news.careers360.com/news-sitemap.xml", name: "Careers360" },
-  {
-    url: "https://www.jagranjosh.com/newsitemap-news-english.xml",
-    name: "Jagran Josh",
-  },
-  { url: "https://testbook.com/news/post-sitemap.xml", name: "Testbook" },
+  { url: "https://ahrefs.com/blog/feed/", name: "Ahrefs Blog" },
+  { url: "https://rss.searchenginejournal.com/", name: "SEJ RSS" },
+  { url: "https://techcrunch.com/news-sitemap.xml", name: "TechCrunch News Sitemap" },
+  { url: "https://www.theverge.com/sitemaps/entries/2026/4", name: "The Verge Entries" },
+  { url: "https://www.searchenginejournal.com/news-sitemap.xml", name: "SEJ News Sitemap" },
+  { url: "https://www.seopress.org/post-sitemap1.xml", name: "SEOPress Posts" },
+  { url: "https://searchengineland.com/post-sitemap.xml", name: "Search Engine Land Posts" },
+  { url: "https://www.searchenginejournal.com/post-sitemap.xml", name: "SEJ Posts Sitemap" },
+  { url: "https://moz.com/sitemaps-1-section-blog-1-sitemap-p1.xml", name: "Moz Blog Sitemap" },
+  { url: "https://feedpress.me/mozblog", name: "Moz Feed" },
+  { url: "https://techcrunch.com/feed/", name: "TechCrunch Feed" },
 ];
 
 function getTodayIST(): string {
@@ -138,6 +138,66 @@ function getPublicationOrLastMod(
   return "";
 }
 
+function parseRssLikeResponse(
+  result: Record<string, unknown>,
+  source: SitemapSource,
+): NewsArticle[] {
+  const fromRss = ((): Record<string, unknown>[] => {
+    const channel = (result.rss as Record<string, unknown> | undefined)?.channel;
+    if (!channel || typeof channel !== "object") return [];
+    const item = (channel as Record<string, unknown>).item;
+    if (!item) return [];
+    return (Array.isArray(item) ? item : [item]).filter(
+      (v): v is Record<string, unknown> => Boolean(v && typeof v === "object"),
+    );
+  })();
+
+  const fromAtom = ((): Record<string, unknown>[] => {
+    const feed = result.feed;
+    if (!feed || typeof feed !== "object") return [];
+    const entry = (feed as Record<string, unknown>).entry;
+    if (!entry) return [];
+    return (Array.isArray(entry) ? entry : [entry]).filter(
+      (v): v is Record<string, unknown> => Boolean(v && typeof v === "object"),
+    );
+  })();
+
+  const rows = fromRss.length > 0 ? fromRss : fromAtom;
+  if (rows.length === 0) return [];
+
+  return rows
+    .map((item) => {
+      const linkRaw = item.link;
+      const url =
+        typeof linkRaw === "string"
+          ? linkRaw
+          : linkRaw && typeof linkRaw === "object"
+            ? xmlScalar((linkRaw as Record<string, unknown>)["@_href"]) ||
+              xmlScalar((linkRaw as Record<string, unknown>)["#text"])
+            : "";
+      const pubDate =
+        xmlScalar(item.pubDate) ||
+        xmlScalar(item.published) ||
+        xmlScalar(item.updated) ||
+        xmlScalar(item.lastmod);
+      const title = xmlScalar(item.title) || extractTitleFromUrl(url);
+      return {
+        url,
+        lastmod: pubDate,
+        source: source.name,
+        title: normalizeNewsTitle(title).slice(0, 500),
+        lastModifiedTime: formatLastModTime(pubDate),
+      } satisfies NewsArticle;
+    })
+    .filter(
+      (item) =>
+        Boolean(item.url) &&
+        Boolean(item.lastmod) &&
+        !shouldSkipEducationNewsSourceUrl(item.url) &&
+        isToday(item.lastmod),
+    );
+}
+
 export function formatLastModTime(lastmod: string): string {
   try {
     const date = new Date(lastmod);
@@ -178,32 +238,6 @@ async function fetchSingleSitemap(
       cache: "no-store",
     };
 
-    if (source.name === "Shiksha") {
-      const proxies = [
-        `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(source.url)}`,
-        `https://corsproxy.io/?${encodeURIComponent(source.url)}`,
-        `https://api.allorigins.win/raw?url=${encodeURIComponent(source.url)}`,
-      ];
-
-      for (const proxyUrl of proxies) {
-        try {
-          const proxyResponse = await fetch(proxyUrl, {
-            ...options,
-            signal: AbortSignal.timeout(8000),
-          });
-
-          if (proxyResponse.ok) {
-            const xmlText = await proxyResponse.text();
-            return parseSitemapResponse(xmlText, source);
-          }
-        } catch {
-          /* try next proxy */
-        }
-      }
-
-      return [];
-    }
-
     const response = await fetch(source.url, options);
 
     if (!response.ok) {
@@ -230,6 +264,9 @@ function parseSitemapResponse(
     });
 
     const result = parser.parse(xmlText);
+
+    const rssArticles = parseRssLikeResponse(result as Record<string, unknown>, source);
+    if (rssArticles.length > 0) return rssArticles;
 
     let urls: unknown[] = [];
 

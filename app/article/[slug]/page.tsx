@@ -2,8 +2,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { JsonLd } from "@/components/JsonLd";
+import { PublicArticleShareBar } from "@/components/PublicArticleShareBar";
 import { prisma } from "@/lib/prisma";
 import { buildPageMetadata } from "@/lib/seo-page";
+import { getSiteUrl } from "@/lib/site-url";
 
 type Props = {
   params: { slug: string };
@@ -70,6 +72,7 @@ export default async function PublicArticlePage({ params }: Props) {
   if (!row) notFound();
 
   const description = buildDescription(row.markdown, row.title);
+  const canonicalUrl = `${getSiteUrl().replace(/\/$/, "")}/article/${row.slug}`;
   const schema = {
     "@context": "https://schema.org",
     "@type": "Article",
@@ -90,8 +93,19 @@ export default async function PublicArticlePage({ params }: Props) {
             ← Create your own article
           </Link>
         </p>
-        <article className="mt-6 rounded-xl border border-border bg-surface/60 p-5">
+        <article className="mt-6 rounded-xl border border-border bg-surface/60 p-5 md:p-6">
+          <p className="font-mono text-[11px] text-text-muted">
+            Published{" "}
+            <time dateTime={row.createdAt.toISOString()}>
+              {row.createdAt.toLocaleDateString("en-IN", {
+                year: "numeric",
+                month: "short",
+                day: "numeric",
+              })}
+            </time>
+          </p>
           <h1 className="font-display text-3xl text-text-primary">{row.title}</h1>
+          <PublicArticleShareBar title={row.title} url={canonicalUrl} />
           <div
             className="blog-prose mt-8 overflow-x-auto font-serif text-text-primary"
             dangerouslySetInnerHTML={{ __html: row.html }}
