@@ -13,7 +13,7 @@ export function ExitIntentPopup() {
     if (window.sessionStorage.getItem(DISMISS_KEY) === "1") return;
 
     function onMouseOut(event: MouseEvent) {
-      if (event.relatedTarget || event.toElement) return;
+      if (event.relatedTarget) return;
       if (event.clientY > 10) return;
       setOpen(true);
       window.removeEventListener("mouseout", onMouseOut);
