@@ -3,8 +3,8 @@ import Link from "next/link";
 type Props = {
   currentPage: number;
   totalPages: number;
-  /** `/blogs` or `/news` — no trailing query string */
-  basePath: "/blogs" | "/news";
+  /** Supported list index route — no trailing query string */
+  basePath: "/blog" | "/blogs" | "/news";
 };
 
 export function ListPagination({ currentPage, totalPages, basePath }: Props) {

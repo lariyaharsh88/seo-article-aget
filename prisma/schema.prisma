@@ -65,6 +65,19 @@ model LeadInquiry {
   @@index([source, articleSlug])
 }
 
+/// Public share pages created from generated article output.
+model SharedArticle {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  title       String
+  markdown    String   @db.Text
+  html        String   @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([createdAt])
+}
+
 // Sitemap-backed education news: persisted + optional AI repurposed draft (SEO-style).
 model EducationNewsArticle {
   id                 String    @id @default(cuid())

@@ -12,6 +12,7 @@ import { PipelineProgress } from "@/components/PipelineProgress";
 import { SeoPackage } from "@/components/SeoPackage";
 import { SourcesList } from "@/components/SourcesList";
 import { ArticleSeoScorecard } from "@/components/ArticleSeoScorecard";
+import { ArticleGeoPanel } from "@/components/ArticleGeoPanel";
 import { TopicForm } from "@/components/TopicForm";
 import { AdSenseSlot } from "@/components/AdSenseSlot";
 import { ADSENSE_SLOTS } from "@/lib/adsense-config";
@@ -45,17 +46,21 @@ const ArticleEditor = dynamic(
 type TabId =
   | "article"
   | "score"
+  | "geo"
   | "seo"
   | "keywords"
   | "sources"
   | "log"
   | "visual";
 
+type PipelineMode = "simple" | "advanced";
+
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null;
 }
 
 export function SeoAgentClient() {
+  const [mode, setMode] = useState<PipelineMode>("simple");
   const [input, setInput] = useState<PipelineInput>({
     topic: "",
     audience: "",
@@ -63,6 +68,7 @@ export function SeoAgentClient() {
     sourceUrl: "",
     primaryKeyword: "",
   });
+  const [simpleKeyword, setSimpleKeyword] = useState("");
   const [gscRows, setGscRows] = useState<GscQueryRow[]>([]);
   const [googleSuggestions, setGoogleSuggestions] = useState<string[]>([]);
   const [loadingGsc, setLoadingGsc] = useState(false);
@@ -107,7 +113,9 @@ export function SeoAgentClient() {
   const [autoEnrich, setAutoEnrich] = useState(true);
 
   const canRun =
-    Boolean(input.topic.trim() || input.sourceUrl.trim()) && !running;
+    mode === "simple"
+      ? simpleKeyword.trim().length > 0 && !running
+      : Boolean(input.topic.trim() || input.sourceUrl.trim()) && !running;
 
   const topicFirstLine =
     input.topic.trim().split("\n")[0]?.trim() ?? "";
@@ -214,7 +222,18 @@ export function SeoAgentClient() {
   }, []);
 
   const runPipeline = useCallback(async () => {
-    if (!input.topic.trim() && !input.sourceUrl.trim()) return;
+    const effectiveInput: PipelineInput =
+      mode === "simple"
+        ? {
+            topic: simpleKeyword.trim(),
+            audience: "general readers",
+            intent: "informational",
+            sourceUrl: "",
+            primaryKeyword: simpleKeyword.trim(),
+          }
+        : input;
+
+    if (!effectiveInput.topic.trim() && !effectiveInput.sourceUrl.trim()) return;
     setRunning(true);
     setError(null);
     setLogLines([]);
@@ -235,7 +254,7 @@ export function SeoAgentClient() {
       setDoneStages((prev) => (prev.includes(id) ? prev : [...prev, id]));
     };
 
-    const hasSourceUrl = input.sourceUrl.trim().length > 0;
+    const hasSourceUrl = effectiveInput.sourceUrl.trim().length > 0;
     const gscFallbackToSiteWide =
       typeof gscNote === "string" &&
       gscNote.toLowerCase().includes("showing site-wide top queries instead");
@@ -247,11 +266,11 @@ export function SeoAgentClient() {
     try {
       const result = await runArticlePipeline(
         {
-          topic: input.topic,
-          audience: input.audience,
-          intent: input.intent,
-          sourceUrl: input.sourceUrl,
-          primaryKeyword: input.primaryKeyword,
+          topic: effectiveInput.topic,
+          audience: effectiveInput.audience,
+          intent: effectiveInput.intent,
+          sourceUrl: effectiveInput.sourceUrl,
+          primaryKeyword: effectiveInput.primaryKeyword,
           searchConsoleQueries: searchConsoleQueriesForArticle,
           googleSuggestions,
         },
@@ -284,12 +303,13 @@ export function SeoAgentClient() {
       setRunning(false);
       setStage(null);
     }
-  }, [input, pushLog, gscRows, gscNote, googleSuggestions, autoEnrich]);
+  }, [mode, simpleKeyword, input, pushLog, gscRows, gscNote, googleSuggestions, autoEnrich]);
 
   const tabs: { id: TabId; label: string }[] = [
     { id: "article", label: "Article" },
     { id: "visual", label: "Visual HTML" },
     { id: "score", label: "SEO score" },
+    { id: "geo", label: "GEO panel" },
     { id: "seo", label: "SEO package" },
     { id: "keywords", label: "Keywords" },
     { id: "sources", label: "Sources" },
@@ -334,6 +354,30 @@ export function SeoAgentClient() {
             Free-tier APIs
           </span>
         </div>
+        <div className="mt-4 inline-flex rounded-lg border border-border bg-surface/70 p-1">
+          <button
+            type="button"
+            onClick={() => setMode("simple")}
+            className={`rounded-md px-3 py-1.5 font-mono text-xs transition-colors ${
+              mode === "simple"
+                ? "bg-accent text-background"
+                : "text-text-secondary hover:text-text-primary"
+            }`}
+          >
+            Simple Mode
+          </button>
+          <button
+            type="button"
+            onClick={() => setMode("advanced")}
+            className={`rounded-md px-3 py-1.5 font-mono text-xs transition-colors ${
+              mode === "advanced"
+                ? "bg-accent text-background"
+                : "text-text-secondary hover:text-text-primary"
+            }`}
+          >
+            Advanced Mode
+          </button>
+        </div>
       </header>
 
       {ADSENSE_SLOTS.toolInline ? (
@@ -351,21 +395,43 @@ export function SeoAgentClient() {
 
       <div className="grid min-w-0 gap-6 lg:grid-cols-[1fr_320px]">
         <div className="min-w-0 space-y-4">
-          <TopicForm
-            value={input}
-            onChange={setInput}
-            disabled={running}
-            gscRows={gscRows}
-            googleSuggestions={googleSuggestions}
-            onFetchSearchConsole={() => void handleFetchSearchConsole()}
-            onFetchGoogleSuggestions={() => void handleFetchGoogleSuggestions()}
-            loadingGsc={loadingGsc}
-            loadingSuggest={loadingSuggest}
-            gscError={gscError}
-            gscNote={gscNote}
-            suggestError={suggestError}
-            searchConsoleConfigured={searchConsoleConfigured}
-          />
+          {mode === "simple" ? (
+            <section className="rounded-xl border border-border bg-surface/80 p-4">
+              <h2 className="font-mono text-sm uppercase text-accent">
+                Simple brief
+              </h2>
+              <p className="mt-2 font-serif text-sm text-text-secondary">
+                Add one keyword and generate a full article in one click.
+              </p>
+              <label className="mt-3 block text-sm text-text-secondary">
+                <span className="font-medium text-text-primary">Keyword</span>
+                <input
+                  type="text"
+                  value={simpleKeyword}
+                  onChange={(e) => setSimpleKeyword(e.target.value)}
+                  placeholder="e.g. how to rank in chatgpt search"
+                  disabled={running}
+                  className="mt-2 w-full rounded-lg border border-border bg-background px-3 py-2 font-serif text-text-primary placeholder:text-text-muted focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+                />
+              </label>
+            </section>
+          ) : (
+            <TopicForm
+              value={input}
+              onChange={setInput}
+              disabled={running}
+              gscRows={gscRows}
+              googleSuggestions={googleSuggestions}
+              onFetchSearchConsole={() => void handleFetchSearchConsole()}
+              onFetchGoogleSuggestions={() => void handleFetchGoogleSuggestions()}
+              loadingGsc={loadingGsc}
+              loadingSuggest={loadingSuggest}
+              gscError={gscError}
+              gscNote={gscNote}
+              suggestError={suggestError}
+              searchConsoleConfigured={searchConsoleConfigured}
+            />
+          )}
 
           <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
             <button
@@ -374,7 +440,11 @@ export function SeoAgentClient() {
               disabled={!canRun}
               className="touch-manipulation w-full rounded-lg bg-accent px-5 py-2.5 font-mono text-sm font-semibold text-background transition-all duration-200 enabled:hover:opacity-90 enabled:focus:outline-none enabled:focus:ring-2 enabled:focus:ring-accent disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto"
             >
-              {running ? "Running pipeline…" : "Run pipeline"}
+              {running
+                ? "Running pipeline…"
+                : mode === "simple"
+                  ? "Generate Article"
+                  : "Run pipeline"}
             </button>
             <label className="flex cursor-pointer items-center gap-2 font-mono text-[11px] text-text-secondary sm:text-xs">
               <input
@@ -468,7 +538,11 @@ export function SeoAgentClient() {
                 ))}
               {tab === "article" && (
                 <div>
-                  <ArticleCopyBar markdown={article} disabled={running} />
+                  <ArticleCopyBar
+                    markdown={article}
+                    title={topicFirstLine || input.primaryKeyword || "Generated article"}
+                    disabled={running}
+                  />
                   <ResearchImagesPanel
                     topic={
                       storedResearchTopic.trim() ||
@@ -510,6 +584,13 @@ export function SeoAgentClient() {
                     available, and your keyword list.
                   </p>
                 ))}
+              {tab === "geo" && (
+                <ArticleGeoPanel
+                  article={article}
+                  topic={topicFirstLine || input.topic.trim() || "this topic"}
+                  primaryKeyword={input.primaryKeyword}
+                />
+              )}
               {tab === "seo" && <SeoPackage meta={meta} article={article} />}
               {tab === "keywords" && (
                 <KeywordsPanel
