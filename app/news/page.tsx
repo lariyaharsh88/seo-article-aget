@@ -94,38 +94,52 @@ export default async function NewsIndexPage({ searchParams }: Props) {
             ← Home
           </Link>
         </p>
-        <h1 className="mt-6 font-display text-3xl text-text-primary sm:text-4xl">
-          News
-        </h1>
+        <header className="mt-6 rounded-2xl border border-border bg-surface/60 px-5 py-6 sm:px-6">
+          <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-accent">
+            Education News
+          </p>
+          <h1 className="mt-2 font-display text-3xl text-text-primary sm:text-4xl">
+            Latest repurposed stories
+          </h1>
+          <p className="mt-2 max-w-2xl font-serif text-sm text-text-secondary">
+            SEO-ready coverage of education updates, optimized for readability and
+            search intent.
+          </p>
+        </header>
 
         {loadFailed ? (
-          <p className="mt-10 font-serif text-sm text-amber-100" role="alert">
+          <p
+            className="mt-10 rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 font-serif text-sm text-amber-100"
+            role="alert"
+          >
             Could not load news right now. Try refreshing in a moment.
           </p>
         ) : items.length === 0 ? (
-          <p className="mt-10 font-serif text-sm text-text-muted">
-            No published repurposed articles yet. Run{" "}
-            <Link href="/education-news" className="text-accent underline">
-              Repurpose
-            </Link>{" "}
-            from the education news dashboard.
-          </p>
+          <div className="mt-10 rounded-xl border border-border bg-surface/40 p-5">
+            <p className="font-serif text-sm text-text-muted">
+              No published repurposed articles yet. Run{" "}
+              <Link href="/education-news" className="text-accent underline">
+                Repurpose
+              </Link>{" "}
+              from the education news dashboard.
+            </p>
+          </div>
         ) : (
           <>
-            <ul className="mt-10 space-y-4 border-t border-border pt-8">
+            <ul className="mt-8 grid gap-4">
               {items.map((item) => (
-                <li
-                  key={item.id}
-                  className="border-b border-border/80 pb-4 last:border-0"
-                >
+                <li key={item.id}>
                   <Link
                     href={`/news/${encodeURIComponent(item.slug)}`}
-                    className="group block"
+                    className="group block rounded-xl border border-border bg-surface/50 p-4 transition-colors hover:border-accent/40 hover:bg-surface/70"
                   >
-                    <span className="font-display text-lg text-text-primary group-hover:text-accent">
+                    <span className="font-display text-xl text-text-primary group-hover:text-accent">
                       {item.title}
                     </span>
-                    <span className="mt-1 block font-mono text-[11px] leading-relaxed text-text-muted">
+                    <span className="mt-2 inline-block rounded-full border border-border/80 bg-background/70 px-2.5 py-1 font-mono text-[10px] uppercase tracking-wide text-text-muted">
+                      Repurposed Article
+                    </span>
+                    <span className="mt-3 block font-mono text-[11px] leading-relaxed text-text-muted">
                       {(() => {
                         const issued = formatSourceIssueTimeIst(item.lastmod);
                         const repurposed =
@@ -138,6 +152,9 @@ export default async function NewsIndexPage({ searchParams }: Props) {
                           ? `Issued ${issued} · Repurposed ${repurposed}`
                           : `Repurposed ${repurposed}`;
                       })()}
+                    </span>
+                    <span className="mt-3 inline-block font-mono text-xs text-accent">
+                      Read story →
                     </span>
                   </Link>
                 </li>

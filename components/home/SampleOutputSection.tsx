@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { motion } from "framer-motion";
 
 type SampleCard = {
   id: "keyword" | "outline" | "article";
@@ -116,35 +116,20 @@ export function SampleOutputSection() {
                 {isOpen ? "Collapse" : "Expand"}
               </motion.span>
             </motion.button>
-            <AnimatePresence initial={false}>
-              {isOpen ? (
-                <motion.div
-                  key="expanded"
-                  initial={false}
-                  animate={{ opacity: 1, height: "auto" }}
-                  exit={{ opacity: 0, height: 0 }}
-                  transition={{ duration: 0.28, ease: "easeOut" }}
-                  className="mt-4 overflow-hidden"
-                >
-                  <pre className="h-full whitespace-pre-wrap rounded-lg border border-border/70 bg-background/80 p-3 font-mono text-xs leading-relaxed text-text-secondary">
-                    {card.content}
-                  </pre>
-                </motion.div>
-              ) : (
-                <motion.div
-                  key="collapsed"
-                  initial={false}
-                  animate={{ opacity: 1, height: "auto" }}
-                  exit={{ opacity: 0, height: 0 }}
-                  transition={{ duration: 0.22, ease: "easeOut" }}
-                  className="mt-4 overflow-hidden"
-                >
-                  <pre className="line-clamp-3 whitespace-pre-wrap rounded-lg border border-border/70 bg-background/80 p-3 font-mono text-xs leading-relaxed text-text-secondary">
-                    {card.content}
-                  </pre>
-                </motion.div>
-              )}
-            </AnimatePresence>
+            <motion.div
+              initial={false}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+              className="mt-4"
+            >
+              <pre
+                className={`whitespace-pre-wrap rounded-lg border border-border/70 bg-background/80 p-3 font-mono text-xs leading-relaxed text-text-secondary ${
+                  isOpen ? "" : "line-clamp-3"
+                }`}
+              >
+                {card.content}
+              </pre>
+            </motion.div>
           </motion.article>
             );
           })()
