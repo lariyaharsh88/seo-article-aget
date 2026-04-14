@@ -54,6 +54,7 @@ type TabId =
   | "visual";
 
 type PipelineMode = "simple" | "advanced";
+type ArticleViewMode = "edit" | "preview";
 
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null;
@@ -111,6 +112,7 @@ export function SeoAgentClient() {
   /** Final-step HTML from POST /api/seo-enrich (H2 images, QuickChart, comparison tables). */
   const [enrichedHtml, setEnrichedHtml] = useState("");
   const [autoEnrich, setAutoEnrich] = useState(true);
+  const [articleViewMode, setArticleViewMode] = useState<ArticleViewMode>("edit");
 
   const canRun =
     mode === "simple"
@@ -248,6 +250,7 @@ export function SeoAgentClient() {
     setStoredResearchContext("");
     setStoredResearchTopic("");
     setEnrichedHtml("");
+    setArticleViewMode("edit");
     setTab("article");
 
     const markDone = (id: string) => {
@@ -543,6 +546,30 @@ export function SeoAgentClient() {
                     title={topicFirstLine || input.primaryKeyword || "Generated article"}
                     disabled={running}
                   />
+                  <div className="mb-4 inline-flex rounded-lg border border-border bg-background/60 p-1">
+                    <button
+                      type="button"
+                      onClick={() => setArticleViewMode("edit")}
+                      className={`rounded-md px-3 py-1.5 font-mono text-xs transition-colors ${
+                        articleViewMode === "edit"
+                          ? "bg-accent text-background"
+                          : "text-text-secondary hover:text-text-primary"
+                      }`}
+                    >
+                      Edit Article
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setArticleViewMode("preview")}
+                      className={`rounded-md px-3 py-1.5 font-mono text-xs transition-colors ${
+                        articleViewMode === "preview"
+                          ? "bg-accent text-background"
+                          : "text-text-secondary hover:text-text-primary"
+                      }`}
+                    >
+                      Preview Article
+                    </button>
+                  </div>
                   <ResearchImagesPanel
                     topic={
                       storedResearchTopic.trim() ||
@@ -558,8 +585,8 @@ export function SeoAgentClient() {
                       setArticleEditorEpoch((e) => e + 1)
                     }
                   />
-                  {running ? (
-                    <ArticleRenderer markdown={article} streaming />
+                  {running || articleViewMode === "preview" ? (
+                    <ArticleRenderer markdown={article} streaming={running} />
                   ) : (
                     <ArticleEditor
                       key={articleEditorEpoch}
