@@ -84,20 +84,20 @@ export async function getStaticBlogPostBySlug(slug: string): Promise<BlogPost | 
 }
 
 export async function listStaticBlogPosts(): Promise<PublishedBlogListItem[]> {
-  const results = await Promise.all(
-    STATIC_SPECS.map(async (spec) => {
-      const content = await readMarkdownForSlug(spec.slug);
-      if (!content) return null;
-      return {
-        id: `static-${spec.slug}`,
-        slug: spec.slug,
-        title: spec.title,
-        excerpt: spec.excerpt,
-        createdAt: new Date("2026-01-01T00:00:00.000Z"),
-      } satisfies PublishedBlogListItem;
-    }),
-  );
-  return results.filter(
-    (item): item is PublishedBlogListItem => item !== null,
-  );
+  const createdAt = new Date("2026-01-01T00:00:00.000Z");
+  const results: PublishedBlogListItem[] = [];
+
+  for (const spec of STATIC_SPECS) {
+    const content = await readMarkdownForSlug(spec.slug);
+    if (!content) continue;
+    results.push({
+      id: `static-${spec.slug}`,
+      slug: spec.slug,
+      title: spec.title,
+      excerpt: spec.excerpt,
+      createdAt,
+    });
+  }
+
+  return results;
 }
