@@ -97,5 +97,7 @@ export async function listStaticBlogPosts(): Promise<PublishedBlogListItem[]> {
       } satisfies PublishedBlogListItem;
     }),
   );
-  return results.filter((item): item is PublishedBlogListItem => Boolean(item));
+  return results.filter(
+    (item): item is PublishedBlogListItem => item !== null,
+  );
 }
