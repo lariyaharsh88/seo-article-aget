@@ -57,22 +57,17 @@ A practical workflow starts with long-tail clustering, then moves to SERP-aware 
 ];
 
 export function SampleOutputSection() {
-  const [open, setOpen] = useState<Record<string, boolean>>({
-    keyword: true,
-    outline: true,
-    article: true,
-  });
+  const [collapsed, setCollapsed] = useState<
+    Partial<Record<SampleCard["id"], boolean>>
+  >({});
 
   function toggle(id: SampleCard["id"]) {
-    setOpen((prev) => ({ ...prev, [id]: !prev[id] }));
+    setCollapsed((prev) => ({ ...prev, [id]: !prev[id] }));
   }
 
   return (
     <motion.section
-      initial={{ opacity: 0, y: 10 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, amount: 0.2 }}
-      transition={{ duration: 0.45, ease: "easeOut" }}
+      initial={false}
       className="mb-12 rounded-2xl border border-border bg-surface/60 p-5 md:p-6"
     >
       <p className="font-mono text-xs uppercase tracking-[0.2em] text-accent">
@@ -88,12 +83,13 @@ export function SampleOutputSection() {
 
       <div className="mt-5 grid gap-4 md:grid-cols-3">
         {SAMPLE_CARDS.map((card, idx) => (
+          (() => {
+            const isOpen = collapsed[card.id] !== true;
+            return (
           <motion.article
             key={card.id}
-            initial={{ opacity: 0, y: 18 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, amount: 0.25 }}
-            transition={{ delay: idx * 0.06, duration: 0.35, ease: "easeOut" }}
+            initial={false}
+            transition={{ delay: idx * 0.03, duration: 0.2, ease: "easeOut" }}
             whileHover={{ y: -4, boxShadow: "0 12px 30px rgba(2, 132, 199, 0.15)" }}
             className="flex min-h-[320px] flex-col rounded-xl border border-border bg-background/70 p-4"
           >
@@ -101,7 +97,7 @@ export function SampleOutputSection() {
               type="button"
               onClick={() => toggle(card.id)}
               className="flex w-full items-start justify-between gap-3 text-left"
-              aria-expanded={open[card.id]}
+              aria-expanded={isOpen}
               whileTap={{ scale: 0.99 }}
             >
               <div>
@@ -117,14 +113,14 @@ export function SampleOutputSection() {
                 transition={{ duration: 0.2 }}
                 className="font-mono text-xs text-accent"
               >
-                {open[card.id] ? "Collapse" : "Expand"}
+                {isOpen ? "Collapse" : "Expand"}
               </motion.span>
             </motion.button>
             <AnimatePresence initial={false}>
-              {open[card.id] ? (
+              {isOpen ? (
                 <motion.div
                   key="expanded"
-                  initial={{ opacity: 0, height: 0 }}
+                  initial={false}
                   animate={{ opacity: 1, height: "auto" }}
                   exit={{ opacity: 0, height: 0 }}
                   transition={{ duration: 0.28, ease: "easeOut" }}
@@ -137,7 +133,7 @@ export function SampleOutputSection() {
               ) : (
                 <motion.div
                   key="collapsed"
-                  initial={{ opacity: 0, height: 0 }}
+                  initial={false}
                   animate={{ opacity: 1, height: "auto" }}
                   exit={{ opacity: 0, height: 0 }}
                   transition={{ duration: 0.22, ease: "easeOut" }}
@@ -150,6 +146,8 @@ export function SampleOutputSection() {
               )}
             </AnimatePresence>
           </motion.article>
+            );
+          })()
         ))}
       </div>
     </motion.section>
