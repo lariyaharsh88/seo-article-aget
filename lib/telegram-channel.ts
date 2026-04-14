@@ -90,6 +90,15 @@ function newsTelegramEnv():
   return { token, chatId, hubLabel };
 }
 
+function newsPublicBaseUrl(): string {
+  const fromEnv = process.env.TELEGRAM_NEWS_BASE_URL?.trim();
+  if (fromEnv) {
+    const withProto = /^https?:\/\//i.test(fromEnv) ? fromEnv : `https://${fromEnv}`;
+    return withProto.replace(/\/$/, "");
+  }
+  return "https://education.rankflowhq.com";
+}
+
 /** Fire-and-forget: new published blog post announcement (text + inline buttons, no image). */
 export function notifyTelegramNewBlogPost(opts: {
   title: string;
@@ -134,7 +143,7 @@ export function notifyTelegramNewsRepurposed(opts: {
   const cfg = newsTelegramEnv();
   if (!cfg) return;
 
-  const base = getSiteUrl().replace(/\/$/, "");
+  const base = newsPublicBaseUrl();
   const articleUrl = `${base}/news/${encodeURIComponent(opts.slug)}`;
   const hubUrl = `${base}/news`;
 
