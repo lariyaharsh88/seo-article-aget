@@ -44,8 +44,10 @@ const SEO_SOURCE_NAMES = new Set(SEO_SITEMAP_SOURCES.map((s) => s.name));
  */
 export function siteDomainForNewsSource(
   source: string,
-  _profile: NewsSourceProfile,
+  profile: NewsSourceProfile,
 ): SiteDomain {
+  void source;
+  void profile;
   const name = source.trim();
   if (SEO_SOURCE_NAMES.has(name)) return SiteDomain.education;
   if (EDUCATION_SOURCE_NAMES.has(name)) return SiteDomain.education;
@@ -57,9 +59,11 @@ export function siteDomainForNewsSource(
  * All news articles are routed to education domain.
  */
 export function siteDomainForNewsArticle(
-  _article: Pick<NewsArticle, "source" | "title" | "url">,
-  _profile: NewsSourceProfile,
+  article: Pick<NewsArticle, "source" | "title" | "url">,
+  profile: NewsSourceProfile,
 ): SiteDomain {
+  void article;
+  void profile;
   return SiteDomain.education;
 }
 
