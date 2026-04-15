@@ -1,18 +1,6 @@
 const LIVE_UPDATES_HEADING = "## 🔴 Live Updates";
 const SECTION_SPLIT_RE = /\n##\s+/;
 
-function formatIstTimestamp(d: Date): string {
-  return d.toLocaleString("en-IN", {
-    timeZone: "Asia/Kolkata",
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: true,
-  });
-}
-
 function formatIstTimeLabel(d: Date): string {
   return d.toLocaleTimeString("en-IN", {
     timeZone: "Asia/Kolkata",
