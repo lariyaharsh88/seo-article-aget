@@ -1,4 +1,4 @@
-import type { EducationNewsArticle } from "@prisma/client";
+import { SiteDomain, type EducationNewsArticle } from "@prisma/client";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { unstable_noStore as noStore } from "next/cache";
@@ -97,7 +97,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const post = await findReadyRepurposedNewsBySlug(slug);
     if (post?.repurposedSlug?.trim()) {
       await permanentRedirectIfWrongSiteDomain(
-        post.siteDomain,
+        SiteDomain.education,
         `/news/${params.slug}`,
       );
       title = post.title;
@@ -145,7 +145,7 @@ export default async function RepurposedNewsArticlePage({ params }: Props) {
   }
 
   await permanentRedirectIfWrongSiteDomain(
-    post.siteDomain,
+    SiteDomain.education,
     `/news/${params.slug}`,
   );
 

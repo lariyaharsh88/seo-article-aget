@@ -38,39 +38,29 @@ const EDUCATION_SOURCE_NAMES = new Set(
 );
 const SEO_SOURCE_NAMES = new Set(SEO_SITEMAP_SOURCES.map((s) => s.name));
 
-/** Main-domain news should stay focused on AI/SEO updates only. */
-const MAIN_AI_SEO_TOPIC_RE =
-  /\b(ai|seo|search engine|search ranking|serp|google update|core update|algorithm|backlink|link building|content marketing|llm|chatgpt|openai|gemini|claude|anthropic|perplexity|programmatic seo|generative engine optimization|geo)\b/i;
-
 /**
  * `siteDomain` for a row from its feed `source` label and which sitemap profile was synced.
- * Unknown `source` values follow the profile (education subdomain vs main SEO feeds).
+ * News is published on the education surface.
  */
 export function siteDomainForNewsSource(
   source: string,
-  profile: NewsSourceProfile,
+  _profile: NewsSourceProfile,
 ): SiteDomain {
   const name = source.trim();
-  if (SEO_SOURCE_NAMES.has(name)) return SiteDomain.main;
+  if (SEO_SOURCE_NAMES.has(name)) return SiteDomain.education;
   if (EDUCATION_SOURCE_NAMES.has(name)) return SiteDomain.education;
-  return profile === "education" ? SiteDomain.education : SiteDomain.main;
+  return SiteDomain.education;
 }
 
 /**
  * Final domain routing for a fetched article.
- * - Known education feeds always remain on the education domain.
- * - Known SEO feeds are heuristically split: edtech/exam stories -> education, else main.
+ * All news articles are routed to education domain.
  */
 export function siteDomainForNewsArticle(
-  article: Pick<NewsArticle, "source" | "title" | "url">,
-  profile: NewsSourceProfile,
+  _article: Pick<NewsArticle, "source" | "title" | "url">,
+  _profile: NewsSourceProfile,
 ): SiteDomain {
-  const sourceDomain = siteDomainForNewsSource(article.source, profile);
-  if (sourceDomain === SiteDomain.education) return SiteDomain.education;
-  const topicText = `${article.source}\n${article.title}\n${article.url}`;
-  return MAIN_AI_SEO_TOPIC_RE.test(topicText)
-    ? SiteDomain.main
-    : SiteDomain.education;
+  return SiteDomain.education;
 }
 
 function sourcesForProfile(profile: NewsSourceProfile): SitemapSource[] {
