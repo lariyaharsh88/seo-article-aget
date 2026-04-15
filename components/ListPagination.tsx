@@ -4,7 +4,16 @@ type Props = {
   currentPage: number;
   totalPages: number;
   /** Supported list index route — no trailing query string */
-  basePath: "/blog" | "/blogs" | "/news";
+  basePath:
+    | "/blog"
+    | "/blogs"
+    | "/news"
+    | "/article"
+    | "/article/generated"
+    | "/news/category/ssc"
+    | "/news/category/rrb"
+    | "/news/category/upsc"
+    | "/news/category/board-results";
 };
 
 export function ListPagination({ currentPage, totalPages, basePath }: Props) {
