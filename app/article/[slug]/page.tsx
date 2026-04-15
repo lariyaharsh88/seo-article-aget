@@ -4,31 +4,13 @@ import { notFound } from "next/navigation";
 import { JsonLd } from "@/components/JsonLd";
 import { PublicArticleShareBar } from "@/components/PublicArticleShareBar";
 import { prisma } from "@/lib/prisma";
+import { getRequestSiteOrigin } from "@/lib/request-site-origin";
 import { buildPageMetadata } from "@/lib/seo-page";
-import { getSiteUrl } from "@/lib/site-url";
+import { permanentRedirectIfWrongSiteDomain } from "@/lib/site-domain-redirect";
 
 type Props = {
   params: { slug: string };
 };
-
-type SharedArticleRow = {
-  slug: string;
-  title: string;
-  markdown: string;
-  html: string;
-  createdAt: Date;
-  updatedAt: Date;
-};
-
-async function loadSharedArticle(slug: string): Promise<SharedArticleRow | null> {
-  const rows = await prisma.$queryRaw<SharedArticleRow[]>`
-    SELECT "slug", "title", "markdown", "html", "createdAt", "updatedAt"
-    FROM "SharedArticle"
-    WHERE "slug" = ${slug}
-    LIMIT 1
-  `;
-  return rows[0] ?? null;
-}
 
 function buildDescription(markdown: string, fallbackTitle: string): string {
   const stripped = markdown
@@ -41,7 +23,9 @@ function buildDescription(markdown: string, fallbackTitle: string): string {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const row = await loadSharedArticle(params.slug);
+  const row = await prisma.sharedArticle.findUnique({
+    where: { slug: params.slug },
+  });
   if (!row) {
     return buildPageMetadata({
       title: "Article not found",
@@ -49,6 +33,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       path: `/article/${params.slug}`,
     });
   }
+  await permanentRedirectIfWrongSiteDomain(
+    row.siteDomain,
+    `/article/${params.slug}`,
+  );
+  const siteOrigin = await getRequestSiteOrigin();
   const description = buildDescription(row.markdown, row.title);
   return buildPageMetadata({
     title: row.title,
@@ -64,15 +53,24 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       "programmatic SEO content",
       row.title,
     ],
+    siteOrigin,
   });
 }
 
 export default async function PublicArticlePage({ params }: Props) {
-  const row = await loadSharedArticle(params.slug);
+  const row = await prisma.sharedArticle.findUnique({
+    where: { slug: params.slug },
+  });
   if (!row) notFound();
 
+  await permanentRedirectIfWrongSiteDomain(
+    row.siteDomain,
+    `/article/${params.slug}`,
+  );
+
+  const siteOrigin = await getRequestSiteOrigin();
   const description = buildDescription(row.markdown, row.title);
-  const canonicalUrl = `${getSiteUrl().replace(/\/$/, "")}/article/${row.slug}`;
+  const canonicalUrl = `${siteOrigin}/article/${row.slug}`;
   const schema = {
     "@context": "https://schema.org",
     "@type": "Article",
@@ -82,6 +80,10 @@ export default async function PublicArticlePage({ params }: Props) {
     dateModified: row.updatedAt.toISOString(),
     author: { "@type": "Organization", name: "RankFlowHQ" },
     publisher: { "@type": "Organization", name: "RankFlowHQ" },
+    mainEntityOfPage: {
+      "@type": "WebPage",
+      "@id": canonicalUrl,
+    },
   } as Record<string, unknown>;
 
   return (

@@ -23,7 +23,7 @@ export async function GET(request: Request) {
     const sources = getUniqueSources(articles);
 
     try {
-      await syncEducationNewsArticles(articles);
+      await syncEducationNewsArticles(articles, profile);
       await runAutoRepurposeAfterSync();
     } catch (syncErr) {
       console.error("[education-news] sync / auto-repurpose:", syncErr);

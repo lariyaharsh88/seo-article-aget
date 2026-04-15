@@ -1,12 +1,9 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
+import { EDUCATION_HOSTS } from "@/lib/education-hosts";
 
 const CANONICAL_HOST = "rankflowhq.com";
-const EDUCATION_HOSTS = new Set([
-  "education.rankflowhq.com",
-  "education.rankflohq.com",
-]);
 
 /**
  * Host canonicalization for `www` is handled in **Vercel → Project → Domains** (redirect
@@ -53,12 +50,6 @@ export async function middleware(request: NextRequest) {
   }
 
   if (!isEducationHost) {
-    if (path === "/news" || path.startsWith("/news/")) {
-      const url = request.nextUrl.clone();
-      url.hostname = "education.rankflowhq.com";
-      url.protocol = "https:";
-      return NextResponse.redirect(url, 308);
-    }
     if (
       path === "/education-trends" ||
       path.startsWith("/education/") ||

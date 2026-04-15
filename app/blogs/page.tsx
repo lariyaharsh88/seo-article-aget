@@ -9,6 +9,8 @@ import { buildPageMetadata } from "@/lib/seo-page";
 import { ToolExplainerSection } from "@/components/ToolExplainerSection";
 import { buildBlogsIndexSchema } from "@/lib/schema-org";
 import { getToolExplainerMarkdown } from "@/lib/tool-explainer";
+import { getRequestSiteOrigin } from "@/lib/request-site-origin";
+import { getRequestSiteDomain } from "@/lib/site-domain";
 
 type Props = { searchParams: { page?: string | string[] } };
 
@@ -18,10 +20,12 @@ export async function generateMetadata({
   const page = parseListPageParam(searchParams?.page);
   const title = page > 1 ? `Blog (page ${page})` : "Blog";
   const path = page > 1 ? `/blogs?page=${page}` : "/blogs";
+  const siteOrigin = await getRequestSiteOrigin();
   return buildPageMetadata({
     title,
     description: "Articles and updates from RankFlowHQ.",
     path,
+    siteOrigin,
   });
 }
 
@@ -31,6 +35,8 @@ export const runtime = "nodejs";
 export const maxDuration = 60;
 
 export default async function BlogsIndexPage({ searchParams }: Props) {
+  const siteDomain = await getRequestSiteDomain();
+  const siteOrigin = await getRequestSiteOrigin();
   const markdown = await getToolExplainerMarkdown("blogs");
   const requestedPage = parseListPageParam(searchParams?.page);
   let posts: Awaited<
@@ -42,6 +48,7 @@ export default async function BlogsIndexPage({ searchParams }: Props) {
     const result = await getCachedPublishedBlogPostsPage(
       requestedPage,
       LIST_PAGE_SIZE,
+      siteDomain,
     );
     posts = result.items;
     total = result.total;
@@ -66,7 +73,7 @@ export default async function BlogsIndexPage({ searchParams }: Props) {
 
   return (
     <>
-      <JsonLd data={buildBlogsIndexSchema()} />
+      <JsonLd data={buildBlogsIndexSchema({ base: siteOrigin })} />
       <main className="mx-auto min-w-0 max-w-3xl px-4 py-8 sm:py-10 md:px-6">
         {listError ? (
           <div

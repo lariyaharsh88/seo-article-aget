@@ -5,11 +5,16 @@ import { getSiteUrl } from "@/lib/site-url";
 
 export function siteRefs() {
   const base = getSiteUrl().replace(/\/$/, "");
+  return siteRefsForOrigin(base);
+}
+
+function siteRefsForOrigin(base: string) {
+  const b = base.replace(/\/$/, "");
   return {
-    base,
-    websiteId: `${base}/#website`,
-    orgId: `${base}/#organization`,
-    softwareId: `${base}/#software`,
+    base: b,
+    websiteId: `${b}/#website`,
+    orgId: `${b}/#organization`,
+    softwareId: `${b}/#software`,
   };
 }
 
@@ -56,7 +61,10 @@ export function buildHomePageSchema(): Record<string, unknown> {
 }
 
 /** /blogs — CollectionPage + breadcrumbs. */
-export function buildBlogsIndexSchema(): Record<string, unknown> {
+export function buildBlogsIndexSchema(opts?: {
+  /** e.g. education subdomain origin when serving `/blogs` there */
+  base?: string;
+}): Record<string, unknown> {
   return buildCollectionPageSchema({
     path: "/blogs",
     headline: "Articles",
@@ -66,6 +74,7 @@ export function buildBlogsIndexSchema(): Record<string, unknown> {
       { name: "Home", path: "/" },
       { name: "Blog", path: "/blogs" },
     ],
+    base: opts?.base,
   });
 }
 
@@ -74,8 +83,11 @@ export function buildCollectionPageSchema(opts: {
   headline: string;
   description: string;
   breadcrumb: { name: string; path: string }[];
+  base?: string;
 }): Record<string, unknown> {
-  const { base, websiteId, orgId } = siteRefs();
+  const { base, websiteId, orgId } = opts.base
+    ? siteRefsForOrigin(opts.base)
+    : siteRefs();
   const url = `${base}${opts.path.startsWith("/") ? opts.path : `/${opts.path}`}`;
   const wpId = `${url}#webpage`;
   const bcId = `${url}#breadcrumb`;
@@ -108,8 +120,13 @@ export function buildCollectionPageSchema(opts: {
 }
 
 /** Blog post — BlogPosting + WebPage + BreadcrumbList. */
-export function buildBlogPostingSchema(post: BlogPost): Record<string, unknown> {
-  const { base, websiteId, orgId } = siteRefs();
+export function buildBlogPostingSchema(
+  post: BlogPost,
+  opts?: { base?: string },
+): Record<string, unknown> {
+  const { base, websiteId, orgId } = opts?.base
+    ? siteRefsForOrigin(opts.base)
+    : siteRefs();
   const path = `/blogs/${post.slug}`;
   const url = `${base}${path}`;
   const wpId = `${url}#webpage`;
@@ -185,8 +202,11 @@ export function buildRepurposedNewsArticleSchema(
     | "repurposedImageUrl"
     | "authorName"
   >,
+  opts?: { base?: string },
 ): Record<string, unknown> {
-  const { base, websiteId, orgId } = siteRefs();
+  const { base, websiteId, orgId } = opts?.base
+    ? siteRefsForOrigin(opts.base)
+    : siteRefs();
   const slug = post.repurposedSlug?.trim() ?? "";
   const path = `/news/${slug}`;
   const url = `${base}${path}`;
@@ -297,8 +317,12 @@ export function buildNewsIndexSchema(opts: {
   items: Array<{ title: string; slug: string }>;
   /** First ListItem position on this page (e.g. `(page - 1) * pageSize + 1`). Default 1. */
   itemPositionStart?: number;
+  /** Canonical origin when index is served on education vs main. */
+  base?: string;
 }): Record<string, unknown> {
-  const { base, websiteId, orgId } = siteRefs();
+  const { base, websiteId, orgId } = opts.base
+    ? siteRefsForOrigin(opts.base)
+    : siteRefs();
   const newsUrl = `${base}/news`;
   const wpId = `${newsUrl}#webpage`;
   const bcId = `${newsUrl}#breadcrumb`;

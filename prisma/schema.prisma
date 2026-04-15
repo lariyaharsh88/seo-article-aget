@@ -9,6 +9,12 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
+/// Which site surface owns the URL: main product (AI/SEO) vs education subdomain.
+enum SiteDomain {
+  main
+  education
+}
+
 model VisibilityLog {
   id           Int      @id @default(autoincrement())
   keyword      String
@@ -37,16 +43,17 @@ model OptimizedContent {
 }
 
 model BlogPost {
-  id          String   @id @default(cuid())
-  slug        String   @unique
+  id          String     @id @default(cuid())
+  slug        String     @unique
   title       String
-  excerpt     String?  @db.Text
-  content     String   @db.Text
-  published   Boolean  @default(false)
+  excerpt     String?    @db.Text
+  content     String     @db.Text
+  published   Boolean    @default(false)
+  siteDomain  SiteDomain @default(main)
   authorEmail String
-  authorName  String   @default("Harsh")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  authorName  String     @default("Harsh")
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
 }
 
 /// Lead form submissions from /blogs/[slug] and /news/[slug].
@@ -67,25 +74,27 @@ model LeadInquiry {
 
 /// Public share pages created from generated article output.
 model SharedArticle {
-  id          String   @id @default(cuid())
-  slug        String   @unique
+  id          String     @id @default(cuid())
+  slug        String     @unique
   title       String
-  markdown    String   @db.Text
-  html        String   @db.Text
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  markdown    String     @db.Text
+  html        String     @db.Text
+  siteDomain  SiteDomain @default(main)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
 
   @@index([createdAt])
 }
 
 // Sitemap-backed education news: persisted + optional AI repurposed draft (SEO-style).
 model EducationNewsArticle {
-  id                 String    @id @default(cuid())
-  url                String    @unique
+  id                 String     @id @default(cuid())
+  url                String     @unique
   title              String
   source             String
   lastmod            String
-  authorName         String    @default("Harsh")
+  siteDomain         SiteDomain @default(education)
+  authorName         String     @default("Harsh")
   rawArticleText     String?   @db.Text
   rawFetchedAt       DateTime?
   repurposedMarkdown String?   @db.Text

@@ -1,4 +1,4 @@
-import { Prisma } from "@prisma/client";
+import { Prisma, type SiteDomain } from "@prisma/client";
 import type { EducationNewsArticle } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
@@ -38,12 +38,15 @@ export type RepurposedNewsListItem = {
   repurposedAt: Date;
 };
 
-const readyRepurposedNewsWhere = {
-  repurposeStatus: "ready" as const,
-  repurposedSlug: { not: null },
-  repurposedMarkdown: { not: null },
-  repurposedAt: { not: null },
-};
+function readyRepurposedNewsWhere(domain: SiteDomain) {
+  return {
+    repurposeStatus: "ready" as const,
+    repurposedSlug: { not: null },
+    repurposedMarkdown: { not: null },
+    repurposedAt: { not: null },
+    siteDomain: domain,
+  };
+}
 
 const readyRepurposedNewsSelect = {
   id: true,
@@ -76,11 +79,13 @@ function mapReadyNewsRows(
     }));
 }
 
-export async function listReadyRepurposedNews(): Promise<RepurposedNewsListItem[]> {
+export async function listReadyRepurposedNews(
+  siteDomain: SiteDomain,
+): Promise<RepurposedNewsListItem[]> {
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     try {
       const rows = await prisma.educationNewsArticle.findMany({
-        where: readyRepurposedNewsWhere,
+        where: readyRepurposedNewsWhere(siteDomain),
         orderBy: { repurposedAt: "desc" },
         select: readyRepurposedNewsSelect,
       });
@@ -102,6 +107,7 @@ export async function listReadyRepurposedNews(): Promise<RepurposedNewsListItem[
 export async function listReadyRepurposedNewsPage(
   page: number,
   pageSize: number,
+  siteDomain: SiteDomain,
 ): Promise<{ items: RepurposedNewsListItem[]; total: number }> {
   const safePage = Math.max(1, Math.floor(page));
   const skip = (safePage - 1) * pageSize;
@@ -109,9 +115,11 @@ export async function listReadyRepurposedNewsPage(
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     try {
       const [total, rows] = await Promise.all([
-        prisma.educationNewsArticle.count({ where: readyRepurposedNewsWhere }),
+        prisma.educationNewsArticle.count({
+          where: readyRepurposedNewsWhere(siteDomain),
+        }),
         prisma.educationNewsArticle.findMany({
-          where: readyRepurposedNewsWhere,
+          where: readyRepurposedNewsWhere(siteDomain),
           orderBy: { repurposedAt: "desc" },
           skip,
           take: pageSize,
@@ -160,10 +168,11 @@ export async function findReadyRepurposedNewsBySlug(
 export async function listReadyRepurposedNewsExceptSlug(
   rawExcludeSlug: string,
   take = 6,
+  siteDomain: SiteDomain,
 ): Promise<RepurposedNewsListItem[]> {
   const excludeSlug = normalizeNewsSlugParam(rawExcludeSlug);
   if (!excludeSlug) {
-    const all = await listReadyRepurposedNews();
+    const all = await listReadyRepurposedNews(siteDomain);
     return all.slice(0, take);
   }
 
@@ -171,10 +180,7 @@ export async function listReadyRepurposedNewsExceptSlug(
     try {
       const rows = await prisma.educationNewsArticle.findMany({
         where: {
-          repurposeStatus: "ready",
-          repurposedMarkdown: { not: null },
-          repurposedAt: { not: null },
-          repurposedSlug: { not: null },
+          ...readyRepurposedNewsWhere(siteDomain),
           NOT: { repurposedSlug: excludeSlug },
         },
         orderBy: { updatedAt: "desc" },

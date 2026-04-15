@@ -1,11 +1,8 @@
+import { SiteDomain } from "@prisma/client";
 import { NextResponse } from "next/server";
+import { EDUCATION_HOSTS } from "@/lib/education-hosts";
 import { prisma } from "@/lib/prisma";
 import { getSiteUrl } from "@/lib/site-url";
-
-type SharedArticleSitemapRow = {
-  slug: string;
-  updatedAt: Date;
-};
 
 function escapeXml(text: string): string {
   return text
@@ -18,14 +15,27 @@ function escapeXml(text: string): string {
 
 export const revalidate = 300;
 
-export async function GET() {
-  const base = getSiteUrl().replace(/\/$/, "");
-  const rows = await prisma.$queryRaw<SharedArticleSitemapRow[]>`
-    SELECT "slug", "updatedAt"
-    FROM "SharedArticle"
-    ORDER BY "updatedAt" DESC
-    LIMIT 10000
-  `;
+export async function GET(request: Request) {
+  const host = (request.headers.get("host") || "").split(":")[0].toLowerCase();
+  const siteDomain = EDUCATION_HOSTS.has(host)
+    ? SiteDomain.education
+    : SiteDomain.main;
+  const proto =
+    request.headers.get("x-forwarded-proto") === "http" ? "http" : "https";
+  const base =
+    host && host !== "localhost"
+      ? `${proto}://${request.headers.get("host")?.split(":")[0] ?? host}`
+      : getSiteUrl().replace(/\/$/, "");
+
+  const rows = await prisma.sharedArticle.findMany({
+    where: { siteDomain },
+    select: {
+      slug: true,
+      updatedAt: true,
+    },
+    orderBy: { updatedAt: "desc" },
+    take: 10000,
+  });
 
   const urls = rows
     .map(
@@ -51,4 +61,3 @@ ${urls}
     },
   });
 }
-

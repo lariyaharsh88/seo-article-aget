@@ -1,5 +1,7 @@
 import type { MetadataRoute } from "next";
+import { SiteDomain } from "@prisma/client";
 import { getProgrammaticKeywordPages } from "@/lib/programmatic-ai-seo";
+import { prisma } from "@/lib/prisma";
 import { getSiteUrl } from "@/lib/site-url";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -106,7 +108,55 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.78,
   }));
 
-  /* Blog: `app/blogs/sitemap.xml/route.ts`. See robots.ts. */
+  const [mainNews, mainShared] = await Promise.all([
+    prisma.educationNewsArticle.findMany({
+      where: {
+        repurposeStatus: "ready",
+        repurposedSlug: { not: null },
+        siteDomain: SiteDomain.main,
+      },
+      select: { repurposedSlug: true, updatedAt: true },
+      orderBy: { updatedAt: "desc" },
+      take: 5000,
+    }),
+    prisma.sharedArticle.findMany({
+      where: { siteDomain: SiteDomain.main },
+      select: { slug: true, updatedAt: true },
+      orderBy: { updatedAt: "desc" },
+      take: 5000,
+    }),
+  ]);
 
-  return [...routes, ...programmatic];
+  const newsUrls: MetadataRoute.Sitemap = [
+    {
+      url: `${base}/news`,
+      lastModified: now,
+      changeFrequency: "weekly",
+      priority: 0.82,
+    },
+    {
+      url: `${base}/blogs`,
+      lastModified: now,
+      changeFrequency: "weekly",
+      priority: 0.8,
+    },
+    ...mainNews
+      .filter((r) => Boolean(r.repurposedSlug?.trim()))
+      .map((r) => ({
+        url: `${base}/news/${encodeURIComponent(r.repurposedSlug!.trim())}`,
+        lastModified: r.updatedAt,
+        changeFrequency: "weekly" as const,
+        priority: 0.75,
+      })),
+    ...mainShared.map((r) => ({
+      url: `${base}/article/${encodeURIComponent(r.slug)}`,
+      lastModified: r.updatedAt,
+      changeFrequency: "weekly" as const,
+      priority: 0.7,
+    })),
+  ];
+
+  /* Blog posts: `app/blogs/sitemap.xml/route.ts`. See robots.ts. */
+
+  return [...routes, ...programmatic, ...newsUrls];
 }

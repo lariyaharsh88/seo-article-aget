@@ -1,5 +1,6 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
+import { SiteDomain } from "@prisma/client";
 import type { BlogPost } from "@prisma/client";
 import type { PublishedBlogListItem } from "@/lib/blog-post-query";
 
@@ -76,6 +77,7 @@ export async function getStaticBlogPostBySlug(slug: string): Promise<BlogPost | 
     excerpt: spec.excerpt,
     content,
     published: true,
+    siteDomain: SiteDomain.main,
     authorEmail: "team@rankflowhq.com",
     authorName: "RankFlowHQ Team",
     createdAt,

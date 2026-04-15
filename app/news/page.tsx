@@ -9,6 +9,8 @@ import { LIST_PAGE_SIZE, parseListPageParam } from "@/lib/list-pagination";
 import { ToolExplainerSection } from "@/components/ToolExplainerSection";
 import { buildNewsIndexSchema } from "@/lib/schema-org";
 import { buildPageMetadata } from "@/lib/seo-page";
+import { getRequestSiteOrigin } from "@/lib/request-site-origin";
+import { getRequestSiteDomain } from "@/lib/site-domain";
 import { getToolExplainerMarkdown } from "@/lib/tool-explainer";
 
 type Props = { searchParams: { page?: string | string[] } };
@@ -23,10 +25,12 @@ export async function generateMetadata({
   const titleBase = "Education News Articles — Repurposed SEO Stories";
   const title = page > 1 ? `${titleBase} (page ${page})` : titleBase;
   const path = page > 1 ? `/news?page=${page}` : "/news";
+  const siteOrigin = await getRequestSiteOrigin();
   return buildPageMetadata({
     title,
     description: DESC,
     path,
+    siteOrigin,
     keywords: [
       "education news articles",
       "repurposed news SEO",
@@ -39,6 +43,8 @@ export async function generateMetadata({
 export const dynamic = "force-dynamic";
 
 export default async function NewsIndexPage({ searchParams }: Props) {
+  const siteDomain = await getRequestSiteDomain();
+  const siteOrigin = await getRequestSiteOrigin();
   const markdown = await getToolExplainerMarkdown("news");
   const requestedPage = parseListPageParam(searchParams?.page);
   let items: Awaited<
@@ -51,6 +57,7 @@ export default async function NewsIndexPage({ searchParams }: Props) {
     const result = await listReadyRepurposedNewsPage(
       requestedPage,
       LIST_PAGE_SIZE,
+      siteDomain,
     );
     items = result.items;
     total = result.total;
@@ -80,6 +87,7 @@ export default async function NewsIndexPage({ searchParams }: Props) {
     description: DESC,
     items: items.map((it) => ({ title: it.title, slug: it.slug })),
     itemPositionStart: positionStart,
+    base: siteOrigin,
   });
 
   return (

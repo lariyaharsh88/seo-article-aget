@@ -16,7 +16,9 @@ import {
 } from "@/lib/blog-post-query";
 import { buildPageMetadata } from "@/lib/seo-page";
 import { buildBlogPostingSchema } from "@/lib/schema-org";
+import { getRequestSiteOrigin } from "@/lib/request-site-origin";
 import { SITE_NAME } from "@/lib/seo-site";
+import { permanentRedirectIfWrongSiteDomain } from "@/lib/site-domain-redirect";
 
 type Props = { params: { slug: string } };
 
@@ -31,6 +33,10 @@ export async function generateMetadata({ params }: Props) {
   try {
     const post = await findPublishedBlogPostBySlug(params.slug);
     if (post) {
+      await permanentRedirectIfWrongSiteDomain(
+        post.siteDomain,
+        `/blogs/${params.slug}`,
+      );
       title = post.title;
       description = (post.excerpt?.slice(0, 160) || post.title) ?? SITE_NAME;
       article = {
@@ -41,16 +47,19 @@ export async function generateMetadata({ params }: Props) {
   } catch {
     /* DB unavailable after retries */
   }
+  const siteOrigin = await getRequestSiteOrigin();
   return buildPageMetadata({
     title,
     description,
     path: `/blogs/${params.slug}`,
     article,
+    siteOrigin,
   });
 }
 
 export default async function BlogPostPage({ params }: Props) {
   noStore();
+  const siteOrigin = await getRequestSiteOrigin();
   let post: BlogPost | null = null;
   try {
     post = await findPublishedBlogPostBySlug(params.slug);
@@ -64,9 +73,18 @@ export default async function BlogPostPage({ params }: Props) {
     notFound();
   }
 
+  await permanentRedirectIfWrongSiteDomain(
+    post.siteDomain,
+    `/blogs/${params.slug}`,
+  );
+
   let peerPosts: Awaited<ReturnType<typeof listPublishedBlogPostsExceptSlug>> = [];
   try {
-    peerPosts = await listPublishedBlogPostsExceptSlug(post.slug, 6);
+    peerPosts = await listPublishedBlogPostsExceptSlug(
+      post.slug,
+      6,
+      post.siteDomain,
+    );
   } catch (e) {
     console.error("[blogs/[slug]] peer posts:", e);
   }
@@ -87,7 +105,7 @@ export default async function BlogPostPage({ params }: Props) {
 
   return (
     <>
-      <JsonLd data={buildBlogPostingSchema(post)} />
+      <JsonLd data={buildBlogPostingSchema(post, { base: siteOrigin })} />
     <main className="mx-auto min-w-0 max-w-3xl px-4 py-8 sm:py-10 md:px-6">
       <p className="font-mono text-xs">
         <Link

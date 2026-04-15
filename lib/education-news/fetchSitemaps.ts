@@ -1,3 +1,4 @@
+import { SiteDomain } from "@prisma/client";
 import { XMLParser } from "fast-xml-parser";
 import type { NewsArticle, SitemapSource } from "./types";
 import { shouldSkipEducationNewsSourceUrl } from "./url-filters";
@@ -31,6 +32,25 @@ const SEO_SITEMAP_SOURCES: SitemapSource[] = [
 ];
 
 export type NewsSourceProfile = "education" | "seo";
+
+const EDUCATION_SOURCE_NAMES = new Set(
+  EDUCATION_SITEMAP_SOURCES.map((s) => s.name),
+);
+const SEO_SOURCE_NAMES = new Set(SEO_SITEMAP_SOURCES.map((s) => s.name));
+
+/**
+ * `siteDomain` for a row from its feed `source` label and which sitemap profile was synced.
+ * Unknown `source` values follow the profile (education subdomain vs main SEO feeds).
+ */
+export function siteDomainForNewsSource(
+  source: string,
+  profile: NewsSourceProfile,
+): SiteDomain {
+  const name = source.trim();
+  if (SEO_SOURCE_NAMES.has(name)) return SiteDomain.main;
+  if (EDUCATION_SOURCE_NAMES.has(name)) return SiteDomain.education;
+  return profile === "education" ? SiteDomain.education : SiteDomain.main;
+}
 
 function sourcesForProfile(profile: NewsSourceProfile): SitemapSource[] {
   return profile === "education" ? EDUCATION_SITEMAP_SOURCES : SEO_SITEMAP_SOURCES;

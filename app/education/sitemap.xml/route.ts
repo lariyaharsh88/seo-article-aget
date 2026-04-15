@@ -1,4 +1,6 @@
+import { SiteDomain } from "@prisma/client";
 import { NextResponse } from "next/server";
+import { getPublishedBlogSitemapRows } from "@/lib/blog-sitemap";
 import { prisma } from "@/lib/prisma";
 
 type NewsRow = {
@@ -25,6 +27,7 @@ export async function GET(request: Request) {
     where: {
       repurposeStatus: "ready",
       repurposedSlug: { not: null },
+      siteDomain: SiteDomain.education,
     },
     select: {
       repurposedSlug: true,
@@ -40,6 +43,7 @@ export async function GET(request: Request) {
     `${base}/education-news`,
     `${base}/education-trends`,
     `${base}/news`,
+    `${base}/blogs`,
   ];
 
   const staticXml = staticUrls
@@ -64,10 +68,42 @@ export async function GET(request: Request) {
     )
     .join("\n");
 
+  const sharedRows = await prisma.sharedArticle.findMany({
+    where: { siteDomain: SiteDomain.education },
+    select: { slug: true, updatedAt: true },
+    orderBy: { updatedAt: "desc" },
+    take: 10000,
+  });
+  const sharedXml = sharedRows
+    .map(
+      (r) => `  <url>
+    <loc>${escapeXml(`${base}/article/${encodeURIComponent(r.slug)}`)}</loc>
+    <lastmod>${new Date(r.updatedAt).toISOString()}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>`,
+    )
+    .join("\n");
+
+  const blogRows = await getPublishedBlogSitemapRows(base, SiteDomain.education);
+  const blogXml = blogRows
+    .filter((row) => row.loc !== `${base}/blogs`)
+    .map(
+      (row) => `  <url>
+    <loc>${escapeXml(row.loc)}</loc>
+    <lastmod>${row.lastmod.toISOString()}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>${row.priority}</priority>
+  </url>`,
+    )
+    .join("\n");
+
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${staticXml}
 ${newsXml}
+${sharedXml}
+${blogXml}
 </urlset>`;
 
   return new NextResponse(xml, {

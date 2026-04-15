@@ -18,9 +18,11 @@ import {
   listReadyRepurposedNewsExceptSlug,
   normalizeNewsSlugParam,
 } from "@/lib/education-news/repurposed-news-query";
+import { getRequestSiteOrigin } from "@/lib/request-site-origin";
 import { buildRepurposedNewsArticleSchema } from "@/lib/schema-org";
 import { SITE_NAME } from "@/lib/seo-site";
 import { buildPageMetadata } from "@/lib/seo-page";
+import { permanentRedirectIfWrongSiteDomain } from "@/lib/site-domain-redirect";
 
 type Props = { params: { slug: string } };
 
@@ -37,6 +39,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   try {
     const post = await findReadyRepurposedNewsBySlug(slug);
     if (post?.repurposedSlug?.trim()) {
+      await permanentRedirectIfWrongSiteDomain(
+        post.siteDomain,
+        `/news/${params.slug}`,
+      );
       title = post.title;
       description = post.title.slice(0, 160);
       ogImage = post.repurposedImageUrl?.trim() || undefined;
@@ -50,12 +56,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   } catch {
     /* DB unavailable */
   }
+  const siteOrigin = await getRequestSiteOrigin();
   return buildPageMetadata({
     title,
     description,
     path: `/news/${params.slug}`,
     article,
     ogImage,
+    siteOrigin,
   });
 }
 
@@ -79,10 +87,20 @@ export default async function RepurposedNewsArticlePage({ params }: Props) {
     notFound();
   }
 
+  await permanentRedirectIfWrongSiteDomain(
+    post.siteDomain,
+    `/news/${params.slug}`,
+  );
+
   const currentSlug = post.repurposedSlug.trim();
+  const siteOrigin = await getRequestSiteOrigin();
   let peerNews: Awaited<ReturnType<typeof listReadyRepurposedNewsExceptSlug>> = [];
   try {
-    peerNews = await listReadyRepurposedNewsExceptSlug(currentSlug, 6);
+    peerNews = await listReadyRepurposedNewsExceptSlug(
+      currentSlug,
+      6,
+      post.siteDomain,
+    );
   } catch (e) {
     console.error("[news/[slug]] peer articles:", e);
   }
@@ -105,7 +123,7 @@ export default async function RepurposedNewsArticlePage({ params }: Props) {
 
   return (
     <>
-      <JsonLd data={buildRepurposedNewsArticleSchema(post)} />
+      <JsonLd data={buildRepurposedNewsArticleSchema(post, { base: siteOrigin })} />
       <main className="mx-auto min-w-0 max-w-3xl px-4 py-8 sm:py-10 md:px-6">
         <p className="font-mono text-xs">
           <Link

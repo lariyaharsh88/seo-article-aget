@@ -13,6 +13,8 @@ export function buildPageMetadata(opts: {
   /** Meta description; aim for ~150–160 characters, primary keyword early. */
   description: string;
   path: string;
+  /** When set (e.g. education subdomain), used for absolute OG/Twitter URLs instead of `getSiteUrl()`. */
+  siteOrigin?: string;
   /** Optional `<meta name="keywords">` (lightweight signal; keep focused). */
   keywords?: string[];
   /** When set, Open Graph uses `type: article` with published/modified times (blog posts). */
@@ -23,7 +25,7 @@ export function buildPageMetadata(opts: {
   /** Absolute or same-origin hero image (e.g. news CDN) for OG / Twitter large card. */
   ogImage?: string | null;
 }): Metadata {
-  const base = getSiteUrl().replace(/\/$/, "");
+  const base = (opts.siteOrigin ?? getSiteUrl()).replace(/\/$/, "");
   const path = opts.path.startsWith("/") ? opts.path : `/${opts.path}`;
   const url = `${base}${path}`;
   const isArticle = Boolean(opts.article);

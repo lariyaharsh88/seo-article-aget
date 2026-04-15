@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { SiteDomain } from "@prisma/client";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { JsonLd } from "@/components/JsonLd";
@@ -38,6 +39,7 @@ export default async function BlogIndexPage({ searchParams }: Props) {
     const result = await getCachedPublishedBlogPostsPage(
       requestedPage,
       LIST_PAGE_SIZE,
+      SiteDomain.main,
     );
     posts = result.items;
     total = result.total;
