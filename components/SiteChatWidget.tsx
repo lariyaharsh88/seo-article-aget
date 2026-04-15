@@ -140,7 +140,7 @@ export function SiteChatWidget() {
 
   return (
     <div className="pointer-events-none fixed bottom-0 right-0 z-[100] p-4 sm:p-6">
-      <div className="pointer-events-auto flex flex-col items-end gap-3">
+      <div className="pointer-events-auto flex max-w-[min(100vw-1rem,24rem)] flex-col items-end gap-3">
         {open ? (
           <section
             id="site-chat-panel"

@@ -7,7 +7,8 @@ export type EducationFunnelMedium =
   | "sticky_button"
   | "exit_popup"
   | "inline_article"
-  | "article_footer";
+  | "article_footer"
+  | "header_nav";
 
 const UTM_SOURCE = "education_site";
 const UTM_CAMPAIGN = "education_to_saas";

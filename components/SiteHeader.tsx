@@ -2,15 +2,25 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { buildEducationFunnelUrl } from "@/lib/education-funnel-url";
+import { EDUCATION_HOSTS } from "@/lib/education-hosts";
 import { SITE_LOGO_PATH, SITE_NAME } from "@/lib/seo-site";
 
-const nav = [
+const mainNav = [
   { href: "/", label: "Home" },
   { href: "/ai-seo-tools", label: "AI SEO Tools" },
   { href: "/free-tools/keyword-clustering", label: "Free Tools" },
   { href: "/blog", label: "Blog" },
   { href: "/pricing", label: "Pricing" },
+] as const;
+
+/** Stays on education.rankflowhq.com — avoids middleware redirects to apex. */
+const educationNav = [
+  { href: "/education", label: "Home" },
+  { href: "/news", label: "News" },
+  { href: "/education-news", label: "Aggregator" },
+  { href: "/education-trends", label: "Trends" },
 ] as const;
 
 function MenuIcon() {
@@ -54,14 +64,23 @@ function CloseIcon() {
 
 export function SiteHeader() {
   const [open, setOpen] = useState(false);
+  const [educationSurface, setEducationSurface] = useState(false);
+
+  useEffect(() => {
+    setEducationSurface(EDUCATION_HOSTS.has(window.location.hostname.toLowerCase()));
+  }, []);
+
+  const nav = educationSurface ? educationNav : mainNav;
+  const homeHref = educationSurface ? "/education" : "/";
+  const saasHref = buildEducationFunnelUrl("/seo-agent", "header_nav");
 
   return (
-    <header className="sticky top-0 z-20 border-b border-border bg-background/85 backdrop-blur-md">
+    <header className="sticky top-0 z-40 border-b border-border bg-background/95 pt-[max(0.25rem,env(safe-area-inset-top))] backdrop-blur-md supports-[backdrop-filter]:bg-background/90">
       <div className="relative mx-auto max-w-6xl px-4 md:px-6">
         <div className="flex items-center justify-between gap-3 py-3">
           <Link
-            href="/"
-            className="flex items-center transition-opacity duration-200 hover:opacity-90"
+            href={homeHref}
+            className="flex min-w-0 items-center gap-3 transition-opacity duration-200 hover:opacity-90"
             onClick={() => setOpen(false)}
           >
             <Image
@@ -72,7 +91,18 @@ export function SiteHeader() {
               className="h-11 w-11 shrink-0 object-contain"
               priority
             />
-            <span className="sr-only">{SITE_NAME}</span>
+            <div className="min-w-0 text-left">
+              <span className="font-display text-sm leading-tight text-text-primary sm:text-base">
+                {SITE_NAME}
+              </span>
+              {educationSurface ? (
+                <span className="mt-0.5 block font-mono text-[10px] uppercase tracking-[0.2em] text-accent">
+                  Education
+                </span>
+              ) : (
+                <span className="sr-only">{SITE_NAME}</span>
+              )}
+            </div>
           </Link>
           <button
             type="button"
@@ -97,6 +127,14 @@ export function SiteHeader() {
                 {item.label}
               </Link>
             ))}
+            {educationSurface ? (
+              <a
+                href={saasHref}
+                className="rounded-lg border border-accent/50 bg-accent/15 px-3 py-1.5 font-mono text-xs text-accent transition-all hover:bg-accent/25"
+              >
+                RankFlowHQ SaaS
+              </a>
+            ) : null}
           </nav>
         </div>
         <nav
@@ -117,6 +155,17 @@ export function SiteHeader() {
                 </Link>
               </li>
             ))}
+            {educationSurface ? (
+              <li>
+                <a
+                  href={saasHref}
+                  className="block rounded-lg border border-accent/40 bg-accent/10 px-3 py-2.5 font-mono text-xs text-accent"
+                  onClick={() => setOpen(false)}
+                >
+                  RankFlowHQ SaaS →
+                </a>
+              </li>
+            ) : null}
           </ul>
         </nav>
       </div>

@@ -50,7 +50,7 @@ export function ExitIntentPopup() {
   );
 
   return (
-    <div className="fixed inset-0 z-40 grid place-items-center bg-black/55 px-4">
+    <div className="fixed inset-0 z-[110] grid place-items-center bg-black/55 px-4">
       <div className="w-full max-w-md rounded-2xl border border-border bg-background p-6 shadow-2xl">
         <p className="font-mono text-xs uppercase tracking-[0.16em] text-accent">
           Before you leave

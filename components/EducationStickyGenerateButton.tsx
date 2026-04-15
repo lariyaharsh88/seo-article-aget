@@ -23,7 +23,7 @@ export function EducationStickyGenerateButton() {
   return (
     <Link
       href={href}
-      className="fixed bottom-5 right-5 z-30 rounded-full bg-accent px-4 py-2.5 font-mono text-xs text-background shadow-lg transition-opacity hover:opacity-90 sm:text-sm"
+      className="fixed bottom-20 right-5 z-[60] rounded-full bg-accent px-4 py-2.5 font-mono text-xs text-background shadow-lg transition-opacity hover:opacity-90 sm:text-sm"
     >
       Generate Article
     </Link>
