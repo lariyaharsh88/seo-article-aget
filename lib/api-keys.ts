@@ -23,8 +23,15 @@ export function resolveOpenAIKey(request: Request): string | undefined {
   return process.env.OPENAI_API_KEY?.trim() || undefined;
 }
 
+export function resolveGroqKey(request: Request): string | undefined {
+  const header = request.headers.get("x-groq-key")?.trim();
+  if (header) return header;
+  return process.env.GROQ_API_KEY?.trim() || undefined;
+}
+
 export function serverKeyStatus(): {
   gemini: boolean;
+  groq: boolean;
   tavily: boolean;
   serper: boolean;
   searchConsole: boolean;
@@ -39,6 +46,7 @@ export function serverKeyStatus(): {
 
   return {
     gemini: Boolean(process.env.GEMINI_API_KEY?.trim()),
+    groq: Boolean(process.env.GROQ_API_KEY?.trim()),
     tavily: Boolean(process.env.TAVILY_API_KEY?.trim()),
     serper: Boolean(process.env.SERPER_API_KEY?.trim()),
     searchConsole: gsc,

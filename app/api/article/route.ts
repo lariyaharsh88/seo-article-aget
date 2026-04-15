@@ -1,5 +1,6 @@
-import { resolveGeminiKey } from "@/lib/api-keys";
+import { resolveGeminiKey, resolveGroqKey } from "@/lib/api-keys";
 import { geminiStream } from "@/lib/gemini";
+import { groqStream } from "@/lib/groq";
 import { buildInternalLinkingInstructionBlock } from "@/lib/internal-linking-prompt";
 import { capPromptText } from "@/lib/prompt-truncate";
 import type { Keyword, PipelineInput } from "@/lib/types";
@@ -42,8 +43,19 @@ function numberedLines(queries: string[]): string {
   return queries.map((q, i) => `${i + 1}. ${q}`).join("\n");
 }
 
+function isGeminiLimitError(errorMessage: string): boolean {
+  const msg = errorMessage.toLowerCase();
+  return (
+    msg.includes("rate limited") ||
+    msg.includes("quota") ||
+    msg.includes("resource_exhausted") ||
+    msg.includes("429")
+  );
+}
+
 export async function POST(request: Request) {
   const geminiKey = resolveGeminiKey(request);
+  const groqKey = resolveGroqKey(request);
   if (!geminiKey) {
     return new Response(
       JSON.stringify({ error: "Missing Gemini API key (header or env)." }),
@@ -189,22 +201,54 @@ ${userPrompt}`;
 
   const stream = new ReadableStream({
     async start(controller) {
+      let streamedChars = 0;
+      const streamChunk = (chunk: string) => {
+        streamedChars += chunk.length;
+        controller.enqueue(encodeSseChunk(chunk));
+      };
+
       try {
         await geminiStream(
           fullPrompt,
-          (chunk) => {
-            controller.enqueue(encodeSseChunk(chunk));
-          },
+          streamChunk,
           geminiKey,
           { temperature: 0.7, maxOutputTokens },
         );
         controller.enqueue(encoder.encode("data: [DONE]\n\n"));
       } catch (e) {
         const msg = e instanceof Error ? e.message : "Article stream failed";
-        controller.enqueue(
-          encoder.encode(`data: ${JSON.stringify({ error: msg })}\n\n`),
-        );
-        controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+        const shouldFallbackToGroq =
+          streamedChars === 0 && Boolean(groqKey) && isGeminiLimitError(msg);
+
+        if (shouldFallbackToGroq && groqKey) {
+          try {
+            await groqStream(
+              fullPrompt,
+              streamChunk,
+              groqKey,
+              { temperature: 0.7, maxOutputTokens },
+            );
+            controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+          } catch (groqError) {
+            const groqMessage =
+              groqError instanceof Error
+                ? groqError.message
+                : "Groq fallback stream failed";
+            controller.enqueue(
+              encoder.encode(
+                `data: ${JSON.stringify({
+                  error: `${msg} | Groq fallback failed: ${groqMessage}`,
+                })}\n\n`,
+              ),
+            );
+            controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+          }
+        } else {
+          controller.enqueue(
+            encoder.encode(`data: ${JSON.stringify({ error: msg })}\n\n`),
+          );
+          controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+        }
       } finally {
         controller.close();
       }
