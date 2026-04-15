@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { resolveGroqKey } from "@/lib/api-keys";
 import { buildSiteChatSystemPrompt } from "@/lib/site-chat-prompt";
 
 export const runtime = "nodejs";
@@ -9,6 +10,7 @@ const DEEPSEEK_URL =
   process.env.DEEPSEEK_API_BASE?.trim().replace(/\/$/, "") ||
   "https://api.deepseek.com/v1";
 const DEEPSEEK_CHAT_PATH = `${DEEPSEEK_URL}/chat/completions`;
+const GROQ_CHAT_PATH = "https://api.groq.com/openai/v1/chat/completions";
 
 function sanitizeApiMessage(s: string): string {
   const t = s.replace(/\s+/g, " ").trim();
@@ -45,6 +47,35 @@ function deepSeekUserFacingError(status: number, bodyText: string): string {
   }
   if (status >= 500) {
     return "DeepSeek service error. Try again shortly.";
+  }
+  return "Assistant could not respond. Try again shortly.";
+}
+
+function groqUserFacingError(status: number, bodyText: string): string {
+  const raw = bodyText.trim();
+  if (raw.startsWith("{")) {
+    try {
+      const j = JSON.parse(raw) as {
+        error?: { message?: string } | string;
+        message?: string;
+      };
+      if (typeof j.error === "object" && j.error?.message) {
+        return sanitizeApiMessage(j.error.message);
+      }
+      if (typeof j.error === "string") return sanitizeApiMessage(j.error);
+      if (typeof j.message === "string") return sanitizeApiMessage(j.message);
+    } catch {
+      /* use status fallbacks */
+    }
+  }
+  if (status === 401) {
+    return "Groq API key rejected. Set a valid GROQ_API_KEY on the server.";
+  }
+  if (status === 429) {
+    return "Groq rate limit hit. Try again in a minute.";
+  }
+  if (status >= 500) {
+    return "Groq service error. Try again shortly.";
   }
   return "Assistant could not respond. Try again shortly.";
 }
@@ -108,10 +139,13 @@ function normalizeMessages(raw: unknown): ChatMessage[] | null {
 }
 
 export async function POST(request: Request) {
-  const apiKey = process.env.DEEPSEEK_API_KEY?.trim();
-  if (!apiKey) {
+  const deepseekApiKey = process.env.DEEPSEEK_API_KEY?.trim();
+  const groqApiKey = resolveGroqKey(request);
+  if (!deepseekApiKey && !groqApiKey) {
     return NextResponse.json(
-      { error: "Chat is not configured (missing DEEPSEEK_API_KEY)." },
+      {
+        error: "Chat is not configured (set DEEPSEEK_API_KEY or GROQ_API_KEY).",
+      },
       { status: 503 },
     );
   }
@@ -144,51 +178,112 @@ export async function POST(request: Request) {
     );
   }
 
-  const model =
-    process.env.DEEPSEEK_MODEL?.trim() || "deepseek-chat";
+  const deepseekModel = process.env.DEEPSEEK_MODEL?.trim() || "deepseek-chat";
+  const groqModel =
+    process.env.GROQ_CHAT_MODEL?.trim() ||
+    process.env.GROQ_MODEL?.trim() ||
+    "llama-3.3-70b-versatile";
+  const chatMessages = [
+    { role: "system", content: buildSiteChatSystemPrompt() },
+    ...messages,
+  ];
 
-  let upstream: Response;
-  try {
-    upstream = await fetch(DEEPSEEK_CHAT_PATH, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model,
-        messages: [
-          { role: "system", content: buildSiteChatSystemPrompt() },
-          ...messages,
-        ],
-        stream: true,
-        max_tokens: 1500,
-        temperature: 0.5,
-      }),
-    });
-  } catch (e) {
-    console.error("[site-chat] DeepSeek fetch failed:", e);
+  let deepSeekError: string | null = null;
+  if (deepseekApiKey) {
+    let upstream: Response;
+    try {
+      upstream = await fetch(DEEPSEEK_CHAT_PATH, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${deepseekApiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: deepseekModel,
+          messages: chatMessages,
+          stream: true,
+          max_tokens: 1500,
+          temperature: 0.5,
+        }),
+      });
+    } catch (e) {
+      console.error("[site-chat] DeepSeek fetch failed:", e);
+      deepSeekError =
+        "Could not reach DeepSeek right now. Retrying with fallback model.";
+      upstream = new Response(null, { status: 599 });
+    }
+
+    if (upstream.ok && upstream.body) {
+      return new Response(upstream.body, {
+        headers: {
+          "Content-Type": "text/event-stream; charset=utf-8",
+          "Cache-Control": "no-cache, no-transform",
+          Connection: "keep-alive",
+        },
+      });
+    }
+
+    if (!upstream.ok) {
+      const errText = await upstream.text().catch(() => "");
+      console.error("[site-chat] DeepSeek error:", upstream.status, errText);
+      deepSeekError = deepSeekUserFacingError(upstream.status, errText);
+    } else if (!upstream.body) {
+      deepSeekError = "DeepSeek returned an empty response.";
+    }
+  }
+
+  if (!groqApiKey) {
     return NextResponse.json(
       {
-        error:
-          "Could not reach the chat API. Check deployment network or try again.",
+        error: deepSeekError || "Assistant could not respond. Try again shortly.",
       },
       { status: 502 },
     );
   }
 
-  if (!upstream.ok) {
-    const errText = await upstream.text().catch(() => "");
-    console.error("[site-chat] DeepSeek error:", upstream.status, errText);
-    const error = deepSeekUserFacingError(upstream.status, errText);
+  let groqUpstream: Response;
+  try {
+    groqUpstream = await fetch(GROQ_CHAT_PATH, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${groqApiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: groqModel,
+        messages: chatMessages,
+        stream: true,
+        max_completion_tokens: 1500,
+        temperature: 0.5,
+      }),
+    });
+  } catch (e) {
+    console.error("[site-chat] Groq fetch failed:", e);
+    return NextResponse.json(
+      {
+        error: deepSeekError
+          ? `${deepSeekError} Fallback provider failed too.`
+          : "Could not reach the chat API. Check deployment network or try again.",
+      },
+      { status: 502 },
+    );
+  }
+
+  if (!groqUpstream.ok) {
+    const errText = await groqUpstream.text().catch(() => "");
+    console.error("[site-chat] Groq error:", groqUpstream.status, errText);
+    const fallbackError = groqUserFacingError(groqUpstream.status, errText);
+    const error = deepSeekError
+      ? `${deepSeekError} ${fallbackError}`
+      : fallbackError;
     return NextResponse.json({ error }, { status: 502 });
   }
 
-  if (!upstream.body) {
+  if (!groqUpstream.body) {
     return NextResponse.json({ error: "Empty response" }, { status: 502 });
   }
 
-  return new Response(upstream.body, {
+  return new Response(groqUpstream.body, {
     headers: {
       "Content-Type": "text/event-stream; charset=utf-8",
       "Cache-Control": "no-cache, no-transform",
