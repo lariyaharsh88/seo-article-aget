@@ -7,8 +7,6 @@ import { BLOG_ADMIN_EMAIL } from "@/lib/blog-constants";
 import { DEFAULT_ARTICLE_AUTHOR_NAME } from "@/lib/article-author";
 import { ensureUniqueSlug, slugify } from "@/lib/blog-slug";
 import { prisma } from "@/lib/prisma";
-import { inferSiteDomainFromText } from "@/lib/site-domain-infer";
-import { parseSiteDomainInput } from "@/lib/site-domain-parse";
 import { notifyTelegramNewBlogPost } from "@/lib/telegram-channel";
 
 function sleep(ms: number): Promise<void> {
@@ -54,8 +52,6 @@ export async function POST(request: Request) {
     content?: string;
     published?: boolean;
     authorName?: string;
-    /** Optional: `main` or `education`; otherwise inferred from title/excerpt/content. */
-    siteDomain?: string;
   };
   try {
     body = (await request.json()) as typeof body;
@@ -89,10 +85,6 @@ export async function POST(request: Request) {
       ? body.authorName.trim().slice(0, 120)
       : DEFAULT_ARTICLE_AUTHOR_NAME;
 
-  const resolvedSiteDomain =
-    parseSiteDomainInput(body.siteDomain) ??
-    inferSiteDomainFromText(title, excerpt, content);
-
   let slug = await ensureUniqueSlug(baseSlug);
   for (let attempt = 0; attempt < 8; attempt++) {
     try {
@@ -107,7 +99,7 @@ export async function POST(request: Request) {
                 excerpt,
                 content,
                 published: Boolean(body.published),
-                siteDomain: resolvedSiteDomain,
+                siteDomain: "main",
                 authorEmail: adminEmail!,
                 authorName,
               },

@@ -1,7 +1,8 @@
 import type { MetadataRoute } from "next";
 import { SiteDomain } from "@prisma/client";
-import { getProgrammaticKeywordPages } from "@/lib/programmatic-ai-seo";
 import { prisma } from "@/lib/prisma";
+import { getSeoLandingSlugs } from "@/lib/seo-landing-pages";
+import { listStaticBlogPosts } from "@/lib/static-blog-posts";
 import { getSiteUrl } from "@/lib/site-url";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -38,12 +39,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: now,
       changeFrequency: "weekly",
       priority: 0.9,
-    },
-    {
-      url: `${base}/ai-seo-tools`,
-      lastModified: now,
-      changeFrequency: "weekly",
-      priority: 0.92,
     },
     {
       url: `${base}/keyword-clustering-tool`,
@@ -101,62 +96,52 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
   ];
 
-  const programmatic = getProgrammaticKeywordPages().map((item) => ({
-    url: `${base}/blog/ai-seo/${item.slug}`,
+  const staticBlogPosts = await listStaticBlogPosts();
+  const blogMainUrls: MetadataRoute.Sitemap = [
+    {
+      url: `${base}/blog`,
+      lastModified: now,
+      changeFrequency: "weekly",
+      priority: 0.92,
+    },
+    ...staticBlogPosts.map((p) => ({
+      url: `${base}/blog/${encodeURIComponent(p.slug)}`,
+      lastModified: now,
+      changeFrequency: "weekly" as const,
+      priority: 0.8,
+    })),
+  ];
+
+  const landingSlugs = getSeoLandingSlugs();
+  const landingUrls: MetadataRoute.Sitemap = landingSlugs.map((slug) => ({
+    url: `${base}/${encodeURIComponent(slug)}`,
     lastModified: now,
     changeFrequency: "weekly" as const,
-    priority: 0.78,
+    priority: 0.9,
   }));
 
-  const [mainNews, mainShared] = await Promise.all([
-    prisma.educationNewsArticle.findMany({
-      where: {
-        repurposeStatus: "ready",
-        repurposedSlug: { not: null },
-        siteDomain: SiteDomain.main,
-      },
-      select: { repurposedSlug: true, updatedAt: true },
-      orderBy: { updatedAt: "desc" },
-      take: 5000,
-    }),
-    prisma.sharedArticle.findMany({
+  /** Shared articles generated on main (SaaS); not education news. */
+  let mainShared: { slug: string; updatedAt: Date }[] = [];
+  try {
+    mainShared = await prisma.sharedArticle.findMany({
       where: { siteDomain: SiteDomain.main },
       select: { slug: true, updatedAt: true },
       orderBy: { updatedAt: "desc" },
       take: 5000,
-    }),
-  ]);
+    });
+  } catch {
+    mainShared = [];
+  }
 
-  const newsUrls: MetadataRoute.Sitemap = [
-    {
-      url: `${base}/news`,
-      lastModified: now,
-      changeFrequency: "weekly",
-      priority: 0.82,
-    },
-    {
-      url: `${base}/blogs`,
-      lastModified: now,
-      changeFrequency: "weekly",
-      priority: 0.8,
-    },
-    ...mainNews
-      .filter((r) => Boolean(r.repurposedSlug?.trim()))
-      .map((r) => ({
-        url: `${base}/news/${encodeURIComponent(r.repurposedSlug!.trim())}`,
-        lastModified: r.updatedAt,
-        changeFrequency: "weekly" as const,
-        priority: 0.75,
-      })),
-    ...mainShared.map((r) => ({
-      url: `${base}/article/${encodeURIComponent(r.slug)}`,
-      lastModified: r.updatedAt,
-      changeFrequency: "weekly" as const,
-      priority: 0.7,
-    })),
-  ];
+  const articleUrls: MetadataRoute.Sitemap = mainShared.map((r) => ({
+    url: `${base}/article/${encodeURIComponent(r.slug)}`,
+    lastModified: r.updatedAt,
+    changeFrequency: "weekly" as const,
+    priority: 0.7,
+  }));
 
-  /* Blog posts: `app/blogs/sitemap.xml/route.ts`. See robots.ts. */
+  /* Education news lives on education.rankflowhq.com; do not list /news on main (would 301). */
+  /* Blog mirrors: `app/blogs/sitemap.xml/route.ts` — legacy `/blogs` URLs 308 → `/blog`. */
 
-  return [...routes, ...programmatic, ...newsUrls];
+  return [...routes, ...landingUrls, ...blogMainUrls, ...articleUrls];
 }

@@ -1,15 +1,20 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { JsonLd } from "@/components/JsonLd";
+import { getRequestSiteOrigin } from "@/lib/request-site-origin";
 import { buildPageMetadata } from "@/lib/seo-page";
 
-export const metadata: Metadata = buildPageMetadata({
-  title: "Education Hub",
-  description:
-    "Education tools hub for trends, news aggregation, and archived education coverage.",
-  path: "/education",
-  keywords: ["education tools", "education trends", "education news"],
-});
+export async function generateMetadata(): Promise<Metadata> {
+  const siteOrigin = await getRequestSiteOrigin();
+  return buildPageMetadata({
+    title: "Education Hub",
+    description:
+      "Education tools hub for trends, news aggregation, and archived education coverage.",
+    path: "/education",
+    siteOrigin,
+    keywords: ["education tools", "education trends", "education news"],
+  });
+}
 
 export default function EducationHubPage() {
   const stack = [

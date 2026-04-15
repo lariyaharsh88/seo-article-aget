@@ -6,6 +6,13 @@ If your team is asking how to operationalize GEO without creating parallel workf
 
 To execute quickly, use [RankFlowHQ SEO Agent](/seo-agent), review examples in the [Blog](/blog), and keep navigation anchored from [Home](/).
 
+## Recommended next reads
+
+- [How to Rank in ChatGPT Search](/blog/how-to-rank-in-chatgpt-search)
+- [Best AI SEO Tools 2026](/blog/best-ai-seo-tools-2026)
+- Landing: [Generative engine optimization](/generative-engine-optimization)
+- Tool: [AI SEO Toolkit](/ai-seo-toolkit)
+
 ## What Is Generative Engine Optimization?
 
 Generative engine optimization is the discipline of structuring content so AI systems can reliably interpret and use it in generated responses.

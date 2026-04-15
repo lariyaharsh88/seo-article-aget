@@ -20,19 +20,25 @@ export function generateStaticParams() {
 export function generateMetadata({ params }: Props): Metadata {
   const page = getProgrammaticKeywordBySlug(params.keyword);
   if (!page) {
-    return buildPageMetadata({
-      title: "AI SEO keyword page",
-      description: "AI SEO keyword page not found.",
-      path: `/blog/ai-seo/${params.keyword}`,
-    });
+    return {
+      ...buildPageMetadata({
+        title: "AI SEO keyword page",
+        description: "AI SEO keyword page not found.",
+        path: `/blog/ai-seo/${params.keyword}`,
+      }),
+      robots: { index: false, follow: true },
+    };
   }
 
-  return buildPageMetadata({
-    title: `${page.keyword} | AI SEO Guide`,
-    description: `Learn ${page.keyword} with actionable SEO workflows, tool integration, and a direct path to generate ranked articles in RankFlowHQ.`,
-    path: `/blog/ai-seo/${page.slug}`,
-    keywords: [page.keyword, "AI SEO", "SEO automation", "ChatGPT SEO"],
-  });
+  return {
+    ...buildPageMetadata({
+      title: `${page.keyword} | AI SEO Guide`,
+      description: `Learn ${page.keyword} with actionable SEO workflows, tool integration, and a direct path to generate ranked articles in RankFlowHQ.`,
+      path: `/blog/ai-seo/${page.slug}`,
+      keywords: [page.keyword, "AI SEO", "SEO automation", "ChatGPT SEO"],
+    }),
+    robots: { index: false, follow: true },
+  };
 }
 
 export default function ProgrammaticKeywordPage({ params }: Props) {

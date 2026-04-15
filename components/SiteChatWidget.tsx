@@ -175,7 +175,7 @@ export function SiteChatWidget() {
             >
               {messages.length === 0 && !loading ? (
                 <p className="font-serif text-sm text-text-secondary">
-                  Ask how to use our SEO tools, where to find the blog or news, or
+                  Ask how to use our SEO tools, where to find the blog or pricing, or
                   what each page does. I only cover {SITE_NAME}—not general web
                   search or unrelated topics.
                 </p>

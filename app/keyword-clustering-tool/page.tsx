@@ -4,6 +4,7 @@ import { JsonLd } from "@/components/JsonLd";
 import { KeywordClusteringToolClient } from "@/components/KeywordClusteringToolClient";
 import { buildPageMetadata } from "@/lib/seo-page";
 import { buildToolWebApplicationSchema } from "@/lib/schema-org";
+import { getSiteUrl } from "@/lib/site-url";
 
 const DESC =
   "Keyword clustering tool by RankFlowHQ: group related keywords, map search intent, and build stronger SEO pages from clean topic clusters.";
@@ -26,6 +27,23 @@ const appSchema = buildToolWebApplicationSchema({
   headline: "AI Keyword Clustering Tool",
   description: DESC,
 });
+
+const canonicalUrl = `${getSiteUrl().replace(/\/$/, "")}/keyword-clustering-tool`;
+
+const articleSchema = {
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "@id": `${canonicalUrl}#article`,
+  headline: "Keyword Clustering Tool",
+  description: DESC,
+  author: {
+    "@type": "Organization",
+    name: "RankFlowHQ",
+    url: getSiteUrl().replace(/\/$/, ""),
+  },
+  publisher: { "@type": "Organization", name: "RankFlowHQ" },
+  mainEntityOfPage: { "@type": "WebPage", "@id": `${canonicalUrl}#webpage` },
+} as Record<string, unknown>;
 
 const faqSchema = {
   "@context": "https://schema.org",
@@ -62,6 +80,7 @@ export default function KeywordClusteringToolPage() {
   return (
     <>
       <JsonLd data={appSchema} />
+      <JsonLd data={articleSchema} />
       <JsonLd data={faqSchema} />
       <main className="mx-auto max-w-5xl px-4 py-10 md:px-6">
         <p className="font-mono text-xs">
@@ -96,6 +115,9 @@ export default function KeywordClusteringToolPage() {
           </p>
           <p className="font-serif text-sm text-text-secondary">
             RankFlowHQ focuses on practical clustering, not abstract labels. The output is built for real publishing decisions: what page to create, what headings to include, and what supporting terms to cover. This means your team can move from cluster map to publish-ready brief with less manual sorting.
+          </p>
+          <p className="font-serif text-sm text-text-secondary">
+            A keyword clustering tool is also a communication tool. When SEO, content, and leadership look at the same cluster map, priorities become easier to explain. Instead of debating isolated keywords, teams debate intent groups, page types, and sequencing. That clarity reduces thrash and helps you defend roadmap decisions with a shared view of search demand. Over a quarter, that alignment often matters more than marginal keyword tweaks because it keeps the program focused on pages that can actually move pipeline and revenue.
           </p>
         </section>
 
@@ -156,8 +178,32 @@ export default function KeywordClusteringToolPage() {
           </p>
         </section>
 
+        <section className="mt-8 space-y-4 rounded-2xl border border-border bg-background/60 p-5 md:p-6">
+          <h2 className="font-display text-3xl text-text-primary">Frequently asked questions</h2>
+          <article className="rounded-xl border border-border bg-surface/50 p-4">
+            <h3 className="font-display text-xl text-text-primary">
+              How does this keyword clustering tool group terms?
+            </h3>
+            <p className="mt-2 font-serif text-sm text-text-secondary">
+              It groups terms by lexical and semantic similarity so related keywords are organized into practical intent clusters for one page or topic hub.
+            </p>
+          </article>
+          <article className="rounded-xl border border-border bg-surface/50 p-4">
+            <h3 className="font-display text-xl text-text-primary">Can I export keyword clusters to CSV?</h3>
+            <p className="mt-2 font-serif text-sm text-text-secondary">
+              Yes. After clustering, use the Download CSV button to export cluster and keyword rows.
+            </p>
+          </article>
+          <article className="rounded-xl border border-border bg-surface/50 p-4">
+            <h3 className="font-display text-xl text-text-primary">Do I need to sign up to use this tool?</h3>
+            <p className="mt-2 font-serif text-sm text-text-secondary">
+              No. The tool is available without login.
+            </p>
+          </article>
+        </section>
+
         <section className="mt-8 space-y-4 rounded-2xl border border-accent/30 bg-accent/10 p-5 md:p-6">
-          <h2 className="font-display text-3xl text-text-primary">Use RankFlowHQ CTA</h2>
+          <h2 className="font-display text-3xl text-text-primary">Try RankFlowHQ</h2>
           <p className="font-serif text-sm text-text-secondary">
             Turn your keyword clusters into complete, optimized articles in one workflow.
           </p>
@@ -183,10 +229,10 @@ export default function KeywordClusteringToolPage() {
             Blog
           </Link>
           <Link
-            href="/seo-agent"
+            href="/pages"
             className="rounded-xl border border-border bg-background/60 p-4 font-serif text-sm text-text-secondary transition-colors hover:border-accent"
           >
-            Tool page: SEO Article Pipeline
+            Tools
           </Link>
         </section>
       </main>

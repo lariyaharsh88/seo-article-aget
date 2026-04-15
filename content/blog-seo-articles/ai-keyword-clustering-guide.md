@@ -6,6 +6,13 @@ This AI keyword clustering guide explains how to group keywords by similarity an
 
 If you are currently publishing one page per minor keyword variation, this guide will help you fix that.
 
+## Recommended next reads
+
+- [Best AI SEO Tools 2026](/blog/best-ai-seo-tools-2026)
+- [How to Rank in ChatGPT Search](/blog/how-to-rank-in-chatgpt-search)
+- Landing: [Keyword clustering tool](/keyword-clustering-tool)
+- Tool: [SEO Article Pipeline](/seo-agent)
+
 ## What Is AI Keyword Clustering?
 
 AI keyword clustering is the process of using similarity patterns (semantic, lexical, or SERP-based) to group keywords that should be targeted together.

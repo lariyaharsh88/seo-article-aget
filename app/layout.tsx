@@ -1,8 +1,9 @@
 import type { Metadata, Viewport } from "next";
-import Link from "next/link";
 import { Abril_Fatface, Lora, Space_Mono } from "next/font/google";
 import Script from "next/script";
 import { ExitIntentPopup } from "@/components/ExitIntentPopup";
+import { EducationStickyGenerateButton } from "@/components/EducationStickyGenerateButton";
+import { EducationTrafficCtaBar } from "@/components/EducationTrafficCtaBar";
 import { SiteChatWidget } from "@/components/SiteChatWidget";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
@@ -10,7 +11,6 @@ import { Providers } from "@/app/providers";
 import { StructuredData } from "@/components/StructuredData";
 import { ADSENSE_CLIENT_ID } from "@/lib/adsense-config";
 import {
-  SITE_DESCRIPTION,
   SITE_LOGO_DIMENSIONS,
   SITE_LOGO_PATH,
   SITE_NAME,
@@ -39,6 +39,8 @@ const spaceMono = Space_Mono({
 });
 
 const siteUrl = getSiteUrl();
+const GLOBAL_SEO_DESCRIPTION =
+  "Build SEO articles that rank on Google and ChatGPT using AI.";
 
 /** GA4 Measurement ID — override with NEXT_PUBLIC_GA_MEASUREMENT_ID if needed. */
 const GA_MEASUREMENT_ID =
@@ -56,7 +58,7 @@ export const metadata: Metadata = {
     default: "RankFlowHQ - AI SEO Automation Platform",
     template: `%s · RankFlowHQ - AI SEO Automation Platform`,
   },
-  description: SITE_DESCRIPTION,
+  description: GLOBAL_SEO_DESCRIPTION,
   keywords: [
     "RankFlowHQ",
     "SEO article",
@@ -90,7 +92,7 @@ export const metadata: Metadata = {
     url: siteUrl,
     siteName: SITE_NAME,
     title: SITE_NAME,
-    description: SITE_DESCRIPTION,
+    description: GLOBAL_SEO_DESCRIPTION,
     images: [
       {
         url: SITE_LOGO_PATH,
@@ -103,7 +105,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: SITE_NAME,
-    description: SITE_DESCRIPTION,
+    description: GLOBAL_SEO_DESCRIPTION,
     images: [SITE_LOGO_PATH],
   },
   other: {
@@ -151,22 +153,12 @@ export default function RootLayout({
         <Providers>
           <div className="relative z-10 flex min-h-screen flex-col">
             <SiteHeader />
+            <EducationTrafficCtaBar />
             <div className="flex-1">{children}</div>
             <SiteFooter />
             <SiteChatWidget />
             <ExitIntentPopup />
-            <Link
-              href="/seo-agent"
-              className="fixed bottom-5 left-5 z-30 rounded-full border border-accent/40 bg-accent/10 px-4 py-2 font-mono text-xs text-accent shadow-lg transition-colors hover:bg-accent/20"
-            >
-              Upgrade to full pipeline
-            </Link>
-            <Link
-              href="/seo-agent"
-              className="fixed bottom-5 right-5 z-30 rounded-full bg-accent px-4 py-2 font-mono text-xs text-background shadow-lg transition-opacity hover:opacity-90"
-            >
-              Generate SEO Article
-            </Link>
+            <EducationStickyGenerateButton />
           </div>
         </Providers>
       </body>

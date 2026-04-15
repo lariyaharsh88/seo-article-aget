@@ -1,7 +1,8 @@
-import type { BlogPost } from "@prisma/client";
+import { SiteDomain, type BlogPost } from "@prisma/client";
 import Link from "next/link";
 import { unstable_noStore as noStore } from "next/cache";
 import { notFound } from "next/navigation";
+import { addHeadingIdsToHtml, extractTocFromMarkdown } from "@/lib/blog-toc";
 import { markdownToArticleBodyHtml } from "@/lib/markdown-to-html";
 import {
   ArticleLeadCapture,
@@ -34,7 +35,7 @@ export async function generateMetadata({ params }: Props) {
     const post = await findPublishedBlogPostBySlug(params.slug);
     if (post) {
       await permanentRedirectIfWrongSiteDomain(
-        post.siteDomain,
+        SiteDomain.main,
         `/blogs/${params.slug}`,
       );
       title = post.title;
@@ -74,7 +75,7 @@ export default async function BlogPostPage({ params }: Props) {
   }
 
   await permanentRedirectIfWrongSiteDomain(
-    post.siteDomain,
+    SiteDomain.main,
     `/blogs/${params.slug}`,
   );
 
@@ -83,7 +84,7 @@ export default async function BlogPostPage({ params }: Props) {
     peerPosts = await listPublishedBlogPostsExceptSlug(
       post.slug,
       6,
-      post.siteDomain,
+      SiteDomain.main,
     );
   } catch (e) {
     console.error("[blogs/[slug]] peer posts:", e);
@@ -94,9 +95,10 @@ export default async function BlogPostPage({ params }: Props) {
     { href: "/blogs", label: "Browse legacy blog archive" },
   ] as const;
 
+  const toc = extractTocFromMarkdown(post.content);
   let html: string;
   try {
-    html = markdownToArticleBodyHtml(post.content);
+    html = addHeadingIdsToHtml(markdownToArticleBodyHtml(post.content), toc);
   } catch (parseErr) {
     console.error("[blogs/[slug]] markdown parse error:", parseErr);
     html =
@@ -106,7 +108,7 @@ export default async function BlogPostPage({ params }: Props) {
   return (
     <>
       <JsonLd data={buildBlogPostingSchema(post, { base: siteOrigin })} />
-    <main className="mx-auto min-w-0 max-w-3xl px-4 py-8 sm:py-10 md:px-6">
+    <main className="mx-auto min-w-0 max-w-5xl px-4 py-8 sm:py-10 md:px-6">
       <p className="font-mono text-xs">
         <Link
           href="/blogs"
@@ -115,7 +117,34 @@ export default async function BlogPostPage({ params }: Props) {
           ← All posts
         </Link>
       </p>
-      <article className="mt-6">
+      <article className="mt-6 grid gap-8 lg:grid-cols-[260px_minmax(0,1fr)]">
+        <aside className="lg:sticky lg:top-6 lg:self-start">
+          {toc.length > 0 ? (
+            <nav
+              aria-label="Table of contents"
+              className="rounded-xl border border-border bg-surface/40 p-4"
+            >
+              <h2 className="font-mono text-xs uppercase tracking-wide text-accent">
+                Table of contents
+              </h2>
+              <ul className="mt-3 space-y-2">
+                {toc.map((item) => (
+                  <li key={item.id}>
+                    <a
+                      href={`#${item.id}`}
+                      className={`block font-serif text-sm text-text-secondary hover:text-accent ${
+                        item.level === 3 ? "pl-4 text-xs" : ""
+                      }`}
+                    >
+                      {item.text}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </nav>
+          ) : null}
+        </aside>
+        <div className="min-w-0">
         <p className="font-mono text-xs text-text-muted">
           <time dateTime={post.createdAt.toISOString()}>
             {post.createdAt.toLocaleDateString("en-IN", {
@@ -200,6 +229,7 @@ export default async function BlogPostPage({ params }: Props) {
           articleSlug={post.slug}
           articleTitle={post.title}
         />
+        </div>
       </article>
       <ContentInterlinks
         headingId="more-blog-posts"

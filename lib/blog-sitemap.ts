@@ -16,12 +16,28 @@ export type BlogSitemapRow = { loc: string; lastmod: Date; priority: number };
 
 const STATIC_BLOG_LASTMOD = new Date("2026-01-01T00:00:00.000Z");
 
-/** Published `/blogs` index + each post URL for sitemaps (any origin). */
+/** Published blog index + posts. Main site uses `/blog` only (`/blogs` 308 → `/blog`). */
 export async function getPublishedBlogSitemapRows(
   base: string,
   siteDomain: SiteDomain,
 ): Promise<BlogSitemapRow[]> {
   const b = base.replace(/\/$/, "");
+
+  if (siteDomain === SiteDomain.main) {
+    const staticList = await listStaticBlogPosts();
+    const latest = STATIC_BLOG_LASTMOD;
+    const entries: BlogSitemapRow[] = [
+      { loc: `${b}/blog`, lastmod: latest, priority: 0.82 },
+    ];
+    for (const s of staticList) {
+      entries.push({
+        loc: `${b}/blog/${encodeURIComponent(s.slug)}`,
+        lastmod: latest,
+        priority: 0.72,
+      });
+    }
+    return entries;
+  }
 
   let posts: { slug: string; updatedAt: Date }[] = [];
   try {
@@ -34,17 +50,7 @@ export async function getPublishedBlogSitemapRows(
     posts = [];
   }
 
-  const dbSlugSet = new Set(posts.map((p) => p.slug));
   const times: number[] = posts.map((p) => p.updatedAt.getTime());
-  if (siteDomain === SiteDomain.main) {
-    const staticList = await listStaticBlogPosts();
-    times.push(STATIC_BLOG_LASTMOD.getTime());
-    for (const s of staticList) {
-      if (!dbSlugSet.has(s.slug)) {
-        times.push(STATIC_BLOG_LASTMOD.getTime());
-      }
-    }
-  }
   const latest =
     times.length > 0 ? new Date(Math.max(...times)) : new Date();
 
@@ -62,18 +68,6 @@ export async function getPublishedBlogSitemapRows(
       lastmod: p.updatedAt,
       priority: 0.65,
     });
-  }
-
-  if (siteDomain === SiteDomain.main) {
-    const staticList = await listStaticBlogPosts();
-    for (const s of staticList) {
-      if (dbSlugSet.has(s.slug)) continue;
-      entries.push({
-        loc: `${b}/blogs/${encodeURIComponent(s.slug)}`,
-        lastmod: STATIC_BLOG_LASTMOD,
-        priority: 0.65,
-      });
-    }
   }
 
   return entries;

@@ -2,14 +2,10 @@ import { NextResponse } from "next/server";
 import { slugify } from "@/lib/blog-slug";
 import { markdownToArticleHtml } from "@/lib/markdown-to-html";
 import { prisma } from "@/lib/prisma";
-import { inferSiteDomainFromText } from "@/lib/site-domain-infer";
-import { parseSiteDomainInput } from "@/lib/site-domain-parse";
 
 type Body = {
   title?: string;
   markdown?: string;
-  /** Optional: `main` (AI/SEO) or `education` (education/exams). If omitted, inferred from text. */
-  siteDomain?: string;
 };
 
 export const runtime = "nodejs";
@@ -45,9 +41,6 @@ export async function POST(request: Request) {
   const html = markdownToArticleHtml(markdown);
   const htmlWithWatermark = `${html}\n<p style="margin-top:20px;color:#94a3b8;font-size:12px">Generated with RankFlowHQ</p>`;
 
-  const explicitDomain = parseSiteDomainInput(body.siteDomain);
-  const siteDomain =
-    explicitDomain ?? inferSiteDomainFromText(title, markdown);
   const base = makeBaseSlug(title);
   for (let i = 0; i < 8; i++) {
     const slug = i === 0 ? base : `${base}-${randomSuffix()}`;
@@ -58,13 +51,13 @@ export async function POST(request: Request) {
           title,
           markdown: `${markdown}\n\nGenerated with RankFlowHQ`,
           html: htmlWithWatermark,
-          siteDomain,
+          siteDomain: "main",
         },
       });
       return NextResponse.json({
         slug,
         url: `/article/${slug}`,
-        siteDomain,
+        siteDomain: "main",
       });
     } catch {
       continue;

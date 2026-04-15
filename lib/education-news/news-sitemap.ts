@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { toAbsoluteHttpsImageUrl } from "@/lib/images-cdn";
 import { SITE_NAME } from "@/lib/seo-site";
 import { getSiteUrl } from "@/lib/site-url";
+import { SiteDomain } from "@prisma/client";
 
 const NEWS_NS = "http://www.google.com/schemas/sitemap-news/0.9";
 const IMAGE_NS = "http://www.google.com/schemas/sitemap-image/1.1";
@@ -39,8 +40,10 @@ function plainTextKeywords(markdown: string | null, title: string): string {
  * @see https://developers.google.com/search/docs/advanced/sitemaps/news-sitemap
  * @see https://developers.google.com/search/docs/advanced/sitemaps/image-sitemaps
  */
-export async function buildGoogleNewsSitemapXml(): Promise<string> {
-  const base = getSiteUrl().replace(/\/$/, "");
+export async function buildGoogleNewsSitemapXml(opts?: {
+  baseUrl?: string;
+}): Promise<string> {
+  const base = (opts?.baseUrl ?? getSiteUrl()).replace(/\/$/, "");
   const publicationName =
     process.env.NEWS_SITEMAP_PUBLICATION_NAME?.trim() || `${SITE_NAME} News`;
   const languageRaw =
@@ -64,6 +67,7 @@ export async function buildGoogleNewsSitemapXml(): Promise<string> {
         repurposedSlug: { not: null },
         repurposedMarkdown: { not: null },
         repurposedAt: { not: null },
+        siteDomain: SiteDomain.education,
       },
       select: {
         repurposedSlug: true,

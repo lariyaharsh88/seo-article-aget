@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { SiteDomain } from "@prisma/client";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { JsonLd } from "@/components/JsonLd";
@@ -34,7 +35,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     });
   }
   await permanentRedirectIfWrongSiteDomain(
-    row.siteDomain,
+    SiteDomain.main,
     `/article/${params.slug}`,
   );
   const siteOrigin = await getRequestSiteOrigin();
@@ -64,7 +65,7 @@ export default async function PublicArticlePage({ params }: Props) {
   if (!row) notFound();
 
   await permanentRedirectIfWrongSiteDomain(
-    row.siteDomain,
+    SiteDomain.main,
     `/article/${params.slug}`,
   );
 

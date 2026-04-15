@@ -1,7 +1,6 @@
 export type SeoLandingSlug =
   | "ai-seo-tools"
   | "automate-blog-writing-ai"
-  | "keyword-clustering-tool"
   | "generative-engine-optimization"
   | "ai-content-automation";
 
@@ -60,6 +59,10 @@ export const SEO_LANDING_PAGES: Record<SeoLandingSlug, SeoLandingPageConfig> = {
       "The strongest AI SEO tools also improve collaboration. Writers, editors, and SEO leads should be able to share one repeatable process instead of personal workflows hidden in documents and prompts. RankFlowHQ helps standardize this operating model. With one system, briefs become clearer, drafts become more consistent, and quality review becomes faster. Over time, this compounds into better publishing velocity and stronger content predictability, which is critical when you are targeting multiple keyword clusters each month.",
       "For growth teams, AI SEO tools should also support performance iteration. Every published article creates feedback signals from search impressions, clicks, and engagement behavior. A mature workflow uses those signals to refine future outlines and improve coverage depth. RankFlowHQ is built for that loop: plan with intent, draft with structure, review with SEO checks, and republish with better clarity where needed. This turns SEO content from one-time output into an improving system.",
       "Finally, AI SEO tools are most valuable when they reduce operational drag. If a team spends more time moving data between tools than deciding strategy, output quality suffers and publishing slows down. RankFlowHQ minimizes those handoffs so teams can stay focused on topics, user value, and conversion outcomes. That is the real advantage of a workflow-first AI SEO platform: faster execution, stronger relevance, and higher confidence in every page you publish.",
+      "When you measure ROI from AI SEO tools, look beyond word count. Track time saved on briefs, reduction in revision rounds, and improvements in ranking coverage for priority clusters. The best teams also measure content velocity: how many high-quality pages ship per month without burning out editors. RankFlowHQ is built to lift those operational metrics while keeping quality gates explicit, so automation amplifies good process instead of replacing it.",
+      "Another practical consideration is risk management. AI-generated content can introduce factual drift or overconfident claims if inputs are thin. Strong AI SEO tooling should encourage structured review: verify statistics, confirm product details, and align messaging with compliance requirements. RankFlowHQ supports this by producing organized drafts that are easier to audit section by section, which reduces the chance that a fast draft becomes an expensive correction later.",
+      "If you run a content program across multiple products or regions, AI SEO tools should also help you keep standards consistent. That means shared terminology, consistent heading patterns, and predictable metadata fields so every page feels like part of one brand system. RankFlowHQ supports repeatable execution so teams do not reinvent the workflow for every campaign, which is where most programs lose speed even after adopting AI.",
+      "Lastly, think about integration with your analytics and publishing stack. SEO tools create value when outputs map cleanly to what your team tracks in Search Console, your CMS, and your conversion analytics. RankFlowHQ focuses on producing structured, optimization-ready articles so downstream steps—publishing, tagging, and reporting—become simpler rather than harder.",
     ],
     howItWorks: [
       {
@@ -113,9 +116,9 @@ export const SEO_LANDING_PAGES: Record<SeoLandingSlug, SeoLandingPageConfig> = {
         description: "Read in-depth AI SEO strategy and execution guides.",
       },
       {
-        label: "SEO Article Pipeline",
-        href: "/seo-agent",
-        description: "Open the tool page and generate a production-ready SEO article.",
+        label: "Tools",
+        href: "/pages",
+        description: "Browse core tools, free tools, and landing pages in one directory.",
       },
     ],
     faqs: [
@@ -165,6 +168,12 @@ export const SEO_LANDING_PAGES: Record<SeoLandingSlug, SeoLandingPageConfig> = {
       "Another challenge in AI blog automation is avoiding shallow repetition across your content library. When many posts are generated from similar prompts, pages can compete with each other instead of building authority together. RankFlowHQ reduces this risk through intent-aware planning and structure-first drafting. You can define the role of each article in your cluster and keep coverage distinct, which improves both ranking coherence and internal-linking logic.",
       "As teams grow, blog automation should reduce revision cycles, not increase them. RankFlowHQ produces cleaner first drafts with clearer section hierarchy and better contextual grounding so editors spend less time restructuring. This shortens time to publish and lowers operational overhead for both agencies and in-house teams. It also enables more predictable content calendars because the draft quality floor is higher from the first pass.",
       "If your goal is to automate blog writing with AI while keeping SEO performance stable, the right approach is process discipline. Use automation to accelerate data collection and draft creation, then apply human review for precision and differentiation. RankFlowHQ is designed around exactly that model, helping teams publish faster without losing search quality, brand voice, or strategic control.",
+      "Teams that succeed with blog automation also invest in templates and guardrails. A template defines the shape of a post: problem framing, solution walkthrough, proof points, and next steps. Guardrails define what must never be invented without verification, such as pricing, performance claims, or regulated statements. RankFlowHQ works best when those expectations are explicit in the brief, because the draft becomes a structured starting point rather than a risky shortcut.",
+      "Finally, consider distribution and refresh. Automating drafts is only half the system; the other half is updating winners and pruning losers. RankFlowHQ helps you produce new posts quickly, but your analytics should tell you which clusters deserve expansion, which pages need internal links, and where thin content should be merged. Automation plus disciplined iteration is how blog programs compound instead of decaying into noisy publishing.",
+      "Publishing cadence is easier to sustain when automation removes the slowest step. For many teams, the bottleneck is not writing sentences—it is assembling research, structuring arguments, and packaging SEO fields consistently. RankFlowHQ targets that bottleneck so editors spend time improving narrative quality and conversion copy instead of rebuilding outlines from scratch.",
+      "You should also align automation with your funnel. Top-of-funnel posts need educational depth, while bottom-of-funnel pages need crisp comparisons and proof. RankFlowHQ helps you generate each type with intent-appropriate structure so you do not end up with the same generic shape on every URL. That diversity matters for both rankings and sales outcomes.",
+      "As you scale, keep a simple quality bar: every automated post should answer a real question, cite enough context to be credible, and point readers to a sensible next step. When those basics are non-negotiable, automation increases throughput without turning your blog into interchangeable filler. RankFlowHQ is built to support that standard by combining structured drafting with SEO-aware outputs your team can review quickly.",
+      "You can also use automation to standardize snippets and metadata, which reduces embarrassing inconsistencies in titles and descriptions across large sites. That small gain compounds when you publish dozens of posts per month, because search snippets are part of your brand’s first impression.",
     ],
     howItWorks: [
       {
@@ -218,9 +227,9 @@ export const SEO_LANDING_PAGES: Record<SeoLandingSlug, SeoLandingPageConfig> = {
         description: "Read practical guides on AI-assisted content production.",
       },
       {
-        label: "SEO Article Pipeline",
-        href: "/seo-agent",
-        description: "Use the tool page to automate your next blog draft.",
+        label: "Tools",
+        href: "/pages",
+        description: "Browse pipelines, free tools, and other RankFlowHQ entry points.",
       },
     ],
     faqs: [
@@ -243,106 +252,6 @@ export const SEO_LANDING_PAGES: Record<SeoLandingSlug, SeoLandingPageConfig> = {
         question: "Which teams benefit most from blog automation?",
         answer:
           "Agencies, SaaS marketing teams, and publishers with regular content calendars benefit the most because they repeat similar workflows each week.",
-      },
-    ],
-  },
-  "keyword-clustering-tool": {
-    slug: "keyword-clustering-tool",
-    keyword: "keyword clustering tool",
-    longTailKeywords: [
-      "best keyword clustering tool for SEO strategy",
-      "how to cluster keywords by search intent",
-      "keyword clustering workflow for topic authority",
-    ],
-    metaTitle: "Keyword Clustering Tool for SEO Topic Groups",
-    metaDescription:
-      "Cluster related keywords by intent and build better content outlines. Use RankFlowHQ to map topic groups and create articles that match search demand.",
-    heroHeadline: "Keyword Clustering Tool for Better SEO Topic Maps",
-    heroSubheading:
-      "Group related search terms by intent, prioritize coverage, and turn clusters into structured outlines your content team can execute quickly.",
-    whatIs: [
-      "A keyword clustering tool helps you group terms that should be covered together in one page or content hub. This reduces cannibalization and improves topical clarity. If your team publishes multiple pages around similar queries, clustering is one of the simplest ways to avoid overlap and protect ranking potential.",
-      "RankFlowHQ combines clustering signals with SERP context so each article can target a coherent search theme and satisfy related user questions. Instead of treating every phrase as a separate page, you can map parent and supporting intent into one practical structure. That is especially helpful for long-tail keyword strategies where query variations are common.",
-      "Many teams treat clustering as a spreadsheet task, but execution breaks when there is no connection to drafting. The key advantage of using a clustering tool inside a broader SEO workflow is continuity. Your cluster directly informs headings, section depth, FAQs, and supporting entities in the draft.",
-      "If you are looking for the best keyword clustering tool for SEO strategy, evaluate whether it helps you make publishing decisions. Great clustering is not just labels. It should improve page architecture, internal linking plans, and editorial confidence before writing starts.",
-    ],
-    howItWorks: [
-      {
-        title: "Collect and normalize keywords",
-        description:
-          "Capture main and supporting terms, then normalize variants to avoid duplicate targeting.",
-      },
-      {
-        title: "Map intent and SERP overlap",
-        description:
-          "Use intent clues and SERP relationship signals to place terms into practical clusters.",
-      },
-      {
-        title: "Convert clusters into outlines",
-        description:
-          "Generate section plans and article structure so each cluster becomes a publishable content asset.",
-      },
-    ],
-    benefits: [
-      "Create cleaner content architecture with less keyword overlap and fewer duplicate pages.",
-      "Improve topical authority by covering related intent in one focused article structure.",
-      "Build briefs and outlines faster for writers and editors with clearer section intent.",
-      "Connect cluster strategy directly to production-ready article drafts in one workflow.",
-      "Support long-tail expansion by mapping semantically related variants into usable groups.",
-      "Improve internal linking decisions across hubs, supporting pages, and comparison content.",
-    ],
-    tool: {
-      title: "Use the pipeline with clustered topics",
-      description:
-        "Run clustered keyword themes through the article workflow and generate long-form content with SEO outputs.",
-      href: "/seo-agent",
-      ctaLabel: "Generate Clustered Article",
-    },
-    cta: {
-      headline: "Turn clusters into ranking pages",
-      text: "Move from grouped keywords to complete SEO content with RankFlowHQ's end-to-end workflow.",
-      primaryLabel: "Try RankFlowHQ",
-      primaryHref: "/seo-agent",
-      secondaryLabel: "See All Tools",
-      secondaryHref: "/",
-    },
-    internalLinks: [
-      {
-        label: "Homepage",
-        href: "/",
-        description: "See the full RankFlowHQ platform and workflow overview.",
-      },
-      {
-        label: "Blog",
-        href: "/blog",
-        description: "Read keyword strategy and clustering implementation guides.",
-      },
-      {
-        label: "SEO Article Pipeline",
-        href: "/seo-agent",
-        description: "Use cluster outputs directly in article generation.",
-      },
-    ],
-    faqs: [
-      {
-        question: "Why is keyword clustering important for SEO?",
-        answer:
-          "It helps you align related queries to the right page. This prevents cannibalization and improves topical relevance.",
-      },
-      {
-        question: "How do I cluster keywords by intent?",
-        answer:
-          "Group terms by user goal first, then validate with SERP overlap. Queries with similar result patterns often belong in one page.",
-      },
-      {
-        question: "Can keyword clustering improve internal linking?",
-        answer:
-          "Yes. Once clusters are defined, it becomes easier to plan hub pages, supporting pages, and logical internal links between them.",
-      },
-      {
-        question: "Does RankFlowHQ use clusters in article creation?",
-        answer:
-          "Yes. Cluster-aware inputs can guide outline structure and section coverage in the article pipeline.",
       },
     ],
   },
@@ -370,6 +279,13 @@ export const SEO_LANDING_PAGES: Record<SeoLandingSlug, SeoLandingPageConfig> = {
       "For SaaS teams, GEO and SEO alignment is especially important in middle- and bottom-funnel content. Buyers comparing tools want direct answers, honest tradeoffs, and implementation clarity. RankFlowHQ helps teams generate drafts that preserve this intent while keeping technical readability high. When your content can be both ranked and cited, you increase discoverability across search listings and conversational answer environments.",
       "Many teams treat GEO as a separate channel, but the better model is shared content architecture. One high-quality page should serve multiple discovery surfaces with minimal fragmentation. RankFlowHQ enables this by unifying intent inputs, structure planning, and optimization review in one workflow. The result is less duplication, better maintenance, and a stronger foundation for programmatic scaling across related keyword clusters.",
       "If you want long-term advantage in generative engine optimization, focus on repeatability. Build pages with consistent formatting patterns, answer-first sectioning, and transparent claims. These habits improve both human comprehension and machine extraction quality over time. RankFlowHQ gives teams the operational system to apply these standards consistently, so GEO becomes a measurable process rather than an ad hoc experiment.",
+      "GEO also rewards topical completeness. Partial answers may be ignored or blended with competitor content in synthesized responses. That is why depth still matters: cover objections, edge cases, and implementation steps where your audience actually gets stuck. RankFlowHQ helps teams build that depth with structured outlines and research-aware drafting so pages feel complete to humans and less ambiguous to retrieval systems.",
+      "Another GEO habit is explicit differentiation. When many brands describe the same category, answer engines may summarize common points without naming a winner. Your page should state what you solve, for whom, and why your approach differs, using concrete scenarios. RankFlowHQ supports clearer differentiation by anchoring drafts to intent inputs and evidence, which reduces generic filler that sounds fluent but says little.",
+      "Finally, measure GEO-adjacent outcomes alongside classic SEO metrics. Watch branded mentions, referral quality from AI surfaces where visible, and engagement on pages that answer high-intent questions. RankFlowHQ helps you ship those pages faster with consistent structure, so your team can iterate on substance instead of fighting formatting debt.",
+      "GEO also intersects with trust and reputation. Pages that are thin, outdated, or internally inconsistent are less likely to be cited as authoritative. A disciplined publishing workflow that refreshes evidence and tightens structure is therefore a GEO advantage, not just an SEO chore. RankFlowHQ helps teams produce structured drafts so updates are easier to apply consistently across large content libraries.",
+      "For teams new to GEO, start with a small set of flagship pages: your category definition, your comparison content, and your implementation guides. Improve clarity and sourcing there first, then expand the same standards across clusters. RankFlowHQ supports this rollout pattern by making it faster to regenerate improved sections while preserving a stable outline and internal linking strategy.",
+      "Over time, GEO rewards brands that publish fewer, stronger pages instead of many shallow ones. That does not mean low volume—it means each URL should earn its existence with clear utility. RankFlowHQ helps teams maintain that standard at scale by keeping outlines tight, claims grounded, and sections purpose-built for both readers and retrieval.",
+      "If you are comparing channels, treat GEO as a layer on top of SEO, not a replacement for product quality or customer proof. Strong answers and strong rankings both come from substantive pages that reflect real expertise, and RankFlowHQ helps you produce those pages with consistent structure and faster iteration cycles.",
     ],
     howItWorks: [
       {
@@ -423,9 +339,9 @@ export const SEO_LANDING_PAGES: Record<SeoLandingSlug, SeoLandingPageConfig> = {
         description: "Read deeper GEO implementation guides and examples.",
       },
       {
-        label: "AI SEO Toolkit",
-        href: "/ai-seo-toolkit",
-        description: "Open the tool page for GEO-focused optimization workflows.",
+        label: "Tools",
+        href: "/pages",
+        description: "Browse all RankFlowHQ tools and entry points from one directory.",
       },
     ],
     faqs: [
@@ -475,6 +391,15 @@ export const SEO_LANDING_PAGES: Record<SeoLandingSlug, SeoLandingPageConfig> = {
       "Another important advantage of automation is predictability. Content teams often struggle with uneven throughput because manual prep work varies by topic complexity. RankFlowHQ reduces this variability by standardizing research and draft generation. Your team can commit to a publishing cadence with higher confidence, even when managing multiple campaign themes at once.",
       "For agencies, AI content automation helps maintain quality across clients without running separate fragmented systems for every account. RankFlowHQ supports this by offering one repeatable operational framework that can adapt to different industries and intents. This enables better margins because teams spend less time on setup and more time on strategic value.",
       "If your growth plan relies on content compounding over time, AI content automation should be treated as a system, not a shortcut. The objective is consistent, high-quality output that strengthens topical authority month after month. RankFlowHQ is built around this operating model, helping teams automate repetitive tasks while preserving quality control and SEO performance standards.",
+      "Security and governance matter too. Automation should not bypass your brand guidelines or legal review when those are required. The right workflow routes drafts through the same approvals as human-written content, but faster because the first pass is already structured. RankFlowHQ supports this by producing predictable section order, explicit claims, and metadata that stakeholders can review without reconstructing the entire article from scratch.",
+      "Automation also helps with localization and variant creation when your team must adapt one core article for multiple segments. Instead of rewriting from zero, teams can regenerate sections with adjusted constraints while preserving the overall outline and internal linking strategy. RankFlowHQ keeps the workflow unified so variants stay aligned with the parent topic plan instead of drifting into conflicting messaging across URLs.",
+      "Finally, think about maintenance. Automated production increases publishing volume, which increases the need for update cadences. Plan quarterly reviews for high-traffic pages, refresh statistics, and tighten internal links as new clusters go live. RankFlowHQ accelerates creation, but your content system stays healthy when iteration is part of the operating model, not an afterthought.",
+      "Budgeting becomes easier with automation because costs become more predictable. Instead of estimating writer hours for every outline and draft from scratch, teams can standardize inputs and expected review time. RankFlowHQ reduces variability in the first draft stage, which makes quarterly planning and contractor staffing more realistic.",
+      "Training also becomes simpler. New writers can follow the same workflow, using the same brief structure and SEO outputs, which shortens onboarding. RankFlowHQ acts as the shared operating system for content production so expertise scales across the team instead of living in individual documents and ad hoc prompts.",
+      "Risk-aware teams also document what automation is allowed to do: generate drafts, propose titles, summarize research—but not invent customer stories or regulated claims without verification. RankFlowHQ supports this separation by producing drafts that are easy to scan for policy checks, which is essential for finance, health-adjacent, and enterprise software categories where accuracy is non-negotiable.",
+      "When automation is adopted broadly, leadership should also track content debt: pages that need refresh, thin sections that need expansion, and outdated examples that need replacement. RankFlowHQ increases output, but the healthiest programs pair higher output with a steady maintenance cadence so quality compounds instead of decaying.",
+      "You can also measure automation success by reviewer time: if editors spend less time fixing structure and more time improving differentiation, the system is working. RankFlowHQ aims to shift effort toward higher-value edits while keeping SEO packaging consistent across the library.",
+      "In short, AI content automation is most valuable when it makes great content easier to ship, not when it encourages publishing for its own sake.",
     ],
     howItWorks: [
       {
@@ -528,9 +453,9 @@ export const SEO_LANDING_PAGES: Record<SeoLandingSlug, SeoLandingPageConfig> = {
         description: "Learn implementation patterns for scalable content ops.",
       },
       {
-        label: "SEO Article Pipeline",
-        href: "/seo-agent",
-        description: "Use the core tool page to automate article production.",
+        label: "Tools",
+        href: "/pages",
+        description: "Explore pipelines, free tools, and landing pages in one place.",
       },
     ],
     faqs: [

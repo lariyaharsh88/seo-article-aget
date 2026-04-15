@@ -6,6 +6,13 @@ This guide explains how to automate blog writing with AI in a way that protects 
 
 If you want an execution-first workflow, start with [RankFlowHQ SEO Agent](/seo-agent), use guides in the [Blog](/blog), and keep core navigation from [Home](/).
 
+## Recommended next reads
+
+- [AI Keyword Clustering Guide](/blog/ai-keyword-clustering-guide)
+- [Generative Engine Optimization Guide](/blog/generative-engine-optimization-guide)
+- Landing: [Automate blog writing with AI](/automate-blog-writing-ai)
+- Tool: [SEO Article Pipeline](/seo-agent)
+
 ## What "Automate Blog Writing AI" Actually Means
 
 Automation should handle repetitive production steps:

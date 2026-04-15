@@ -13,6 +13,13 @@ In this guide, you will learn a practical framework to improve your visibility i
 
 If you want to apply this workflow quickly, start with the [RankFlowHQ SEO article pipeline](/seo-agent), then use the [AI SEO Toolkit](/ai-seo-toolkit) to test visibility and prompt patterns.
 
+## Recommended next reads
+
+- [Generative Engine Optimization Guide](/blog/generative-engine-optimization-guide)
+- [Best AI SEO Tools 2026](/blog/best-ai-seo-tools-2026)
+- Landing: [Generative engine optimization](/generative-engine-optimization)
+- Tool: [SEO Article Pipeline](/seo-agent)
+
 ## What "Ranking in ChatGPT Search" Actually Means
 
 In Google search, ranking usually means appearing in top positions for a query. In ChatGPT search experiences, ranking is more layered:

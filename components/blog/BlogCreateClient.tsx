@@ -1,7 +1,6 @@
 "use client";
 
 import type { BlogPost } from "@prisma/client";
-import { SiteDomain } from "@prisma/client";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
@@ -45,9 +44,9 @@ function postFromApiJson(data: unknown): BlogPost {
   const o = data as Record<string, unknown>;
   const siteDomainRaw = o.siteDomain;
   const siteDomain =
-    siteDomainRaw === SiteDomain.education || siteDomainRaw === SiteDomain.main
+    siteDomainRaw === "education" || siteDomainRaw === "main"
       ? siteDomainRaw
-      : SiteDomain.main;
+      : "main";
   return {
     id: String(o.id ?? ""),
     slug: String(o.slug ?? ""),
@@ -89,10 +88,6 @@ export function BlogCreateClient({ initialPosts, loadError }: Props) {
   const [pubSlug, setPubSlug] = useState("");
   const [pubExcerpt, setPubExcerpt] = useState("");
   const [published, setPublished] = useState(true);
-  /** Empty = let API infer from title/excerpt/content. */
-  const [publishSiteDomain, setPublishSiteDomain] = useState<
-    "" | SiteDomain
-  >("");
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   /** Blocks double-submit before React re-renders `saving`. */
@@ -125,7 +120,6 @@ export function BlogCreateClient({ initialPosts, loadError }: Props) {
       excerpt?: string;
       content: string;
       published: boolean;
-      siteDomain?: SiteDomain;
     }): Promise<BlogPost> => {
       const body = JSON.stringify({
         title: payload.title.trim(),
@@ -133,7 +127,6 @@ export function BlogCreateClient({ initialPosts, loadError }: Props) {
         excerpt: payload.excerpt?.trim() || undefined,
         content: payload.content,
         published: payload.published,
-        ...(payload.siteDomain ? { siteDomain: payload.siteDomain } : {}),
       });
 
       const maxAttempts = 4;
@@ -321,7 +314,6 @@ export function BlogCreateClient({ initialPosts, loadError }: Props) {
             excerpt: excerpt || undefined,
             content: result.article,
             published,
-            ...(publishSiteDomain ? { siteDomain: publishSiteDomain } : {}),
           });
           setPosts((prev) => {
             const rest = prev.filter((p) => p.id !== saved.id);
@@ -362,7 +354,6 @@ export function BlogCreateClient({ initialPosts, loadError }: Props) {
     pushLog,
     postBlogToApi,
     published,
-    publishSiteDomain,
     router,
   ]);
 
@@ -383,7 +374,6 @@ export function BlogCreateClient({ initialPosts, loadError }: Props) {
         excerpt: pubExcerpt.trim() || undefined,
         content: article,
         published,
-        ...(publishSiteDomain ? { siteDomain: publishSiteDomain } : {}),
       });
       setPosts((prev) => {
         const rest = prev.filter((p) => p.id !== saved.id);
@@ -587,31 +577,6 @@ export function BlogCreateClient({ initialPosts, loadError }: Props) {
                   onChange={(e) => setPubExcerpt(e.target.value)}
                 />
               </label>
-              <label className="block space-y-2">
-                <span className="font-mono text-xs uppercase text-text-muted">
-                  Site domain
-                </span>
-                <select
-                  className="w-full max-w-md rounded-lg border border-border bg-background px-3 py-2 font-mono text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-accent"
-                  value={publishSiteDomain}
-                  onChange={(e) => {
-                    const v = e.target.value;
-                    setPublishSiteDomain(
-                      v === SiteDomain.main || v === SiteDomain.education
-                        ? v
-                        : "",
-                    );
-                  }}
-                >
-                  <option value="">Auto (infer from content)</option>
-                  <option value={SiteDomain.main}>
-                    Main — AI / SEO product
-                  </option>
-                  <option value={SiteDomain.education}>
-                    Education — exams and schools
-                  </option>
-                </select>
-              </label>
               <label className="flex cursor-pointer items-center gap-3 font-mono text-xs text-text-secondary">
                 <input
                   type="checkbox"
@@ -659,7 +624,7 @@ export function BlogCreateClient({ initialPosts, loadError }: Props) {
                     )}
                   </div>
                   <span className="mt-1 block font-mono text-[11px] text-text-muted break-all">
-                    /blogs/{p.slug} · {p.siteDomain}
+                    /blogs/{p.slug}
                   </span>
                 </div>
                 {p.published && (

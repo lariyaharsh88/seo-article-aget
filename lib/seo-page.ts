@@ -45,7 +45,8 @@ export function buildPageMetadata(opts: {
     title: opts.title,
     description: opts.description,
     ...(opts.keywords?.length ? { keywords: opts.keywords } : {}),
-    alternates: { canonical: path },
+    /** Absolute URL so education.rankflowhq.com pages are not canonicalized to apex via `metadataBase`. */
+    alternates: { canonical: url },
     openGraph: {
       title: opts.title,
       description: opts.description,

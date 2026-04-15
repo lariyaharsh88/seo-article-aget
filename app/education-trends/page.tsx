@@ -13,6 +13,7 @@ import {
   type EducationTrendRow,
   type ExploreQueryRow,
 } from "@/lib/education-trends";
+import { getRequestSiteOrigin } from "@/lib/request-site-origin";
 import { buildPageMetadata } from "@/lib/seo-page";
 import { buildToolWebApplicationSchema } from "@/lib/schema-org";
 import { getToolExplainerMarkdown } from "@/lib/tool-explainer";
@@ -27,18 +28,22 @@ const educationTrendsSchema = buildToolWebApplicationSchema({
   description: ED_TRENDS_DESC,
 });
 
-export const metadata: Metadata = buildPageMetadata({
-  title: "Education Google Trends — Top & Rising Queries",
-  description: ED_TRENDS_DESC,
-  path: "/education-trends",
-  keywords: [
-    "education Google Trends",
-    "keyword research India",
-    "rising searches",
-    "interest over time",
-    "education keywords",
-  ],
-});
+export async function generateMetadata(): Promise<Metadata> {
+  const siteOrigin = await getRequestSiteOrigin();
+  return buildPageMetadata({
+    title: "Education Google Trends — Top & Rising Queries",
+    description: ED_TRENDS_DESC,
+    path: "/education-trends",
+    siteOrigin,
+    keywords: [
+      "education Google Trends",
+      "keyword research India",
+      "rising searches",
+      "interest over time",
+      "education keywords",
+    ],
+  });
+}
 
 const GEO_PRESETS = ["IN", "US", "GB", "AU", "CA"] as const;
 

@@ -37,6 +37,39 @@ export async function middleware(request: NextRequest) {
     return NextResponse.rewrite(url);
   }
 
+  /**
+   * SaaS marketing, tools, and programmatic pages live on apex only.
+   * Prevents duplicate indexing of the same HTML on education.rankflowhq.com.
+   */
+  if (isEducationHost) {
+    const mainOnlyPaths = new Set([
+      "/seo-agent",
+      "/ai-seo-tools",
+      "/automate-blog-writing-ai",
+      "/generative-engine-optimization",
+      "/ai-content-automation",
+      "/keyword-clustering-tool",
+      "/repurpose-url",
+      "/ai-seo-toolkit",
+      "/off-page-seo",
+      "/pricing",
+      "/about",
+      "/pages",
+      "/privacy",
+      "/terms",
+    ]);
+    if (
+      mainOnlyPaths.has(path) ||
+      path.startsWith("/free-tools/") ||
+      path.startsWith("/blog/ai-seo/")
+    ) {
+      const url = request.nextUrl.clone();
+      url.hostname = CANONICAL_HOST;
+      url.protocol = "https:";
+      return NextResponse.redirect(url, 308);
+    }
+  }
+
   if (isEducationHost && (path === "/archive/news" || path.startsWith("/archive/news/"))) {
     const url = request.nextUrl.clone();
     url.pathname = path.replace(/^\/archive\/news/, "/news");
@@ -49,16 +82,58 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url, 308);
   }
 
+  if (
+    isEducationHost &&
+    (path === "/blogs" ||
+      path.startsWith("/blogs/") ||
+      path === "/blog" ||
+      path.startsWith("/blog/") ||
+      path === "/article" ||
+      path.startsWith("/article/") ||
+      path === "/share" ||
+      path.startsWith("/share/"))
+  ) {
+    const url = request.nextUrl.clone();
+    url.hostname = CANONICAL_HOST;
+    url.protocol = "https:";
+    return NextResponse.redirect(url, 308);
+  }
+
   if (!isEducationHost) {
+    /** Canonical blog URLs: `/blog` is primary; `/blogs` mirrors the same content. */
+    if (path === "/blogs" || path.startsWith("/blogs/")) {
+      const url = request.nextUrl.clone();
+      url.pathname = path.replace(/^\/blogs/, "/blog");
+      return NextResponse.redirect(url, 308);
+    }
+
     if (
-      path === "/education-trends" ||
+      path === "/news" ||
+      path.startsWith("/news/") ||
+      path === "/education" ||
       path.startsWith("/education/") ||
+      path === "/education-news" ||
+      path.startsWith("/education-news/") ||
+      path === "/education-trends" ||
+      path.startsWith("/education-trends/") ||
       path.startsWith("/exam/") ||
-      path.startsWith("/nda/")
+      path.startsWith("/results/") ||
+      path.startsWith("/nda/") ||
+      path.startsWith("/api/education-news") ||
+      path.startsWith("/api/education-trends")
     ) {
       const url = request.nextUrl.clone();
-      url.pathname = "/archive/education";
-      return NextResponse.redirect(url, 308);
+      url.hostname = "education.rankflowhq.com";
+      url.protocol = "https:";
+      return NextResponse.redirect(url, 301);
+    }
+    if (
+      path === "/archive/news" ||
+      path.startsWith("/archive/news/") ||
+      path === "/archive/education" ||
+      path.startsWith("/archive/education/")
+    ) {
+      return new NextResponse("Gone", { status: 410 });
     }
   }
 

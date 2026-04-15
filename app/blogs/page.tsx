@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { SiteDomain } from "@prisma/client";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { JsonLd } from "@/components/JsonLd";
@@ -10,7 +11,6 @@ import { ToolExplainerSection } from "@/components/ToolExplainerSection";
 import { buildBlogsIndexSchema } from "@/lib/schema-org";
 import { getToolExplainerMarkdown } from "@/lib/tool-explainer";
 import { getRequestSiteOrigin } from "@/lib/request-site-origin";
-import { getRequestSiteDomain } from "@/lib/site-domain";
 
 type Props = { searchParams: { page?: string | string[] } };
 
@@ -35,7 +35,6 @@ export const runtime = "nodejs";
 export const maxDuration = 60;
 
 export default async function BlogsIndexPage({ searchParams }: Props) {
-  const siteDomain = await getRequestSiteDomain();
   const siteOrigin = await getRequestSiteOrigin();
   const markdown = await getToolExplainerMarkdown("blogs");
   const requestedPage = parseListPageParam(searchParams?.page);
@@ -48,7 +47,7 @@ export default async function BlogsIndexPage({ searchParams }: Props) {
     const result = await getCachedPublishedBlogPostsPage(
       requestedPage,
       LIST_PAGE_SIZE,
-      siteDomain,
+      SiteDomain.main,
     );
     posts = result.items;
     total = result.total;

@@ -50,6 +50,17 @@ export function SiteFooter() {
           </ul>
         </nav>
       </div>
+      <div className="border-t border-border/60 bg-surface/40 px-4 py-3">
+        <p className="mx-auto max-w-6xl text-center font-mono text-xs text-text-secondary">
+          Generate articles using AI{" "}
+          <Link
+            href="https://rankflowhq.com"
+            className="text-accent underline underline-offset-2 transition-opacity hover:opacity-80"
+          >
+            → RankFlowHQ
+          </Link>
+        </p>
+      </div>
       <div className="border-t border-border/60 py-4 text-center font-mono text-[10px] text-text-muted">
         © {year} {SITE_NAME}. All rights reserved.
       </div>

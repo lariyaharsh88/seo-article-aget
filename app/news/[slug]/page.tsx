@@ -21,6 +21,7 @@ import {
 import { getRequestSiteOrigin } from "@/lib/request-site-origin";
 import { buildRepurposedNewsArticleSchema } from "@/lib/schema-org";
 import { SITE_NAME } from "@/lib/seo-site";
+import { buildEducationFunnelUrl } from "@/lib/education-funnel-url";
 import { buildPageMetadata } from "@/lib/seo-page";
 import { permanentRedirectIfWrongSiteDomain } from "@/lib/site-domain-redirect";
 
@@ -121,6 +122,17 @@ export default async function RepurposedNewsArticlePage({ params }: Props) {
       ? new Date(issuedParsedMs).toISOString()
       : undefined;
 
+  const funnelSeoAgent = buildEducationFunnelUrl(
+    "/seo-agent",
+    "inline_article",
+    currentSlug,
+  );
+  const funnelFooter = buildEducationFunnelUrl(
+    "/seo-agent",
+    "article_footer",
+    currentSlug,
+  );
+
   return (
     <>
       <JsonLd data={buildRepurposedNewsArticleSchema(post, { base: siteOrigin })} />
@@ -203,6 +215,17 @@ export default async function RepurposedNewsArticlePage({ params }: Props) {
             ) : null}
           </p>
           <ArticleLeadCtaStrip className="mt-4" />
+          <section className="mt-6 rounded-2xl border border-accent/35 bg-accent/10 px-4 py-4 sm:px-5">
+            <p className="font-serif text-sm leading-relaxed text-text-secondary">
+              Turn this topic into a ranked blog →{" "}
+              <Link
+                href={funnelSeoAgent}
+                className="font-mono text-accent underline-offset-2 transition-colors hover:underline"
+              >
+                Try RankFlowHQ
+              </Link>
+            </p>
+          </section>
           <div
             className="blog-prose mt-10 overflow-x-auto font-serif text-text-primary"
             dangerouslySetInnerHTML={{ __html: html }}
@@ -235,6 +258,39 @@ export default async function RepurposedNewsArticlePage({ params }: Props) {
           seeAllHref="/news"
           seeAllLabel="All news"
         />
+        <section className="mt-8 rounded-2xl border border-accent/30 bg-accent/10 p-6">
+          <h2 className="font-display text-2xl text-text-primary">
+            Turn this topic into a ranked blog
+          </h2>
+          <p className="mt-2 font-serif text-sm text-text-secondary">
+            Use RankFlowHQ on the main site to go from keyword and SERP intent
+            to publish-ready content with metadata, structure, and optimization
+            checks.
+          </p>
+          <Link
+            href={funnelFooter}
+            className="mt-4 inline-block rounded-lg bg-accent px-4 py-2 font-mono text-sm text-background transition-opacity hover:opacity-90"
+          >
+            Try RankFlowHQ
+          </Link>
+          <div className="mt-5 border-t border-border/70 pt-4">
+            <h3 className="font-mono text-xs uppercase tracking-[0.16em] text-accent">
+              Related education articles
+            </h3>
+            <ul className="mt-3 space-y-2 font-serif text-sm text-text-secondary">
+              {peerNews.slice(0, 3).map((n) => (
+                <li key={n.id}>
+                  <Link
+                    href={`/news/${encodeURIComponent(n.slug)}`}
+                    className="text-accent hover:underline"
+                  >
+                    {n.title}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
       </main>
     </>
   );

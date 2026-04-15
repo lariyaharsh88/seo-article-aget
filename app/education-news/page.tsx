@@ -1,3 +1,4 @@
+import { SiteDomain } from "@prisma/client";
 import type { Metadata } from "next";
 import { EducationNewsDashboard } from "@/components/education-news/NewsDashboard";
 import { JsonLd } from "@/components/JsonLd";
@@ -9,6 +10,7 @@ import {
 import type { NewsArticle } from "@/lib/education-news/types";
 import type { StoredEducationNewsListItem } from "@/lib/education-news/stored-types";
 import { prisma } from "@/lib/prisma";
+import { getRequestSiteOrigin } from "@/lib/request-site-origin";
 import { buildPageMetadata } from "@/lib/seo-page";
 import { buildToolWebApplicationSchema } from "@/lib/schema-org";
 import { getToolExplainerMarkdown } from "@/lib/tool-explainer";
@@ -29,18 +31,22 @@ const educationNewsSchema = buildToolWebApplicationSchema({
   description: ED_NEWS_DESC,
 });
 
-export const metadata: Metadata = buildPageMetadata({
-  title: "Education News Digest — Today’s Headlines",
-  description: ED_NEWS_DESC,
-  path: "/education-news",
-  keywords: [
-    "education news",
-    "India education headlines",
-    "exam news",
-    "university news",
-    "education journalism",
-  ],
-});
+export async function generateMetadata(): Promise<Metadata> {
+  const siteOrigin = await getRequestSiteOrigin();
+  return buildPageMetadata({
+    title: "Education News Digest — Today’s Headlines",
+    description: ED_NEWS_DESC,
+    path: "/education-news",
+    siteOrigin,
+    keywords: [
+      "education news",
+      "India education headlines",
+      "exam news",
+      "university news",
+      "education journalism",
+    ],
+  });
+}
 
 export default async function EducationNewsPage() {
   const explainerMd = await getToolExplainerMarkdown("education-news");
@@ -51,6 +57,7 @@ export default async function EducationNewsPage() {
 
   try {
     const rows = await prisma.educationNewsArticle.findMany({
+      where: { siteDomain: SiteDomain.education },
       orderBy: { updatedAt: "desc" },
       take: 120,
       select: {

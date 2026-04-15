@@ -6,6 +6,13 @@ This guide is for teams that want practical evaluation criteria, realistic deplo
 
 If you want the shortest path to implementation, start with [RankFlowHQ](/seo-agent), review workflow examples in the [Blog](/blog), and keep your tool discovery anchored to the [Homepage](/).
 
+## Recommended next reads
+
+- [How to Rank in ChatGPT Search](/blog/how-to-rank-in-chatgpt-search)
+- [Automate Blog Writing AI](/blog/automate-blog-writing-ai)
+- Landing: [AI SEO tools](/ai-seo-tools)
+- Tool: [Keyword Clustering Tool](/keyword-clustering-tool)
+
 ## What "Best AI SEO Tools 2026" Really Means
 
 The best AI SEO tools in 2026 are not just text generators. They are systems that improve decision quality before writing and improve consistency after writing.

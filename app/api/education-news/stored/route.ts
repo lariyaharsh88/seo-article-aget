@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { SiteDomain } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
@@ -14,6 +15,7 @@ export async function GET(request: Request) {
       where: { id },
       select: {
         id: true,
+        siteDomain: true,
         url: true,
         title: true,
         source: true,
@@ -29,6 +31,9 @@ export async function GET(request: Request) {
     if (!row) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
+    if (row.siteDomain !== SiteDomain.education) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
     const slug = row.repurposedSlug?.trim();
     return NextResponse.json({
       ...row,
@@ -37,6 +42,7 @@ export async function GET(request: Request) {
   }
 
   const rows = await prisma.educationNewsArticle.findMany({
+    where: { siteDomain: SiteDomain.education },
     orderBy: { updatedAt: "desc" },
     take: 50,
     select: {

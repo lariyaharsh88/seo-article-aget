@@ -1,4 +1,4 @@
-import type { BlogPost } from "@prisma/client";
+import { SiteDomain, type BlogPost } from "@prisma/client";
 import Link from "next/link";
 import { unstable_noStore as noStore } from "next/cache";
 import { notFound } from "next/navigation";
@@ -35,7 +35,7 @@ export async function generateMetadata({ params }: Props) {
     const post = await findPublishedBlogPostBySlug(params.slug);
     if (post) {
       await permanentRedirectIfWrongSiteDomain(
-        post.siteDomain,
+        SiteDomain.main,
         `/blogs/${params.slug}`,
       );
       title = post.title;
@@ -71,7 +71,7 @@ export default async function BlogPostPage({ params }: Props) {
   if (!post) notFound();
 
   await permanentRedirectIfWrongSiteDomain(
-    post.siteDomain,
+    SiteDomain.main,
     `/blogs/${params.slug}`,
   );
 
@@ -81,7 +81,7 @@ export default async function BlogPostPage({ params }: Props) {
     peerPosts = await listPublishedBlogPostsExceptSlug(
       post.slug,
       6,
-      post.siteDomain,
+      SiteDomain.main,
     );
   } catch (e) {
     console.error("[blog/[slug]] peer posts:", e);

@@ -91,6 +91,23 @@ export default function SeoLandingPage({ params }: Props) {
           },
         })),
       },
+      {
+        "@type": "Article",
+        "@id": `${canonicalUrl}#article`,
+        headline: config.heroHeadline,
+        description: config.metaDescription,
+        keywords: config.keyword,
+        author: {
+          "@type": "Organization",
+          name: "RankFlowHQ",
+          url: getSiteUrl().replace(/\/$/, ""),
+        },
+        publisher: {
+          "@type": "Organization",
+          name: "RankFlowHQ",
+        },
+        mainEntityOfPage: { "@id": `${canonicalUrl}#webpage` },
+      },
     ],
   } as Record<string, unknown>;
 

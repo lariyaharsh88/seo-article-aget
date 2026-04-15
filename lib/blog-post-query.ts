@@ -53,112 +53,60 @@ const publishedBlogSelect = {
   createdAt: true,
 } as const;
 
-function mergeDbAndStaticLists(
-  dbItems: PublishedBlogListItem[],
-  staticItems: PublishedBlogListItem[],
-): PublishedBlogListItem[] {
-  const map = new Map<string, PublishedBlogListItem>();
-  for (const s of staticItems) map.set(s.slug, s);
-  for (const d of dbItems) map.set(d.slug, d);
-  return Array.from(map.values()).sort(
-    (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
-  );
-}
-
 /**
- * List published posts for `/blogs` on the given site domain (static SEO articles only on main).
+ * List published posts for `/blog` / `/blogs`.
+ * Main site (`rankflowhq.com`): curated static AI + SEO articles only (see `ALLOWED_BLOG_SLUGS`).
+ * Other domains: PostgreSQL `BlogPost` rows only.
  */
 export async function listPublishedBlogPosts(
   siteDomain: SiteDomain,
 ): Promise<PublishedBlogListItem[]> {
-  const staticPosts =
-    siteDomain === SiteDomain.main ? await listStaticBlogPosts() : [];
+  if (siteDomain === SiteDomain.main) {
+    return await listStaticBlogPosts();
+  }
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     try {
-      const dbPosts = await prisma.blogPost.findMany({
+      return await prisma.blogPost.findMany({
         where: { published: true, siteDomain },
         orderBy: { createdAt: "desc" },
         select: publishedBlogSelect,
       });
-      return mergeDbAndStaticLists(dbPosts, staticPosts);
     } catch (err) {
       if (attempt < MAX_ATTEMPTS && isRetryablePrismaError(err)) {
         await sleep(Math.min(120 * 2 ** (attempt - 1), 2000));
         continue;
       }
-      return staticPosts;
+      return [];
     }
   }
-  return staticPosts;
+  return [];
 }
 
-/** Paginated list for `/blogs` index. */
+/** Paginated list for `/blog` / `/blogs` index. */
 export async function listPublishedBlogPostsPage(
   page: number,
   pageSize: number,
   siteDomain: SiteDomain,
 ): Promise<{ items: PublishedBlogListItem[]; total: number }> {
   const safePage = Math.max(1, Math.floor(page));
-  const staticPosts =
-    siteDomain === SiteDomain.main ? await listStaticBlogPosts() : [];
-
-  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-    try {
-      const dbItems = await prisma.blogPost.findMany({
-        where: { published: true, siteDomain },
-        orderBy: { createdAt: "desc" },
-        select: publishedBlogSelect,
-      });
-      const deduped = mergeDbAndStaticLists(dbItems, staticPosts);
-      const total = deduped.length;
-      const skip = (safePage - 1) * pageSize;
-      const items = deduped.slice(skip, skip + pageSize);
-      return { items, total };
-    } catch (err) {
-      if (attempt < MAX_ATTEMPTS && isRetryablePrismaError(err)) {
-        await sleep(Math.min(120 * 2 ** (attempt - 1), 2000));
-        continue;
-      }
-      const deduped = mergeDbAndStaticLists([], staticPosts);
-      const skip = (safePage - 1) * pageSize;
-      return {
-        items: deduped.slice(skip, skip + pageSize),
-        total: deduped.length,
-      };
-    }
-  }
+  const all = await listPublishedBlogPosts(siteDomain);
+  const total = all.length;
   const skip = (safePage - 1) * pageSize;
   return {
-    items: staticPosts.slice(skip, skip + pageSize),
-    total: staticPosts.length,
+    items: all.slice(skip, skip + pageSize),
+    total,
   };
 }
 
 /**
- * Load a published post by slug. Retries on transient DB / pool errors so
- * cold starts and brief connection issues do not surface as 404.
+ * Load a published post by slug for canonical `/blog/[slug]` and `/blogs/[slug]`.
+ * Main site uses curated static markdown only (`content/blog-seo-articles`).
  */
 export async function findPublishedBlogPostBySlug(
   rawSlug: string,
 ): Promise<BlogPost | null> {
   const slug = normalizeBlogSlugParam(rawSlug);
   if (!slug) return null;
-
-  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-    try {
-      const dbPost = await prisma.blogPost.findFirst({
-        where: { slug, published: true },
-      });
-      if (dbPost) return dbPost;
-      return await getStaticBlogPostBySlug(slug);
-    } catch (err) {
-      if (attempt < MAX_ATTEMPTS && isRetryablePrismaError(err)) {
-        await sleep(Math.min(120 * 2 ** (attempt - 1), 2000));
-        continue;
-      }
-      return getStaticBlogPostBySlug(slug);
-    }
-  }
   return getStaticBlogPostBySlug(slug);
 }
 
@@ -169,43 +117,9 @@ export async function listPublishedBlogPostsExceptSlug(
   siteDomain: SiteDomain,
 ): Promise<PublishedBlogListItem[]> {
   const excludeSlug = normalizeBlogSlugParam(rawExcludeSlug);
-  if (!excludeSlug) {
-    const all = await listPublishedBlogPosts(siteDomain);
-    return all.slice(0, take);
-  }
-
-  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-    try {
-      const staticPosts =
-        siteDomain === SiteDomain.main ? await listStaticBlogPosts() : [];
-      const dbPosts = await prisma.blogPost.findMany({
-        where: {
-          published: true,
-          siteDomain,
-          slug: { not: excludeSlug },
-        },
-        orderBy: { updatedAt: "desc" },
-        select: publishedBlogSelect,
-      });
-      const merged = mergeDbAndStaticLists(dbPosts, staticPosts).filter(
-        (post) => post.slug !== excludeSlug,
-      );
-      return merged.slice(0, take);
-    } catch (err) {
-      if (attempt < MAX_ATTEMPTS && isRetryablePrismaError(err)) {
-        await sleep(Math.min(120 * 2 ** (attempt - 1), 2000));
-        continue;
-      }
-      const staticPosts =
-        siteDomain === SiteDomain.main ? await listStaticBlogPosts() : [];
-      return staticPosts
-        .filter((post) => post.slug !== excludeSlug)
-        .slice(0, take);
-    }
-  }
-  const staticPosts =
-    siteDomain === SiteDomain.main ? await listStaticBlogPosts() : [];
-  return staticPosts
-    .filter((post) => post.slug !== excludeSlug)
-    .slice(0, take);
+  const all = await listPublishedBlogPosts(siteDomain);
+  const filtered = excludeSlug
+    ? all.filter((post) => post.slug !== excludeSlug)
+    : all;
+  return filtered.slice(0, take);
 }
