@@ -42,6 +42,11 @@ export async function GET(request: Request) {
     `${base}/education-news`,
     `${base}/education-trends`,
     `${base}/news`,
+    `${base}/news/category`,
+    `${base}/news/category/ssc`,
+    `${base}/news/category/rrb`,
+    `${base}/news/category/upsc`,
+    `${base}/news/category/board-results`,
   ];
 
   const staticXml = staticUrls

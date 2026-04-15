@@ -7,6 +7,9 @@ import { BLOG_ADMIN_EMAIL } from "@/lib/blog-constants";
 import { DEFAULT_ARTICLE_AUTHOR_NAME } from "@/lib/article-author";
 import { ensureUniqueSlug, slugify } from "@/lib/blog-slug";
 import { prisma } from "@/lib/prisma";
+import { getSiteUrl } from "@/lib/site-url";
+import { notifyGoogleSitemaps } from "@/lib/google-indexing";
+import { notifyIndexNowUrlsIfConfigured } from "@/lib/indexnow-submit";
 import { notifyTelegramNewBlogPost } from "@/lib/telegram-channel";
 
 function sleep(ms: number): Promise<void> {
@@ -118,15 +121,29 @@ export async function POST(request: Request) {
         throw new Error("createBlogPost: unreachable");
       })();
       revalidatePath("/blogs");
+      revalidatePath("/blog");
       revalidatePath("/blogs/sitemap.xml");
+      revalidatePath("/sitemap.xml");
       revalidatePath(`/blogs/${post.slug}`);
+      revalidatePath(`/blog/${post.slug}`);
       revalidateTag("blog-posts");
       if (post.published) {
+        const articleUrl = `${getSiteUrl().replace(/\/$/, "")}/blog/${encodeURIComponent(
+          post.slug,
+        )}`;
         notifyTelegramNewBlogPost({
           title: post.title,
           excerpt: post.excerpt,
           content: post.content,
           slug: post.slug,
+        });
+        void notifyGoogleSitemaps({
+          siteOrigin: getSiteUrl(),
+          sitemapPaths: ["/sitemap.xml", "/blogs/sitemap.xml"],
+        });
+        void notifyIndexNowUrlsIfConfigured({
+          urls: [articleUrl],
+          includeNewsSitemap: false,
         });
       }
       return NextResponse.json(post);

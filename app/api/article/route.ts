@@ -6,6 +6,7 @@ import {
 import { geminiStream } from "@/lib/gemini";
 import { groqStream } from "@/lib/groq";
 import { openRouterStream } from "@/lib/openrouter";
+import { buildContentVariationInstruction } from "@/lib/content-variation";
 import { buildInternalLinkingInstructionBlock } from "@/lib/internal-linking-prompt";
 import { capPromptText } from "@/lib/prompt-truncate";
 import type { Keyword, PipelineInput } from "@/lib/types";
@@ -127,6 +128,10 @@ export async function POST(request: Request) {
       : "";
 
   const searchItemCount = gscQueries.length + autoSuggest.length;
+  const variationBlock = buildContentVariationInstruction(
+    `${topic}|${primary}|${intent}|${outlineText.slice(0, 1000)}`,
+    "long-form",
+  );
   const wordTarget =
     searchItemCount > 20
       ? "2000–4000+"
@@ -171,6 +176,7 @@ GOOGLE AUTOCOMPLETE SUGGESTIONS — numbered; must ALL be addressed in article b
 ${autoSuggest.length > 0 ? suggestBlock : "(none — skip autocomplete coverage rules)"}
 ${coverageBlock}
 ${buildInternalLinkingInstructionBlock({ mode: "long-form" })}
+${variationBlock}
 STRICT REQUIREMENTS:
 1. Open with # H1 heading — must contain primary keyword
 2. Follow every H2 (##) and H3 (###) from the outline above exactly
@@ -195,6 +201,14 @@ STRICT REQUIREMENTS:
 15. Use markdown formatting throughout
 16. Outbound markdown links: use **sparingly**; link only to **authoritative official** sources (government, regulator, board, university) when relevant. Do **not** link to competitor homepages, news aggregators, or ed-tech brands unless the topic truly requires it.
 17. **Internal links:** follow the INTERNAL LINKS section above — same-site markdown links to this website’s hubs where the topic is genuinely related.
+18. Google Discover readiness:
+    - Include a featured hero image placeholder near top intended for 1200px+ width.
+    - Use an emotional/curiosity-led but factual title and hook intro.
+    - Keep intro short (2 concise paragraphs) and mobile-first readable.
+    - Add byline + date block near top:
+      **By RankFlowHQ Editorial Team**
+      **Published: [today], Updated: [today]**
+    - Avoid clickbait and misleading statements.
 
 Write the complete article now:`;
 

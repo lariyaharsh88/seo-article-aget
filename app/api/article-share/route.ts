@@ -1,7 +1,12 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { slugify } from "@/lib/blog-slug";
+import { buildDistributionPack } from "@/lib/distribution-pack";
+import { notifyGoogleSitemaps } from "@/lib/google-indexing";
+import { notifyIndexNowUrlsIfConfigured } from "@/lib/indexnow-submit";
 import { markdownToArticleHtml } from "@/lib/markdown-to-html";
 import { prisma } from "@/lib/prisma";
+import { getSiteUrl } from "@/lib/site-url";
 
 type Body = {
   title?: string;
@@ -54,10 +59,29 @@ export async function POST(request: Request) {
           siteDomain: "main",
         },
       });
+      const absoluteUrl = `${getSiteUrl().replace(/\/$/, "")}/article/${slug}`;
+      revalidatePath("/article");
+      revalidatePath(`/article/${slug}`);
+      revalidatePath("/article/sitemap.xml");
+      revalidatePath("/sitemap.xml");
+      void notifyGoogleSitemaps({
+        siteOrigin: getSiteUrl(),
+        sitemapPaths: ["/sitemap.xml", "/article/sitemap.xml"],
+      });
+      void notifyIndexNowUrlsIfConfigured({
+        urls: [absoluteUrl],
+        includeNewsSitemap: false,
+      });
       return NextResponse.json({
         slug,
         url: `/article/${slug}`,
         siteDomain: "main",
+        distribution: buildDistributionPack({
+          title,
+          url: `/article/${slug}`,
+          excerpt: markdown.slice(0, 240),
+          campaign: "article_share",
+        }),
       });
     } catch {
       continue;

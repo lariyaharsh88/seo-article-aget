@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
+import { SiteDomain } from "@prisma/client";
 import Link from "next/link";
 import { JsonLd } from "@/components/JsonLd";
+import { prisma } from "@/lib/prisma";
 import { buildPageMetadata } from "@/lib/seo-page";
 import { buildHomePageSchema } from "@/lib/schema-org";
 export const metadata: Metadata = buildPageMetadata({
@@ -18,7 +20,13 @@ export const metadata: Metadata = buildPageMetadata({
   ],
 });
 
-export default function HomePage() {
+type HomeLinkItem = {
+  title: string;
+  href: string;
+  updatedAt: Date;
+};
+
+export default async function HomePage() {
   const pipelineSteps = [
     "Keyword",
     "Research",
@@ -28,6 +36,67 @@ export default function HomePage() {
     "SEO Audit",
     "Enrichment",
   ] as const;
+  let recentPosts: HomeLinkItem[] = [];
+  let trending: HomeLinkItem[] = [];
+  try {
+    const [newsRows, blogRows, articleRows] = await Promise.all([
+      prisma.educationNewsArticle.findMany({
+        where: {
+          repurposeStatus: "ready",
+          repurposedSlug: { not: null },
+          siteDomain: SiteDomain.education,
+        },
+        select: { title: true, repurposedSlug: true, updatedAt: true },
+        orderBy: { updatedAt: "desc" },
+        take: 6,
+      }),
+      prisma.blogPost.findMany({
+        where: {
+          published: true,
+          siteDomain: SiteDomain.main,
+        },
+        select: { title: true, slug: true, updatedAt: true },
+        orderBy: { updatedAt: "desc" },
+        take: 6,
+      }),
+      prisma.sharedArticle.findMany({
+        where: { siteDomain: SiteDomain.main },
+        select: { title: true, slug: true, updatedAt: true },
+        orderBy: { updatedAt: "desc" },
+        take: 6,
+      }),
+    ]);
+
+    const merged: HomeLinkItem[] = [
+      ...newsRows
+        .filter((r) => Boolean(r.repurposedSlug?.trim()))
+        .map((r) => ({
+          title: r.title,
+          href: `/news/${encodeURIComponent((r.repurposedSlug as string).trim())}`,
+          updatedAt: r.updatedAt,
+        })),
+      ...blogRows.map((r) => ({
+        title: r.title,
+        href: `/blog/${encodeURIComponent(r.slug)}`,
+        updatedAt: r.updatedAt,
+      })),
+      ...articleRows.map((r) => ({
+        title: r.title,
+        href: `/article/${encodeURIComponent(r.slug)}`,
+        updatedAt: r.updatedAt,
+      })),
+    ].sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
+    recentPosts = merged.slice(0, 8);
+
+    // Trending heuristic: freshest in last 72h, weighted by recency.
+    const windowMs = 72 * 60 * 60 * 1000;
+    const now = Date.now();
+    trending = merged
+      .filter((x) => now - x.updatedAt.getTime() <= windowMs)
+      .slice(0, 6);
+  } catch (e) {
+    console.error("[home] recent/trending query failed:", e);
+  }
 
   return (
     <>
@@ -91,6 +160,50 @@ export default function HomePage() {
               {tool.label}
             </Link>
           ))}
+        </section>
+        <section className="mt-8 grid gap-4 lg:grid-cols-2">
+          <div className="rounded-2xl border border-border bg-surface/55 p-5">
+            <h2 className="font-display text-2xl text-text-primary">
+              Recent posts
+            </h2>
+            <p className="mt-1 font-serif text-sm text-text-secondary">
+              Fresh internal links to newly published stories and articles.
+            </p>
+            <ul className="mt-4 space-y-2">
+              {recentPosts.length > 0 ? (
+                recentPosts.map((p) => (
+                  <li key={p.href}>
+                    <Link href={p.href} className="font-serif text-sm text-accent hover:underline">
+                      {p.title}
+                    </Link>
+                  </li>
+                ))
+              ) : (
+                <li className="font-serif text-sm text-text-muted">Recent items will appear here.</li>
+              )}
+            </ul>
+          </div>
+          <div className="rounded-2xl border border-border bg-surface/55 p-5">
+            <h2 className="font-display text-2xl text-text-primary">
+              Trending now
+            </h2>
+            <p className="mt-1 font-serif text-sm text-text-secondary">
+              High-freshness picks to accelerate crawl discovery.
+            </p>
+            <ul className="mt-4 space-y-2">
+              {trending.length > 0 ? (
+                trending.map((p) => (
+                  <li key={p.href}>
+                    <Link href={p.href} className="font-serif text-sm text-accent hover:underline">
+                      {p.title}
+                    </Link>
+                  </li>
+                ))
+              ) : (
+                <li className="font-serif text-sm text-text-muted">Trending items will appear here.</li>
+              )}
+            </ul>
+          </div>
         </section>
       </main>
     </>

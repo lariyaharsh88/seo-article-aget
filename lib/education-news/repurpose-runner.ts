@@ -7,6 +7,7 @@ import { buildEducationNewsRepurposePrompt } from "@/lib/education-news/repurpos
 import { ensureUniqueRepurposedSlug } from "@/lib/education-news/repurpose-news-slug";
 import { createAndStoreNewsHeroImage } from "@/lib/education-news/upload-news-hero-image";
 import { prisma } from "@/lib/prisma";
+import { notifyGoogleSitemaps } from "@/lib/google-indexing";
 import { notifyIndexNowIfConfigured } from "@/lib/indexnow-submit";
 import { absoluteUrlForSiteDomain } from "@/lib/site-domain";
 import { notifyTelegramNewsRepurposed } from "@/lib/telegram-channel";
@@ -158,6 +159,7 @@ export async function runRepurposeForArticleId(
       revalidatePath("/news");
       revalidatePath(sitePath);
       revalidatePath("/news/sitemap.xml");
+      revalidatePath("/education/sitemap.xml");
     } catch {
       /* e.g. script context without Next cache */
     }
@@ -165,6 +167,15 @@ export async function runRepurposeForArticleId(
     void notifyIndexNowIfConfigured({
       articleUrl: repurposedCanonicalUrl,
     });
+    try {
+      const articleOrigin = new URL(repurposedCanonicalUrl).origin;
+      void notifyGoogleSitemaps({
+        siteOrigin: articleOrigin,
+        sitemapPaths: ["/sitemap.xml", "/news/sitemap.xml"],
+      });
+    } catch {
+      /* ignore malformed url edge cases */
+    }
 
     emit(100, "Done");
   } catch (e) {

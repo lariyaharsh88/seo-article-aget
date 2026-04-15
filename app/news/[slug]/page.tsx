@@ -22,6 +22,10 @@ import { getRequestSiteOrigin } from "@/lib/request-site-origin";
 import { buildRepurposedNewsArticleSchema } from "@/lib/schema-org";
 import { SITE_NAME } from "@/lib/seo-site";
 import { buildEducationFunnelUrl } from "@/lib/education-funnel-url";
+import {
+  getNewsClusterMeta,
+  inferNewsClusterFromText,
+} from "@/lib/education-news/topic-clusters";
 import { buildPageMetadata } from "@/lib/seo-page";
 import { permanentRedirectIfWrongSiteDomain } from "@/lib/site-domain-redirect";
 
@@ -191,6 +195,8 @@ export default async function RepurposedNewsArticlePage({ params }: Props) {
       : undefined;
 
   const faqEntries = extractFaqsFromMarkdown(post.repurposedMarkdown);
+  const clusterId = inferNewsClusterFromText(post.title, post.source, post.url);
+  const cluster = clusterId ? getNewsClusterMeta(clusterId) : null;
 
   const funnelSeoAgent = buildEducationFunnelUrl(
     "/seo-agent",
@@ -213,14 +219,35 @@ export default async function RepurposedNewsArticlePage({ params }: Props) {
       />
       <main className="mx-auto min-w-0 max-w-3xl px-4 py-8 sm:py-10 md:px-6">
         <p className="font-mono text-xs">
-          <Link
-            href="/news"
-            className="text-text-muted transition-colors hover:text-accent"
-          >
-            ← All news
+          <Link href="/" className="text-text-muted transition-colors hover:text-accent">
+            Home
+          </Link>{" "}
+          /{" "}
+          <Link href="/news" className="text-text-muted transition-colors hover:text-accent">
+            News
           </Link>
+          {cluster ? (
+            <>
+              {" "}
+              /{" "}
+              <Link
+                href={cluster.path}
+                className="text-text-muted transition-colors hover:text-accent"
+              >
+                {cluster.label}
+              </Link>
+            </>
+          ) : null}
         </p>
         <article className="mt-6">
+          {cluster ? (
+            <p className="mb-3 font-mono text-[11px] uppercase tracking-wide text-accent">
+              Cluster:{" "}
+              <Link href={cluster.path} className="underline-offset-2 hover:underline">
+                {cluster.label} updates hub
+              </Link>
+            </p>
+          ) : null}
           <p className="font-mono text-xs leading-relaxed text-text-muted">
             {issuedDisplay ? (
               <>

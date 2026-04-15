@@ -19,11 +19,28 @@ export type IndexNowNotifyOpts = {
   includeNewsSitemap?: boolean;
 };
 
+export type IndexNowNotifyUrlsOpts = {
+  urls: string[];
+  includeNewsSitemap?: boolean;
+};
+
 /**
  * Fire-and-forget IndexNow POST. Never throws; logs failures.
  */
 export async function notifyIndexNowIfConfigured(
   opts: IndexNowNotifyOpts,
+): Promise<void> {
+  await notifyIndexNowUrlsIfConfigured({
+    urls: [opts.articleUrl],
+    includeNewsSitemap: opts.includeNewsSitemap,
+  });
+}
+
+/**
+ * Fire-and-forget IndexNow POST for one or many URLs.
+ */
+export async function notifyIndexNowUrlsIfConfigured(
+  opts: IndexNowNotifyUrlsOpts,
 ): Promise<void> {
   const key = process.env.INDEXNOW_KEY?.trim();
   const keyLocation = process.env.INDEXNOW_KEY_URL?.trim();
@@ -41,7 +58,9 @@ export async function notifyIndexNowIfConfigured(
       ? opts.includeNewsSitemap
       : fromEnv;
 
-  const urlList = [opts.articleUrl.trim()];
+  const urlList = opts.urls
+    .map((u) => u.trim())
+    .filter((u) => u.length > 0);
   if (includeSitemap) {
     const sm = getNewsSitemapAbsoluteUrl();
     if (!urlList.includes(sm)) urlList.push(sm);

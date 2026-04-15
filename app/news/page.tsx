@@ -11,6 +11,10 @@ import { buildNewsIndexSchema } from "@/lib/schema-org";
 import { buildPageMetadata } from "@/lib/seo-page";
 import { getRequestSiteOrigin } from "@/lib/request-site-origin";
 import { getRequestSiteDomain } from "@/lib/site-domain";
+import {
+  getNewsClusterMeta,
+  inferNewsClusterFromText,
+} from "@/lib/education-news/topic-clusters";
 import { getToolExplainerMarkdown } from "@/lib/tool-explainer";
 
 type Props = { searchParams: { page?: string | string[] } };
@@ -125,6 +129,11 @@ export default async function NewsIndexPage({ searchParams }: Props) {
             SEO-ready coverage of education updates, optimized for readability and
             search intent.
           </p>
+          <p className="mt-3 font-mono text-xs">
+            <Link href="/news/category" className="text-accent hover:underline">
+              Browse topical clusters (SSC, RRB, UPSC, Board Results) →
+            </Link>
+          </p>
         </header>
 
         {loadFailed ? (
@@ -149,6 +158,10 @@ export default async function NewsIndexPage({ searchParams }: Props) {
             <ul className="mt-8 grid gap-4">
               {items.map((item) => (
                 <li key={item.id}>
+                  {(() => {
+                    const clusterId = inferNewsClusterFromText(item.title, item.source);
+                    const cluster = clusterId ? getNewsClusterMeta(clusterId) : null;
+                    return (
                   <Link
                     href={`/news/${encodeURIComponent(item.slug)}`}
                     className="group block rounded-xl border border-border bg-surface/50 p-4 transition-colors hover:border-accent/40 hover:bg-surface/70"
@@ -156,8 +169,15 @@ export default async function NewsIndexPage({ searchParams }: Props) {
                     <span className="font-display text-xl text-text-primary group-hover:text-accent">
                       {item.title}
                     </span>
-                    <span className="mt-2 inline-block rounded-full border border-border/80 bg-background/70 px-2.5 py-1 font-mono text-[10px] uppercase tracking-wide text-text-muted">
-                      News Article
+                    <span className="mt-2 inline-flex items-center gap-2">
+                      <span className="inline-block rounded-full border border-border/80 bg-background/70 px-2.5 py-1 font-mono text-[10px] uppercase tracking-wide text-text-muted">
+                        News Article
+                      </span>
+                      {cluster ? (
+                        <span className="inline-block rounded-full border border-accent/40 bg-accent/10 px-2.5 py-1 font-mono text-[10px] uppercase tracking-wide text-accent">
+                          {cluster.label}
+                        </span>
+                      ) : null}
                     </span>
                     <span className="mt-3 block font-mono text-[11px] leading-relaxed text-text-muted">
                       {(() => {
@@ -176,7 +196,15 @@ export default async function NewsIndexPage({ searchParams }: Props) {
                     <span className="mt-3 inline-block font-mono text-xs text-accent">
                       Read story →
                     </span>
+                    {cluster ? (
+                      <span className="mt-1 block font-mono text-[11px] text-text-muted">
+                        Cluster hub:{" "}
+                        <span className="text-accent">{cluster.path}</span>
+                      </span>
+                    ) : null}
                   </Link>
+                    );
+                  })()}
                 </li>
               ))}
             </ul>

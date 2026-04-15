@@ -1,0 +1,40 @@
+{
+  "weeklyTargetBacklinks": 30,
+  "generatedBacklinkTasks": 16,
+  "antiSpamRules": [
+    "Do not repeat the same anchor text in consecutive posts.",
+    "Keep each platform post unique in opening and CTA.",
+    "Limit direct link ratio: max one backlink per post.",
+    "Use natural discussion context before dropping any link.",
+    "Respect subreddit and platform moderation rules."
+  ],
+  "plan": [
+    {
+      "article": "SSC CGL 2026 Admit Card OUT (LIVE): Direct Link and Exam Day Checklist",
+      "url": "https://education.rankflowhq.com/news/ssc-cgl-2026-admit-card-out-live",
+      "web20Posts": 2,
+      "redditPosts": 1,
+      "quoraAnswers": 1,
+      "directorySubmissions": 1,
+      "estimatedBacklinks": 5
+    },
+    {
+      "article": "RRB NTPC Result 2026 OUT: Zone-wise PDF and Scorecard Steps",
+      "url": "https://education.rankflowhq.com/news/rrb-ntpc-result-2026-out",
+      "web20Posts": 3,
+      "redditPosts": 1,
+      "quoraAnswers": 1,
+      "directorySubmissions": 1,
+      "estimatedBacklinks": 6
+    },
+    {
+      "article": "UPSC Prelims 2026 Exam Date Notification Released: Official Calendar Highlights",
+      "url": "https://education.rankflowhq.com/news/upsc-prelims-2026-exam-date-notification",
+      "web20Posts": 2,
+      "redditPosts": 1,
+      "quoraAnswers": 1,
+      "directorySubmissions": 1,
+      "estimatedBacklinks": 5
+    }
+  ]
+}

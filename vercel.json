@@ -1,0 +1,12 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/education-news-monitor",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/article-live-refresh",
+      "schedule": "0 */4 * * *"
+    }
+  ]
+}

@@ -1,4 +1,5 @@
 import { buildInternalLinkingInstructionBlock } from "@/lib/internal-linking-prompt";
+import { buildContentVariationInstruction } from "@/lib/content-variation";
 import { capPromptText } from "@/lib/prompt-truncate";
 
 /**
@@ -14,6 +15,10 @@ export function buildEducationNewsRepurposePrompt(opts: {
   const body = opts.plainTextFromPage
     ? capPromptText(opts.plainTextFromPage, 10_000)
     : "(No page text could be fetched — write only from the headline and source below.)";
+  const variationBlock = buildContentVariationInstruction(
+    `${opts.title}|${opts.source}|${opts.originalUrl}`,
+    "news",
+  );
 
   return `You are a senior SEO editor repurposing a **same-day education news** item into a **new, original** article for RankFlowHQ readers.
 
@@ -38,6 +43,18 @@ LINKS (strict — avoid boosting competitors):
 - Do **not** link to news aggregators, ed-tech blogs, or commercial test-prep sites. Do **not** markdown-link the original story URL or any competitor homepage in the body.
 - If no official URL is certain, **omit the link** and tell readers to verify on the official board or university website.
 ${buildInternalLinkingInstructionBlock({ mode: "news-repurpose" })}
+${variationBlock}
+
+SOURCE CREDIBILITY (strict):
+- Prioritise **primary source facts** (official notification, circular, board/university notice, government PDF).
+- Include this exact phrase once in the early body (adjust date only):
+  **"According to the official notification released on [date]..."**
+- Quote exact values from source text wherever available: dates, times, cut-offs, eligibility numbers, fee amounts, exam windows, document names.
+- Do not invent figures. If a value is unclear, write "not specified in the official notification" instead of guessing.
+- Add section: **## Official Notification Snapshot**
+  - 3–6 bullet points of exact source-derived facts.
+- Add section: **## PDF / Circular Summary**
+  - 3–5 bullets summarising what the official PDF/notice says (or "Official PDF summary pending verification" if PDF text is unavailable).
 
 SEO + NEWS OPTIMISATION (strict; **total length 800–1000 words**):
 1. Open with exactly one # H1 using this style:
@@ -74,9 +91,16 @@ SEO + NEWS OPTIMISATION (strict; **total length 800–1000 words**):
    - 2 short paragraphs on real-world impact for students/parents.
 10. Add **## Frequently Asked Questions** with 3–5 FAQs:
    - Use ### question headings and 2–4 sentence answers.
-   - Keep answers factual and directly useful.
+   - Keep answers factual and directly useful, anchored to official notification details.
 11. Finish with a concise conclusion + verification reminder on official website.
 12. Follow INTERNAL LINKS rules above where relevant.
+13. Google Discover optimisation:
+   - Keep a large featured image placeholder near top for 1200px+ hero image usage.
+   - Use an emotional but factual headline/hook (no clickbait, no misleading claims).
+   - Keep opening mobile-first: short lines, short paragraphs, immediate value.
+   - Include byline/date block near top:
+     **By RankFlowHQ Editorial Team**
+     **Published: [today], Updated: [today]**
 
 Output **only** valid Markdown (no code fences, no preamble).`;
 }
