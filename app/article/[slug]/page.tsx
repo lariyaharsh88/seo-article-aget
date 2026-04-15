@@ -4,6 +4,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { JsonLd } from "@/components/JsonLd";
 import { PublicArticleShareBar } from "@/components/PublicArticleShareBar";
+import { isAllowedBlogSlug } from "@/lib/static-blog-posts";
+import { markdownToArticleBodyHtml } from "@/lib/markdown-to-html";
 import { prisma } from "@/lib/prisma";
 import { getRequestSiteOrigin } from "@/lib/request-site-origin";
 import { buildPageMetadata } from "@/lib/seo-page";
@@ -23,10 +25,64 @@ function buildDescription(markdown: string, fallbackTitle: string): string {
   return (stripped || fallbackTitle).slice(0, 160);
 }
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const row = await prisma.sharedArticle.findUnique({
-    where: { slug: params.slug },
+type PublicArticlePayload = {
+  slug: string;
+  title: string;
+  markdown: string;
+  html: string;
+  createdAt: Date;
+  updatedAt: Date;
+  provenance: "shared-article" | "blog-post";
+};
+
+async function findPublicArticleBySlug(
+  slug: string,
+): Promise<PublicArticlePayload | null> {
+  const shared = await prisma.sharedArticle.findUnique({
+    where: { slug },
   });
+  if (shared) {
+    return {
+      slug: shared.slug,
+      title: shared.title,
+      markdown: shared.markdown,
+      html: shared.html,
+      createdAt: shared.createdAt,
+      updatedAt: shared.updatedAt,
+      provenance: "shared-article",
+    };
+  }
+
+  if (isAllowedBlogSlug(slug)) return null;
+  const blog = await prisma.blogPost.findFirst({
+    where: {
+      slug,
+      published: true,
+      siteDomain: SiteDomain.main,
+    },
+    select: {
+      slug: true,
+      title: true,
+      content: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+  });
+  if (!blog) return null;
+
+  return {
+    slug: blog.slug,
+    title: blog.title,
+    markdown: blog.content,
+    html: markdownToArticleBodyHtml(blog.content),
+    createdAt: blog.createdAt,
+    updatedAt: blog.updatedAt,
+    provenance: "blog-post",
+  };
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const row = await findPublicArticleBySlug(params.slug);
   if (!row) {
     return buildPageMetadata({
       title: "Article not found",
@@ -59,9 +115,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function PublicArticlePage({ params }: Props) {
-  const row = await prisma.sharedArticle.findUnique({
-    where: { slug: params.slug },
-  });
+  const row = await findPublicArticleBySlug(params.slug);
   if (!row) notFound();
 
   await permanentRedirectIfWrongSiteDomain(
@@ -114,7 +168,9 @@ export default async function PublicArticlePage({ params }: Props) {
             dangerouslySetInnerHTML={{ __html: row.html }}
           />
           <p className="mt-8 border-t border-border pt-4 font-mono text-xs text-text-muted">
-            Generated with RankFlowHQ
+            {row.provenance === "shared-article"
+              ? "Generated with RankFlowHQ"
+              : "Published on RankFlowHQ"}
           </p>
         </article>
       </main>

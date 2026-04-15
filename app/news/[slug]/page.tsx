@@ -114,14 +114,26 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     /* DB unavailable */
   }
   const siteOrigin = await getRequestSiteOrigin();
-  return buildPageMetadata({
-    title,
-    description,
-    path: `/news/${params.slug}`,
-    article,
-    ogImage,
-    siteOrigin,
-  });
+  return {
+    ...buildPageMetadata({
+      title,
+      description,
+      path: `/news/${params.slug}`,
+      article,
+      ogImage,
+      siteOrigin,
+    }),
+    robots: {
+      index: true,
+      follow: true,
+      googleBot: {
+        index: true,
+        follow: true,
+        "max-image-preview": "large",
+        "max-snippet": -1,
+      },
+    },
+  };
 }
 
 export default async function RepurposedNewsArticlePage({ params }: Props) {

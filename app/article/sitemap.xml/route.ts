@@ -2,6 +2,7 @@ import { SiteDomain } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { EDUCATION_HOSTS } from "@/lib/education-hosts";
 import { prisma } from "@/lib/prisma";
+import { ALLOWED_BLOG_SLUGS } from "@/lib/static-blog-posts";
 import { getSiteUrl } from "@/lib/site-url";
 
 function escapeXml(text: string): string {
@@ -36,8 +37,24 @@ export async function GET(request: Request) {
     orderBy: { updatedAt: "desc" },
     take: 10000,
   });
+  const blogRows =
+    siteDomain === SiteDomain.main
+      ? await prisma.blogPost.findMany({
+          where: {
+            siteDomain: SiteDomain.main,
+            published: true,
+            slug: { notIn: [...ALLOWED_BLOG_SLUGS] },
+          },
+          select: {
+            slug: true,
+            updatedAt: true,
+          },
+          orderBy: { updatedAt: "desc" },
+          take: 10000,
+        })
+      : [];
 
-  const urls = rows
+  const urls = [...rows, ...blogRows]
     .map(
       (row) => `  <url>
     <loc>${escapeXml(`${base}/article/${row.slug}`)}</loc>

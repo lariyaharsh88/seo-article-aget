@@ -10,6 +10,7 @@ Allow: /
 Disallow: /api/
 
 Sitemap: ${base}/sitemap.xml
+Sitemap: ${base}/news/sitemap.xml
 `;
   return new NextResponse(body, {
     status: 200,

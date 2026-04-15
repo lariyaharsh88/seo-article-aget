@@ -26,18 +26,30 @@ export async function generateMetadata({
   const title = page > 1 ? `${titleBase} (page ${page})` : titleBase;
   const path = page > 1 ? `/news?page=${page}` : "/news";
   const siteOrigin = await getRequestSiteOrigin();
-  return buildPageMetadata({
-    title,
-    description: DESC,
-    path,
-    siteOrigin,
-    keywords: [
-      "education news articles",
-      "repurposed news SEO",
-      "exam updates",
-      "India education news",
-    ],
-  });
+  return {
+    ...buildPageMetadata({
+      title,
+      description: DESC,
+      path,
+      siteOrigin,
+      keywords: [
+        "education news articles",
+        "repurposed news SEO",
+        "exam updates",
+        "India education news",
+      ],
+    }),
+    robots: {
+      index: true,
+      follow: true,
+      googleBot: {
+        index: true,
+        follow: true,
+        "max-image-preview": "large",
+        "max-snippet": -1,
+      },
+    },
+  };
 }
 
 export const dynamic = "force-dynamic";
