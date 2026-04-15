@@ -8,7 +8,7 @@ import { ensureUniqueRepurposedSlug } from "@/lib/education-news/repurpose-news-
 import { createAndStoreNewsHeroImage } from "@/lib/education-news/upload-news-hero-image";
 import { prisma } from "@/lib/prisma";
 import { notifyIndexNowIfConfigured } from "@/lib/indexnow-submit";
-import { getSiteUrl } from "@/lib/site-url";
+import { absoluteUrlForSiteDomain } from "@/lib/site-domain";
 import { notifyTelegramNewsRepurposed } from "@/lib/telegram-channel";
 
 /** 0–100 for one article; optional article index when batching. */
@@ -101,7 +101,10 @@ export async function runRepurposeForArticleId(
       repurposedSlug = await ensureUniqueRepurposedSlug(base, id);
     }
     const sitePath = `/news/${repurposedSlug}`;
-    const repurposedCanonicalUrl = `${getSiteUrl()}${sitePath}`;
+    const repurposedCanonicalUrl = absoluteUrlForSiteDomain(
+      row.siteDomain,
+      sitePath,
+    );
 
     await prisma.educationNewsArticle.update({
       where: { id },
@@ -120,6 +123,7 @@ export async function runRepurposeForArticleId(
       title: row.title,
       repurposedMarkdown: md,
       slug: repurposedSlug,
+      siteDomain: row.siteDomain,
     });
 
     emit(96, "Publishing hero image to images CDN…");

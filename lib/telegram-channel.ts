@@ -1,4 +1,5 @@
 import { getSiteUrl } from "@/lib/site-url";
+import { SiteDomain, absoluteUrlForSiteDomain } from "@/lib/site-domain";
 
 const TELEGRAM_API = "https://api.telegram.org";
 
@@ -90,13 +91,24 @@ function newsTelegramEnv():
   return { token, chatId, hubLabel };
 }
 
-function newsPublicBaseUrl(): string {
+function newsDomainTag(domain: SiteDomain): {
+  badge: string;
+  hashtag: string;
+} {
+  if (domain === SiteDomain.main) {
+    return { badge: "MAIN DOMAIN", hashtag: "#MainDomainNews" };
+  }
+  return { badge: "EDUCATION DOMAIN", hashtag: "#EducationDomainNews" };
+}
+
+function newsPublicBaseUrl(domain: SiteDomain): string {
+  const canonical = absoluteUrlForSiteDomain(domain, "").replace(/\/$/, "");
   const fromEnv = process.env.TELEGRAM_NEWS_BASE_URL?.trim();
   if (fromEnv) {
     const withProto = /^https?:\/\//i.test(fromEnv) ? fromEnv : `https://${fromEnv}`;
     return withProto.replace(/\/$/, "");
   }
-  return "https://education.rankflowhq.com";
+  return canonical;
 }
 
 /** Fire-and-forget: new published blog post announcement (text + inline buttons, no image). */
@@ -139,18 +151,21 @@ export function notifyTelegramNewsRepurposed(opts: {
   title: string;
   repurposedMarkdown: string;
   slug: string;
+  siteDomain?: SiteDomain;
 }): void {
   const cfg = newsTelegramEnv();
   if (!cfg) return;
 
-  const base = newsPublicBaseUrl();
+  const domain = opts.siteDomain ?? SiteDomain.education;
+  const tag = newsDomainTag(domain);
+  const base = newsPublicBaseUrl(domain);
   const articleUrl = `${base}/news/${encodeURIComponent(opts.slug)}`;
   const hubUrl = `${base}/news`;
 
   const blurb =
     markdownToPlainTeaser(opts.repurposedMarkdown, 320) ||
     "New education news article on RankFlowHQ.";
-  const html = `<b>${escapeTelegramHtml(opts.title)}</b>\n\n${escapeTelegramHtml(blurb)}`;
+  const html = `<b>${escapeTelegramHtml(tag.badge)}</b>\n<b>${escapeTelegramHtml(opts.title)}</b>\n\n${escapeTelegramHtml(blurb)}\n\n${escapeTelegramHtml(tag.hashtag)}`;
 
   void sendTelegramMessage({
     botToken: cfg.token,

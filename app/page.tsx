@@ -78,6 +78,10 @@ export default function HomePage() {
             { href: "/ai-seo-toolkit", label: "AI SEO Toolkit" },
             { href: "/off-page-seo", label: "Off-page SEO" },
             { href: "/repurpose-url", label: "Repurpose URL" },
+            { href: "/free-tools/keyword-clustering", label: "Free Keyword Clustering" },
+            { href: "/free-tools/keyword-extractor", label: "Keyword Extractor" },
+            { href: "/free-tools/ai-search-grader", label: "AI Search Grader" },
+            { href: "/free-tools/llms-txt-generator", label: "LLMs.txt Generator" },
           ].map((tool) => (
             <Link
               key={tool.href}

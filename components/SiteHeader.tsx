@@ -10,7 +10,8 @@ import { SITE_LOGO_PATH, SITE_NAME } from "@/lib/seo-site";
 const mainNav = [
   { href: "/", label: "Home" },
   { href: "/ai-seo-tools", label: "AI SEO Tools" },
-  { href: "/free-tools/keyword-clustering", label: "Free Tools" },
+  { href: "/free-tools", label: "Free Tools" },
+  { href: "/pages", label: "All Tools" },
   { href: "/blog", label: "Blog" },
   { href: "/pricing", label: "Pricing" },
 ] as const;
