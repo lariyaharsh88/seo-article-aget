@@ -1,6 +1,6 @@
 import { DEFAULT_ARTICLE_AUTHOR_NAME } from "@/lib/article-author";
 import type { NewsSourceProfile } from "@/lib/education-news/fetchSitemaps";
-import { siteDomainForNewsSource } from "@/lib/education-news/fetchSitemaps";
+import { siteDomainForNewsArticle } from "@/lib/education-news/fetchSitemaps";
 import type { NewsArticle } from "@/lib/education-news/types";
 import { shouldSkipEducationNewsSourceUrl } from "@/lib/education-news/url-filters";
 import { prisma } from "@/lib/prisma";
@@ -22,7 +22,7 @@ export async function syncEducationNewsArticles(
   for (const a of articles) {
     const url = a.url?.trim();
     if (!url || shouldSkipEducationNewsSourceUrl(url)) continue;
-    const siteDomain = siteDomainForNewsSource(a.source, profile);
+    const siteDomain = siteDomainForNewsArticle(a, profile);
     await prisma.educationNewsArticle.upsert({
       where: { url },
       create: {

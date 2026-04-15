@@ -1,5 +1,6 @@
 import { SiteDomain } from "@prisma/client";
 import { XMLParser } from "fast-xml-parser";
+import { inferSiteDomainFromText } from "@/lib/site-domain-infer";
 import type { NewsArticle, SitemapSource } from "./types";
 import { shouldSkipEducationNewsSourceUrl } from "./url-filters";
 
@@ -50,6 +51,20 @@ export function siteDomainForNewsSource(
   if (SEO_SOURCE_NAMES.has(name)) return SiteDomain.main;
   if (EDUCATION_SOURCE_NAMES.has(name)) return SiteDomain.education;
   return profile === "education" ? SiteDomain.education : SiteDomain.main;
+}
+
+/**
+ * Final domain routing for a fetched article.
+ * - Known education feeds always remain on the education domain.
+ * - Known SEO feeds are heuristically split: edtech/exam stories -> education, else main.
+ */
+export function siteDomainForNewsArticle(
+  article: Pick<NewsArticle, "source" | "title" | "url">,
+  profile: NewsSourceProfile,
+): SiteDomain {
+  const sourceDomain = siteDomainForNewsSource(article.source, profile);
+  if (sourceDomain === SiteDomain.education) return SiteDomain.education;
+  return inferSiteDomainFromText(article.source, article.title, article.url);
 }
 
 function sourcesForProfile(profile: NewsSourceProfile): SitemapSource[] {
