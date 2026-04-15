@@ -30,6 +30,20 @@ function mapInnerToRange(
   );
 }
 
+function extractFirstMarkdownH1(markdown: string): string | null {
+  const lines = markdown.split(/\r?\n/);
+  for (const raw of lines) {
+    const line = raw.trim();
+    if (!line) continue;
+    if (line.startsWith("# ")) {
+      const h1 = line.replace(/^#\s+/, "").trim();
+      if (h1) return h1.slice(0, 500);
+    }
+    if (line.startsWith("##")) break;
+  }
+  return null;
+}
+
 export async function runRepurposeForArticleId(
   id: string,
   geminiKey: string,
@@ -93,6 +107,7 @@ export async function runRepurposeForArticleId(
     if (md.length < 200) {
       throw new Error("Model returned too little text");
     }
+    const optimizedTitle = extractFirstMarkdownH1(md) || row.title.slice(0, 500);
 
     emit(94, "Saving repurposed draft to database…");
     let repurposedSlug = row.repurposedSlug?.trim() || null;
@@ -109,6 +124,7 @@ export async function runRepurposeForArticleId(
     await prisma.educationNewsArticle.update({
       where: { id },
       data: {
+        title: optimizedTitle,
         repurposedMarkdown: md,
         repurposedAt: new Date(),
         repurposeStatus: "ready",

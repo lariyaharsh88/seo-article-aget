@@ -29,6 +29,62 @@ type Props = { params: { slug: string } };
 
 export const dynamic = "force-dynamic";
 
+function buildNewsMetaDescription(title: string): string {
+  const clean = title.replace(/\s+/g, " ").trim();
+  const suffix =
+    " LIVE today: result, admit card, exam date, direct link and PDF download details.";
+  const full = `${clean}${suffix}`;
+  return full.length <= 160 ? full : full.slice(0, 157).trimEnd() + "...";
+}
+
+function extractFaqsFromMarkdown(markdown: string): Array<{
+  question: string;
+  answer: string;
+}> {
+  const lines = markdown.split(/\r?\n/);
+  const out: Array<{ question: string; answer: string }> = [];
+  let inFaq = false;
+  let currentQ: string | null = null;
+  let currentA: string[] = [];
+
+  const flush = () => {
+    if (!currentQ) return;
+    const answer = currentA.join(" ").replace(/\s+/g, " ").trim();
+    if (answer) {
+      out.push({ question: currentQ, answer });
+    }
+    currentQ = null;
+    currentA = [];
+  };
+
+  for (const raw of lines) {
+    const line = raw.trim();
+    if (!inFaq) {
+      if (/^##\s+.*(faq|frequently asked questions)/i.test(line)) {
+        inFaq = true;
+      }
+      continue;
+    }
+
+    if (/^##\s+/.test(line) && !/^##\s+.*(faq|frequently asked questions)/i.test(line)) {
+      break;
+    }
+
+    if (/^###\s+/.test(line)) {
+      flush();
+      currentQ = line.replace(/^###\s+/, "").trim();
+      continue;
+    }
+
+    if (!currentQ) continue;
+    if (!line) continue;
+    currentA.push(line.replace(/^[-*]\s+/, ""));
+  }
+  flush();
+
+  return out.slice(0, 5);
+}
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   let title = "News article";
   let description = SITE_NAME;
@@ -45,7 +101,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         `/news/${params.slug}`,
       );
       title = post.title;
-      description = post.title.slice(0, 160);
+      description = buildNewsMetaDescription(post.title);
       ogImage = post.repurposedImageUrl?.trim() || undefined;
       if (post.repurposedAt) {
         article = {
@@ -122,6 +178,8 @@ export default async function RepurposedNewsArticlePage({ params }: Props) {
       ? new Date(issuedParsedMs).toISOString()
       : undefined;
 
+  const faqEntries = extractFaqsFromMarkdown(post.repurposedMarkdown);
+
   const funnelSeoAgent = buildEducationFunnelUrl(
     "/seo-agent",
     "inline_article",
@@ -135,7 +193,12 @@ export default async function RepurposedNewsArticlePage({ params }: Props) {
 
   return (
     <>
-      <JsonLd data={buildRepurposedNewsArticleSchema(post, { base: siteOrigin })} />
+      <JsonLd
+        data={buildRepurposedNewsArticleSchema(post, {
+          base: siteOrigin,
+          faqs: faqEntries,
+        })}
+      />
       <main className="mx-auto min-w-0 max-w-3xl px-4 py-8 sm:py-10 md:px-6">
         <p className="font-mono text-xs">
           <Link

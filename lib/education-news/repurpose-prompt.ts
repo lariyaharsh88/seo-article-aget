@@ -29,6 +29,9 @@ VOICE / ETHICS:
 - Write as **RankFlowHQ's own article**: confident, direct editorial voice — as if this site reported the story. Do **not** use syndication-style lines such as "Summary based on reports from…", "According to [news brand]…", "see original for full detail", or any phrasing that hands authority or credit to third-party news brands.
 - Do **not** name "${opts.source}" or other commercial news/ed-tech brands in the intro, body, or disclaimers. Prefer neutral sourcing: "Recent updates…", "Official notices…", "The board stated…", "As per the circular…".
 - Do **not** tell readers to go read the story elsewhere; the facts should read complete on this page.
+- The final article must read as **100% unique, human-written newsroom copy** (not templated AI output).
+- Preserve factual accuracy, but rewrite all phrasing completely in original language.
+- Avoid robotic transitions and repetitive section openers.
 
 LINKS (strict — avoid boosting competitors):
 - Add **at most 1–3** outbound markdown links in the whole article, and **only** to **official** sources when you are sure of the URL: government sites (Indian gov.in / nic.in and similar), official board/university/NTA/exam-board domains, or statutory bodies.
@@ -36,16 +39,44 @@ LINKS (strict — avoid boosting competitors):
 - If no official URL is certain, **omit the link** and tell readers to verify on the official board or university website.
 ${buildInternalLinkingInstructionBlock({ mode: "news-repurpose" })}
 
-SEO + STYLE (match RankFlowHQ / seo-agent article rules, but **total length 800–1000 words** — strict):
-1. Open with one # H1 — include the main topic phrase naturally (from the headline).
-2. Use ## and ### subheads; short paragraphs (2–3 sentences); active voice; Indian English readers (clear Grade 8–10 English, British/Indian spelling where natural).
-3. One markdown table OR bullet list for scanability.
-4. Small **## FAQ** section: **3–4** questions with tight answers (derived only from facts in the source text).
-5. Conclusion with takeaways + one soft CTA (e.g. verify dates on the official site).
-6. Optional: one markdown image placeholder line describing a chart (no fake URLs).
-7. Keyword use: natural; do not stuff.
-8. Follow the INTERNAL LINKS rules above where topics align (same-site hubs).
-9. Entire piece **800–1000 words** — count mentally; stay inside this band.
+SEO + NEWS OPTIMISATION (strict; **total length 800–1000 words**):
+1. Open with exactly one # H1 using this style:
+   [Exam/Board Name] 2026 OUT (LIVE) – Direct Link, PDF Download, Check Details
+   - Adapt naturally if the item is admit card / answer key / counselling / timetable / merit list.
+   - Keep it factual and credible (no fake claims).
+2. Immediately below H1, write one short metadata line in markdown:
+   **Meta Description:** <150–165 characters including urgency words like LIVE/Today/Released and keywords such as result, admit card, exam date, direct link, PDF download where relevant>
+3. Add section: ## 🔥 Latest Update (Today)
+   - 2–3 short lines only, real-time tone, fact-based.
+4. Add section: ## 🔗 Direct Important Links
+   - Bullet list with exactly these labels:
+     - Official Website:
+     - Download PDF:
+     - Result / Check Link:
+   - Use official URLs only when certain; otherwise write "To be updated on official website".
+5. Add section: ## 📊 Key Highlights
+   - One markdown table with rows for:
+     - Exam Name
+     - Conducting Body
+     - Date
+     - Status
+     - Official Website
+6. Use clear SEO structure with keyword placement:
+   - main keyword in H1, first 100 words, and at least 2 H2 headings.
+7. Human newsroom style:
+   - Add context on why the update happened and why now.
+   - Explain clear student impact (who should act, what changes for them, and by when).
+   - Use natural sentence variety (mix short and longer sentences); avoid repetitive rhythm.
+   - Avoid generic AI filler like "in today's fast-paced world", "it is important to note", "delve into", "landscape", "moreover" chains.
+8. Readability:
+   - Short paragraphs (2–3 sentences max), bullet points, and bold key facts like date/time/status.
+9. Add section: **## Why this matters**
+   - 2 short paragraphs on real-world impact for students/parents.
+10. Add **## Frequently Asked Questions** with 3–5 FAQs:
+   - Use ### question headings and 2–4 sentence answers.
+   - Keep answers factual and directly useful.
+11. Finish with a concise conclusion + verification reminder on official website.
+12. Follow INTERNAL LINKS rules above where relevant.
 
 Output **only** valid Markdown (no code fences, no preamble).`;
 }

@@ -202,7 +202,10 @@ export function buildRepurposedNewsArticleSchema(
     | "repurposedImageUrl"
     | "authorName"
   >,
-  opts?: { base?: string },
+  opts?: {
+    base?: string;
+    faqs?: Array<{ question: string; answer: string }>;
+  },
 ): Record<string, unknown> {
   const { base, websiteId, orgId } = opts?.base
     ? siteRefsForOrigin(opts.base)
@@ -307,6 +310,24 @@ export function buildRepurposedNewsArticleSchema(
         : {}),
     },
   ];
+
+  const faqs = opts?.faqs?.filter(
+    (f) => f.question.trim().length > 0 && f.answer.trim().length > 0,
+  );
+  if (faqs && faqs.length > 0) {
+    graph.push({
+      "@type": "FAQPage",
+      "@id": `${url}#faq`,
+      mainEntity: faqs.map((f) => ({
+        "@type": "Question",
+        name: f.question.trim(),
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: f.answer.trim(),
+        },
+      })),
+    });
+  }
 
   return { "@context": "https://schema.org", "@graph": graph };
 }

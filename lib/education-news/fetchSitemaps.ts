@@ -1,6 +1,5 @@
 import { SiteDomain } from "@prisma/client";
 import { XMLParser } from "fast-xml-parser";
-import { inferSiteDomainFromText } from "@/lib/site-domain-infer";
 import type { NewsArticle, SitemapSource } from "./types";
 import { shouldSkipEducationNewsSourceUrl } from "./url-filters";
 
@@ -39,6 +38,10 @@ const EDUCATION_SOURCE_NAMES = new Set(
 );
 const SEO_SOURCE_NAMES = new Set(SEO_SITEMAP_SOURCES.map((s) => s.name));
 
+/** Main-domain news should stay focused on AI/SEO updates only. */
+const MAIN_AI_SEO_TOPIC_RE =
+  /\b(ai|seo|search engine|search ranking|serp|google update|core update|algorithm|backlink|link building|content marketing|llm|chatgpt|openai|gemini|claude|anthropic|perplexity|programmatic seo|generative engine optimization|geo)\b/i;
+
 /**
  * `siteDomain` for a row from its feed `source` label and which sitemap profile was synced.
  * Unknown `source` values follow the profile (education subdomain vs main SEO feeds).
@@ -64,7 +67,10 @@ export function siteDomainForNewsArticle(
 ): SiteDomain {
   const sourceDomain = siteDomainForNewsSource(article.source, profile);
   if (sourceDomain === SiteDomain.education) return SiteDomain.education;
-  return inferSiteDomainFromText(article.source, article.title, article.url);
+  const topicText = `${article.source}\n${article.title}\n${article.url}`;
+  return MAIN_AI_SEO_TOPIC_RE.test(topicText)
+    ? SiteDomain.main
+    : SiteDomain.education;
 }
 
 function sourcesForProfile(profile: NewsSourceProfile): SitemapSource[] {
