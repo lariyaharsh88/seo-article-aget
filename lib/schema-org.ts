@@ -216,7 +216,7 @@ export function buildRepurposedNewsArticleSchema(
   const wpId = `${url}#webpage`;
   const articleId = `${url}#article`;
   const bcId = `${url}#breadcrumb`;
-  const desc = `${post.title} — ${post.source}`.slice(0, 500);
+  const desc = post.title.slice(0, 500);
   const published = post.repurposedAt?.toISOString() ?? post.updatedAt.toISOString();
   const heroUrl = post.repurposedImageUrl?.trim();
 
@@ -285,17 +285,11 @@ export function buildRepurposedNewsArticleSchema(
         },
       },
       copyrightHolder: { "@id": orgId },
-      articleSection: post.source,
       genre: "Educational news",
       isAccessibleForFree: true,
       mainEntityOfPage: { "@id": wpId },
       url,
       inLanguage: "en",
-      isBasedOn: {
-        "@type": "WebPage",
-        url: post.url,
-        name: `${post.source} (original)`,
-      },
       ...(heroUrl
         ? {
             image: [

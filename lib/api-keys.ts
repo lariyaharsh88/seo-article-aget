@@ -29,9 +29,16 @@ export function resolveGroqKey(request: Request): string | undefined {
   return process.env.GROQ_API_KEY?.trim() || undefined;
 }
 
+export function resolveOpenRouterKey(request: Request): string | undefined {
+  const header = request.headers.get("x-openrouter-key")?.trim();
+  if (header) return header;
+  return process.env.OPENROUTER_API_KEY?.trim() || undefined;
+}
+
 export function serverKeyStatus(): {
   gemini: boolean;
   groq: boolean;
+  openrouter: boolean;
   tavily: boolean;
   serper: boolean;
   searchConsole: boolean;
@@ -47,6 +54,7 @@ export function serverKeyStatus(): {
   return {
     gemini: Boolean(process.env.GEMINI_API_KEY?.trim()),
     groq: Boolean(process.env.GROQ_API_KEY?.trim()),
+    openrouter: Boolean(process.env.OPENROUTER_API_KEY?.trim()),
     tavily: Boolean(process.env.TAVILY_API_KEY?.trim()),
     serper: Boolean(process.env.SERPER_API_KEY?.trim()),
     searchConsole: gsc,

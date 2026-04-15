@@ -1,6 +1,11 @@
-import { resolveGeminiKey, resolveGroqKey } from "@/lib/api-keys";
+import {
+  resolveGeminiKey,
+  resolveGroqKey,
+  resolveOpenRouterKey,
+} from "@/lib/api-keys";
 import { geminiStream } from "@/lib/gemini";
 import { groqStream } from "@/lib/groq";
+import { openRouterStream } from "@/lib/openrouter";
 import { buildInternalLinkingInstructionBlock } from "@/lib/internal-linking-prompt";
 import { capPromptText } from "@/lib/prompt-truncate";
 import type { Keyword, PipelineInput } from "@/lib/types";
@@ -56,9 +61,13 @@ function isGeminiLimitError(errorMessage: string): boolean {
 export async function POST(request: Request) {
   const geminiKey = resolveGeminiKey(request);
   const groqKey = resolveGroqKey(request);
-  if (!geminiKey) {
+  const openRouterKey = resolveOpenRouterKey(request);
+  if (!geminiKey && !groqKey && !openRouterKey) {
     return new Response(
-      JSON.stringify({ error: "Missing Gemini API key (header or env)." }),
+      JSON.stringify({
+        error:
+          "Missing provider key. Set one of: Gemini (x-gemini-key/GEMINI_API_KEY), Groq (x-groq-key/GROQ_API_KEY), OpenRouter (x-openrouter-key/OPENROUTER_API_KEY).",
+      }),
       { status: 401, headers: { "Content-Type": "application/json" } },
     );
   }
@@ -201,55 +210,99 @@ ${userPrompt}`;
 
   const stream = new ReadableStream({
     async start(controller) {
-      let streamedChars = 0;
-      const streamChunk = (chunk: string) => {
-        streamedChars += chunk.length;
-        controller.enqueue(encodeSseChunk(chunk));
+      const streamChunk = (provider: string, chunk: string) => {
+        controller.enqueue(encodeSseChunk(`[${provider}] ${chunk}`));
       };
+      const streamDivider = (provider: string) => {
+        controller.enqueue(
+          encodeSseChunk(`\n\n---\n\n## ${provider} output\n\n`),
+        );
+      };
+      const providerRuns: Promise<void>[] = [];
+
+      if (geminiKey) {
+        providerRuns.push(
+          (async () => {
+            streamDivider("Gemini");
+            let streamedChars = 0;
+            try {
+              await geminiStream(
+                fullPrompt,
+                (chunk) => {
+                  streamedChars += chunk.length;
+                  streamChunk("Gemini", chunk);
+                },
+                geminiKey,
+                { temperature: 0.7, maxOutputTokens },
+              );
+            } catch (e) {
+              const msg =
+                e instanceof Error ? e.message : "Gemini article stream failed";
+              const shouldFallbackToGroq =
+                streamedChars === 0 && Boolean(groqKey) && isGeminiLimitError(msg);
+              if (shouldFallbackToGroq && groqKey) {
+                streamChunk(
+                  "Gemini",
+                  `\n[Gemini fallback] ${msg}. Switching to Groq for this run.\n`,
+                );
+                await groqStream(
+                  fullPrompt,
+                  (chunk) => streamChunk("Groq", chunk),
+                  groqKey,
+                  { temperature: 0.7, maxOutputTokens },
+                );
+              } else {
+                streamChunk("Gemini", `\n[Error] ${msg}\n`);
+              }
+            }
+          })(),
+        );
+      }
+
+      if (groqKey) {
+        providerRuns.push(
+          (async () => {
+            streamDivider("Groq");
+            try {
+              await groqStream(
+                fullPrompt,
+                (chunk) => streamChunk("Groq", chunk),
+                groqKey,
+                { temperature: 0.7, maxOutputTokens },
+              );
+            } catch (e) {
+              const msg =
+                e instanceof Error ? e.message : "Groq article stream failed";
+              streamChunk("Groq", `\n[Error] ${msg}\n`);
+            }
+          })(),
+        );
+      }
+
+      if (openRouterKey) {
+        providerRuns.push(
+          (async () => {
+            streamDivider("OpenRouter");
+            try {
+              await openRouterStream(
+                fullPrompt,
+                (chunk) => streamChunk("OpenRouter", chunk),
+                openRouterKey,
+                { temperature: 0.7, maxOutputTokens },
+              );
+            } catch (e) {
+              const msg =
+                e instanceof Error ? e.message : "OpenRouter stream failed";
+              streamChunk("OpenRouter", `\n[Error] ${msg}\n`);
+            }
+          })(),
+        );
+      }
 
       try {
-        await geminiStream(
-          fullPrompt,
-          streamChunk,
-          geminiKey,
-          { temperature: 0.7, maxOutputTokens },
-        );
-        controller.enqueue(encoder.encode("data: [DONE]\n\n"));
-      } catch (e) {
-        const msg = e instanceof Error ? e.message : "Article stream failed";
-        const shouldFallbackToGroq =
-          streamedChars === 0 && Boolean(groqKey) && isGeminiLimitError(msg);
-
-        if (shouldFallbackToGroq && groqKey) {
-          try {
-            await groqStream(
-              fullPrompt,
-              streamChunk,
-              groqKey,
-              { temperature: 0.7, maxOutputTokens },
-            );
-            controller.enqueue(encoder.encode("data: [DONE]\n\n"));
-          } catch (groqError) {
-            const groqMessage =
-              groqError instanceof Error
-                ? groqError.message
-                : "Groq fallback stream failed";
-            controller.enqueue(
-              encoder.encode(
-                `data: ${JSON.stringify({
-                  error: `${msg} | Groq fallback failed: ${groqMessage}`,
-                })}\n\n`,
-              ),
-            );
-            controller.enqueue(encoder.encode("data: [DONE]\n\n"));
-          }
-        } else {
-          controller.enqueue(
-            encoder.encode(`data: ${JSON.stringify({ error: msg })}\n\n`),
-          );
-          controller.enqueue(encoder.encode("data: [DONE]\n\n"));
-        }
+        await Promise.all(providerRuns);
       } finally {
+        controller.enqueue(encoder.encode("data: [DONE]\n\n"));
         controller.close();
       }
     },

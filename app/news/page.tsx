@@ -16,13 +16,13 @@ import { getToolExplainerMarkdown } from "@/lib/tool-explainer";
 type Props = { searchParams: { page?: string | string[] } };
 
 const DESC =
-  "Repurposed education news on RankFlowHQ—SEO-friendly articles on exams, boards, and higher ed. Browse the index and open full stories under /news.";
+  "Education news on RankFlowHQ—clear coverage on exams, boards, and higher education updates. Browse all stories under /news.";
 
 export async function generateMetadata({
   searchParams,
 }: Props): Promise<Metadata> {
   const page = parseListPageParam(searchParams?.page);
-  const titleBase = "Education News Articles — Repurposed SEO Stories";
+  const titleBase = "Education News Articles — Latest Updates";
   const title = page > 1 ? `${titleBase} (page ${page})` : titleBase;
   const path = page > 1 ? `/news?page=${page}` : "/news";
   const siteOrigin = await getRequestSiteOrigin();
@@ -34,7 +34,7 @@ export async function generateMetadata({
       siteOrigin,
       keywords: [
         "education news articles",
-        "repurposed news SEO",
+        "education news updates",
         "exam updates",
         "India education news",
       ],
@@ -119,7 +119,7 @@ export default async function NewsIndexPage({ searchParams }: Props) {
             Education News
           </p>
           <h1 className="mt-2 font-display text-3xl text-text-primary sm:text-4xl">
-            Latest repurposed stories
+            Latest stories
           </h1>
           <p className="mt-2 max-w-2xl font-serif text-sm text-text-secondary">
             SEO-ready coverage of education updates, optimized for readability and
@@ -137,9 +137,9 @@ export default async function NewsIndexPage({ searchParams }: Props) {
         ) : items.length === 0 ? (
           <div className="mt-10 rounded-xl border border-border bg-surface/40 p-5">
             <p className="font-serif text-sm text-text-muted">
-              No published repurposed articles yet. Run{" "}
+              No published articles yet. Run{" "}
               <Link href="/education-news" className="text-accent underline">
-                Repurpose
+                Publish
               </Link>{" "}
               from the education news dashboard.
             </p>
@@ -157,20 +157,20 @@ export default async function NewsIndexPage({ searchParams }: Props) {
                       {item.title}
                     </span>
                     <span className="mt-2 inline-block rounded-full border border-border/80 bg-background/70 px-2.5 py-1 font-mono text-[10px] uppercase tracking-wide text-text-muted">
-                      Repurposed Article
+                      News Article
                     </span>
                     <span className="mt-3 block font-mono text-[11px] leading-relaxed text-text-muted">
                       {(() => {
                         const issued = formatSourceIssueTimeIst(item.lastmod);
-                        const repurposed =
+                        const published =
                           item.repurposedAt.toLocaleDateString("en-IN", {
                             year: "numeric",
                             month: "short",
                             day: "numeric",
                           });
                         return issued
-                          ? `Issued ${issued} · Repurposed ${repurposed}`
-                          : `Repurposed ${repurposed}`;
+                          ? `Issued ${issued} · Published ${published}`
+                          : `Published ${published}`;
                       })()}
                     </span>
                     <span className="mt-3 inline-block font-mono text-xs text-accent">

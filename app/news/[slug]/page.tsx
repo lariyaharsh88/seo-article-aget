@@ -236,7 +236,7 @@ export default async function RepurposedNewsArticlePage({ params }: Props) {
             {post.repurposedAt ? (
               <>
                 {" · "}
-                <span className="text-text-secondary">Repurposed</span>{" "}
+                <span className="text-text-secondary">Published</span>{" "}
                 <time dateTime={post.repurposedAt.toISOString()}>
                   {post.repurposedAt.toLocaleString("en-IN", {
                     timeZone: "Asia/Kolkata",
@@ -268,27 +268,16 @@ export default async function RepurposedNewsArticlePage({ params }: Props) {
               fetchPriority="high"
             />
           ) : null}
-          <p className="mt-4 font-mono text-[11px] text-text-muted">
-            <a
-              href={post.url}
-              target="_blank"
-              rel="nofollow noopener noreferrer"
-              className="text-accent underline-offset-2 hover:underline"
-            >
-              View original source
-            </a>
-            {post.repurposedCanonicalUrl ? (
-              <>
-                {" · "}
-                <a
-                  href={post.repurposedCanonicalUrl}
-                  className="text-text-muted underline-offset-2 hover:text-accent hover:underline"
-                >
-                  Permalink (canonical)
-                </a>
-              </>
-            ) : null}
-          </p>
+          {post.repurposedCanonicalUrl ? (
+            <p className="mt-4 font-mono text-[11px] text-text-muted">
+              <a
+                href={post.repurposedCanonicalUrl}
+                className="text-text-muted underline-offset-2 hover:text-accent hover:underline"
+              >
+                Permalink
+              </a>
+            </p>
+          ) : null}
           <ArticleLeadCtaStrip className="mt-4" />
           <section className="mt-6 rounded-2xl border border-accent/35 bg-accent/10 px-4 py-4 sm:px-5">
             <p className="font-serif text-sm leading-relaxed text-text-secondary">
@@ -316,14 +305,14 @@ export default async function RepurposedNewsArticlePage({ params }: Props) {
           heading="More news"
           items={peerNews.map((n) => {
             const issued = formatSourceIssueTimeIst(n.lastmod);
-            const repurposed = n.repurposedAt.toLocaleDateString("en-IN", {
+            const published = n.repurposedAt.toLocaleDateString("en-IN", {
               year: "numeric",
               month: "short",
               day: "numeric",
             });
             const description = issued
-              ? `Issued ${issued} · Repurposed ${repurposed}`
-              : `Repurposed ${repurposed}`;
+              ? `Issued ${issued} · Published ${published}`
+              : `Published ${published}`;
             return {
               href: `/news/${encodeURIComponent(n.slug)}`,
               title: n.title,
