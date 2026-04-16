@@ -321,7 +321,8 @@ export function SeoAgentClient() {
   const usageRemaining = Math.max(0, usageLimit - usageRuns);
   const usageLimitReached = usageRemaining <= 0;
   const hasFirstOutput = article.trim().length >= 40;
-  const hasVisitedOptimizationStep = tab === "seo" || tab === "score" || showSeoScore;
+  const hasVisitedOptimizationStep =
+    tab === "seo" || tab === "score" || (hasFirstOutput && !running);
 
   const onboardingProgress = Math.round((onboardingStep / 4) * 100);
   const onboardingChecklistItems = [
