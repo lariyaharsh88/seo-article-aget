@@ -17,27 +17,38 @@ export async function GET(request: Request, { params }: Props) {
     return NextResponse.json({ error: "Missing id" }, { status: 400 });
   }
 
-  const row = await prisma.userGeneratedArticle.findFirst({
-    where: { id, supabaseUserId: user.id },
-    select: {
-      id: true,
-      title: true,
-      topic: true,
-      primaryKeyword: true,
-      sourceUrl: true,
-      markdown: true,
-      wordCount: true,
-      createdAt: true,
-    },
-  });
-  if (!row) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
-  }
+  try {
+    const row = await prisma.userGeneratedArticle.findFirst({
+      where: { id, supabaseUserId: user.id },
+      select: {
+        id: true,
+        title: true,
+        topic: true,
+        primaryKeyword: true,
+        sourceUrl: true,
+        markdown: true,
+        wordCount: true,
+        createdAt: true,
+      },
+    });
+    if (!row) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
 
-  return NextResponse.json({
-    item: {
-      ...row,
-      createdAt: row.createdAt.toISOString(),
-    },
-  });
+    return NextResponse.json({
+      item: {
+        ...row,
+        createdAt: row.createdAt.toISOString(),
+      },
+    });
+  } catch (e) {
+    console.error("[user-articles/:id] GET failed:", e);
+    return NextResponse.json(
+      {
+        error:
+          "Could not load article detail. Run prisma migrate deploy to create UserGeneratedArticle table.",
+      },
+      { status: 500 },
+    );
+  }
 }

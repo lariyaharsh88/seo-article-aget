@@ -17,6 +17,16 @@ type Item = {
   createdAt: string;
 };
 
+async function parseJsonSafe<T>(res: Response): Promise<T | null> {
+  const raw = await res.text();
+  if (!raw.trim()) return null;
+  try {
+    return JSON.parse(raw) as T;
+  } catch {
+    return null;
+  }
+}
+
 export default function DashboardArticleDetailPage() {
   const params = useParams<{ id: string }>();
   const id = params?.id;
@@ -35,8 +45,15 @@ export default function DashboardArticleDetailPage() {
         const res = await fetch(`/api/user-articles/${encodeURIComponent(id || "")}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        const payload = (await res.json()) as { item?: Item; error?: string };
-        if (!res.ok) throw new Error(payload.error || `HTTP ${res.status}`);
+        const payload = (await parseJsonSafe<{ item?: Item; error?: string }>(res)) || {
+          error: "",
+        };
+        if (!res.ok) {
+          throw new Error(
+            payload.error ||
+              `Article detail API failed (HTTP ${res.status}). If this is a fresh deploy, run prisma migrate deploy.`,
+          );
+        }
         if (!dead) setItem(payload.item ?? null);
       } catch (e) {
         if (!dead) setError(e instanceof Error ? e.message : "Failed to load article");

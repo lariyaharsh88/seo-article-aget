@@ -26,28 +26,39 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const rows = await prisma.userGeneratedArticle.findMany({
-    where: { supabaseUserId: user.id },
-    orderBy: { createdAt: "desc" },
-    take: 100,
-    select: {
-      id: true,
-      title: true,
-      topic: true,
-      primaryKeyword: true,
-      sourceUrl: true,
-      wordCount: true,
-      createdAt: true,
-    },
-  });
+  try {
+    const rows = await prisma.userGeneratedArticle.findMany({
+      where: { supabaseUserId: user.id },
+      orderBy: { createdAt: "desc" },
+      take: 100,
+      select: {
+        id: true,
+        title: true,
+        topic: true,
+        primaryKeyword: true,
+        sourceUrl: true,
+        wordCount: true,
+        createdAt: true,
+      },
+    });
 
-  return NextResponse.json({
-    items: rows.map((r) => ({
-      ...r,
-      createdAt: r.createdAt.toISOString(),
-      dashboardLink: `/dashboard/articles/${encodeURIComponent(r.id)}`,
-    })),
-  });
+    return NextResponse.json({
+      items: rows.map((r) => ({
+        ...r,
+        createdAt: r.createdAt.toISOString(),
+        dashboardLink: `/dashboard/articles/${encodeURIComponent(r.id)}`,
+      })),
+    });
+  } catch (e) {
+    console.error("[user-articles] GET failed:", e);
+    return NextResponse.json(
+      {
+        error:
+          "Could not load dashboard history. Run prisma migrate deploy to create UserGeneratedArticle table.",
+      },
+      { status: 500 },
+    );
+  }
 }
 
 export async function POST(request: Request) {
@@ -78,23 +89,34 @@ export async function POST(request: Request) {
     );
   }
 
-  const row = await prisma.userGeneratedArticle.create({
-    data: {
-      supabaseUserId: user.id,
-      title: extractTitleFromMarkdown(markdown, body.title?.trim() || topic),
-      topic,
-      primaryKeyword: body.primaryKeyword?.trim() || null,
-      sourceUrl: body.sourceUrl?.trim() || null,
-      markdown,
-      wordCount: readWordCount(markdown),
-    },
-    select: { id: true, createdAt: true },
-  });
+  try {
+    const row = await prisma.userGeneratedArticle.create({
+      data: {
+        supabaseUserId: user.id,
+        title: extractTitleFromMarkdown(markdown, body.title?.trim() || topic),
+        topic,
+        primaryKeyword: body.primaryKeyword?.trim() || null,
+        sourceUrl: body.sourceUrl?.trim() || null,
+        markdown,
+        wordCount: readWordCount(markdown),
+      },
+      select: { id: true, createdAt: true },
+    });
 
-  return NextResponse.json({
-    ok: true,
-    id: row.id,
-    createdAt: row.createdAt.toISOString(),
-    dashboardLink: `/dashboard/articles/${encodeURIComponent(row.id)}`,
-  });
+    return NextResponse.json({
+      ok: true,
+      id: row.id,
+      createdAt: row.createdAt.toISOString(),
+      dashboardLink: `/dashboard/articles/${encodeURIComponent(row.id)}`,
+    });
+  } catch (e) {
+    console.error("[user-articles] POST failed:", e);
+    return NextResponse.json(
+      {
+        error:
+          "Could not save article history. Run prisma migrate deploy to create UserGeneratedArticle table.",
+      },
+      { status: 500 },
+    );
+  }
 }

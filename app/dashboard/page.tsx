@@ -15,6 +15,16 @@ type Row = {
   dashboardLink: string;
 };
 
+async function parseJsonSafe<T>(res: Response): Promise<T | null> {
+  const raw = await res.text();
+  if (!raw.trim()) return null;
+  try {
+    return JSON.parse(raw) as T;
+  } catch {
+    return null;
+  }
+}
+
 export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -36,11 +46,16 @@ export default function DashboardPage() {
         const res = await fetch("/api/user-articles", {
           headers: { Authorization: `Bearer ${token}` },
         });
-        const payload = (await res.json()) as {
+        const payload = (await parseJsonSafe<{
           items?: Row[];
           error?: string;
-        };
-        if (!res.ok) throw new Error(payload.error || `HTTP ${res.status}`);
+        }>(res)) || { error: "" };
+        if (!res.ok) {
+          throw new Error(
+            payload.error ||
+              `Dashboard API failed (HTTP ${res.status}). If this is a fresh deploy, run prisma migrate deploy.`,
+          );
+        }
         if (!dead) setRows(Array.isArray(payload.items) ? payload.items : []);
       } catch (e) {
         if (!dead) setError(e instanceof Error ? e.message : "Failed to load dashboard.");
