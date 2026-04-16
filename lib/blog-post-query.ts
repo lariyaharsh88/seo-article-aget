@@ -1,7 +1,11 @@
 import { Prisma, SiteDomain } from "@prisma/client";
 import type { BlogPost } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { getStaticBlogPostBySlug, listStaticBlogPosts } from "@/lib/static-blog-posts";
+import {
+  ALLOWED_BLOG_SLUGS,
+  getStaticBlogPostBySlug,
+  listStaticBlogPosts,
+} from "@/lib/static-blog-posts";
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -107,7 +111,30 @@ export async function findPublishedBlogPostBySlug(
 ): Promise<BlogPost | null> {
   const slug = normalizeBlogSlugParam(rawSlug);
   if (!slug) return null;
-  return getStaticBlogPostBySlug(slug);
+  const staticPost = await getStaticBlogPostBySlug(slug);
+  if (staticPost) return staticPost;
+
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    try {
+      return await prisma.blogPost.findFirst({
+        where: {
+          published: true,
+          siteDomain: SiteDomain.main,
+          AND: [
+            { slug },
+            { slug: { notIn: [...ALLOWED_BLOG_SLUGS] } },
+          ],
+        },
+      });
+    } catch (err) {
+      if (attempt < MAX_ATTEMPTS && isRetryablePrismaError(err)) {
+        await sleep(Math.min(120 * 2 ** (attempt - 1), 2000));
+        continue;
+      }
+      return null;
+    }
+  }
+  return null;
 }
 
 /** Other published posts for bottom-of-article internal links (newest first). */

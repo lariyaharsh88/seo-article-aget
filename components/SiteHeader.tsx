@@ -9,13 +9,12 @@ import { SITE_LOGO_PATH, SITE_NAME } from "@/lib/seo-site";
 
 const mainNav = [
   { href: "/", label: "Home" },
-  { href: "/ai-seo-tools", label: "AI SEO Tools" },
-  { href: "/free-tools", label: "Free Tools" },
-  { href: "/pages", label: "All Tools" },
+  { href: "/seo-agent", label: "Product" },
+  { href: "/ai-seo-tools", label: "Solutions" },
+  { href: "/free-tools", label: "Resources" },
   { href: "/dashboard", label: "Dashboard" },
-  { href: "/login?next=/seo-agent", label: "Login" },
-  { href: "/blog", label: "Blog" },
   { href: "/pricing", label: "Pricing" },
+  { href: "/login?next=/seo-agent", label: "Login" },
 ] as const;
 
 /** Stays on education.rankflowhq.com — avoids middleware redirects to apex. */
@@ -78,8 +77,8 @@ export function SiteHeader() {
   const saasHref = buildEducationFunnelUrl("/seo-agent", "header_nav");
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border bg-background/95 pt-[max(0.25rem,env(safe-area-inset-top))] backdrop-blur-md supports-[backdrop-filter]:bg-background/90">
-      <div className="relative mx-auto max-w-6xl px-4 md:px-6">
+    <header className="sticky top-0 z-50 border-b border-border/80 bg-background/80 pt-[max(0.25rem,env(safe-area-inset-top))] backdrop-blur-xl supports-[backdrop-filter]:bg-background/70">
+      <div className="relative mx-auto max-w-7xl px-4 md:px-6">
         <div className="flex items-center justify-between gap-3 py-3">
           <Link
             href={homeHref}
@@ -117,27 +116,31 @@ export function SiteHeader() {
           >
             {open ? <CloseIcon /> : <MenuIcon />}
           </button>
-          <nav
-            className="hidden flex-wrap items-center justify-end gap-2 md:flex"
-            aria-label="Primary"
-          >
+          <nav className="hidden flex-wrap items-center justify-end gap-2 md:flex" aria-label="Primary">
             {nav.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
-                className="rounded-lg border border-border px-3 py-1.5 font-mono text-xs text-text-secondary transition-all duration-200 hover:border-accent hover:text-accent focus:outline-none focus:ring-2 focus:ring-accent"
+                className="rounded-lg border border-border/80 bg-surface/40 px-3 py-1.5 font-mono text-xs text-text-secondary transition-all duration-200 hover:-translate-y-0.5 hover:border-accent/70 hover:text-text-primary focus:outline-none focus:ring-2 focus:ring-accent"
               >
                 {item.label}
               </Link>
             ))}
-            {educationSurface ? (
+            {!educationSurface ? (
+              <Link
+                href="/seo-agent"
+                className="rounded-lg bg-accent px-4 py-2 font-mono text-xs font-semibold text-background transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90"
+              >
+                Start Free Trial
+              </Link>
+            ) : (
               <a
                 href={saasHref}
-                className="rounded-lg border border-accent/50 bg-accent/15 px-3 py-1.5 font-mono text-xs text-accent transition-all hover:bg-accent/25"
+                className="rounded-lg bg-accent px-4 py-2 font-mono text-xs font-semibold text-background transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90"
               >
                 RankFlowHQ SaaS
               </a>
-            ) : null}
+            )}
           </nav>
         </div>
         <nav

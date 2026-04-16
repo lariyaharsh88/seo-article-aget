@@ -10,6 +10,16 @@ body {
   @apply min-h-screen bg-background font-serif text-text-primary antialiased;
 }
 
+a,
+button {
+  transition:
+    color 0.24s ease,
+    background-color 0.24s ease,
+    border-color 0.24s ease,
+    transform 0.24s ease,
+    opacity 0.24s ease;
+}
+
 .page-grid::before {
   content: "";
   pointer-events: none;
@@ -17,11 +27,21 @@ body {
   inset: 0;
   z-index: 0;
   background-image:
-    linear-gradient(rgba(30, 45, 61, 0.35) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(30, 45, 61, 0.35) 1px, transparent 1px);
+    linear-gradient(rgba(30, 41, 59, 0.25) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(30, 41, 59, 0.25) 1px, transparent 1px);
   background-size: 48px 48px;
-  opacity: 0.35;
+  opacity: 0.25;
   mask-image: radial-gradient(ellipse at top, black 0%, transparent 65%);
+}
+
+.premium-noise::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: radial-gradient(rgba(148, 163, 184, 0.08) 0.7px, transparent 0.7px);
+  background-size: 3px 3px;
+  opacity: 0.25;
 }
 
 .custom-scrollbar {

@@ -12,7 +12,7 @@ const footerLinks = [
 export function SiteFooter() {
   const year = new Date().getFullYear();
   return (
-    <footer className="mt-auto border-t border-border bg-background/80">
+    <footer className="mt-auto border-t border-border/80 bg-background/70 backdrop-blur-sm">
       {ADSENSE_SLOTS.footer ? (
         <div className="border-b border-border/60 bg-background/40">
           <div className="mx-auto max-w-6xl space-y-2 px-4 py-6 md:px-6">
@@ -27,21 +27,30 @@ export function SiteFooter() {
           </div>
         </div>
       ) : null}
-      <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-10 md:flex-row md:items-center md:justify-between md:px-6">
-        <div className="space-y-1">
-          <p className="font-display text-sm text-text-primary">{SITE_NAME}</p>
-          <p className="max-w-md font-serif text-xs text-text-muted">
-            SEO tooling for research, content, and outreach — built for teams who ship
-            organic growth.
+      <div className="mx-auto grid max-w-7xl gap-8 px-4 py-12 md:grid-cols-[1.2fr_1fr_auto] md:items-start md:px-6">
+        <div className="space-y-3">
+          <p className="font-display text-lg text-text-primary">{SITE_NAME}</p>
+          <p className="max-w-md font-serif text-sm text-text-secondary">
+            The AI SEO platform for teams shipping high-quality, answer-ready content.
+            Plan, generate, optimize, and publish from one workflow.
+          </p>
+          <Link
+            href="/seo-agent"
+            className="inline-flex rounded-lg bg-accent px-4 py-2 font-mono text-xs font-semibold text-background transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90"
+          >
+            Start Free
+          </Link>
+          <p className="font-mono text-[11px] text-text-muted">
+            Start free in under 60 seconds. No complex setup.
           </p>
         </div>
-        <nav aria-label="Footer">
+        <nav aria-label="Footer" className="md:justify-self-center">
           <ul className="flex flex-wrap gap-x-6 gap-y-2">
             {footerLinks.map((item) => (
               <li key={item.href}>
                 <Link
                   href={item.href}
-                  className="font-mono text-xs text-text-secondary transition-colors hover:text-accent"
+                  className="font-mono text-xs text-text-secondary transition-colors hover:text-text-primary"
                 >
                   {item.label}
                 </Link>
@@ -49,9 +58,17 @@ export function SiteFooter() {
             ))}
           </ul>
         </nav>
+        <div className="rounded-xl border border-border/80 bg-surface/50 p-4 md:justify-self-end">
+          <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-accent">
+            Build with confidence
+          </p>
+          <p className="mt-2 font-serif text-xs text-text-secondary">
+            Structured workflows, clear outputs, and reliable publishing paths for growth teams.
+          </p>
+        </div>
       </div>
-      <div className="border-t border-border/60 bg-surface/40 px-4 py-3">
-        <p className="mx-auto max-w-6xl text-center font-mono text-xs text-text-secondary">
+      <div className="border-t border-border/60 bg-surface/30 px-4 py-3">
+        <p className="mx-auto max-w-7xl text-center font-mono text-xs text-text-secondary">
           Generate articles using AI{" "}
           <Link
             href="https://rankflowhq.com"

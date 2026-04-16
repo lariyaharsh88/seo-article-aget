@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Abril_Fatface, Lora, Space_Mono } from "next/font/google";
+import { Inter, Space_Mono } from "next/font/google";
 import Script from "next/script";
 import { ExitIntentPopup } from "@/components/ExitIntentPopup";
 import { EducationStickyGenerateButton } from "@/components/EducationStickyGenerateButton";
@@ -19,16 +19,9 @@ import {
 import { getMetadataBaseUrl, getSiteUrl } from "@/lib/site-url";
 import "./globals.css";
 
-const abril = Abril_Fatface({
-  weight: "400",
+const inter = Inter({
   subsets: ["latin"],
-  variable: "--font-abril",
-  display: "swap",
-});
-
-const lora = Lora({
-  subsets: ["latin"],
-  variable: "--font-lora",
+  variable: "--font-inter",
   display: "swap",
 });
 
@@ -129,7 +122,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${abril.variable} ${lora.variable} ${spaceMono.variable} page-grid`}
+        className={`${inter.variable} ${spaceMono.variable} page-grid`}
       >
         <Script
           src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}

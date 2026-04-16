@@ -101,7 +101,7 @@ export async function middleware(request: NextRequest) {
 
   if (!isEducationHost) {
     /** Canonical blog URLs: `/blog` is primary; `/blogs` mirrors the same content. */
-    if (path === "/blogs" || path.startsWith("/blogs/")) {
+    if ((path === "/blogs" || path.startsWith("/blogs/")) && path !== "/blogs/sitemap.xml") {
       const url = request.nextUrl.clone();
       url.pathname = path.replace(/^\/blogs/, "/blog");
       return NextResponse.redirect(url, 308);
