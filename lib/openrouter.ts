@@ -45,11 +45,11 @@ function streamTextFromPayload(payload: string): string {
   }
 }
 
-export async function openRouterChat(
+export async function openRouterChatWithKey(
   messages: { role: "system" | "user" | "assistant"; content: string }[],
+  apiKey: string,
   options?: { temperature?: number; maxTokens?: number },
 ): Promise<{ content: string; model: string }> {
-  const key = requireOpenRouterKey();
   const model = getOpenRouterModel();
   const siteUrl =
     process.env.NEXT_PUBLIC_SITE_URL?.trim() || "http://localhost:3000";
@@ -58,7 +58,7 @@ export async function openRouterChat(
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${key}`,
+      Authorization: `Bearer ${apiKey}`,
       "HTTP-Referer": siteUrl,
       "X-Title": "AI SEO Toolkit",
     },
@@ -93,6 +93,13 @@ export async function openRouterChat(
   }
 
   return { content: content.trim(), model };
+}
+
+export async function openRouterChat(
+  messages: { role: "system" | "user" | "assistant"; content: string }[],
+  options?: { temperature?: number; maxTokens?: number },
+): Promise<{ content: string; model: string }> {
+  return openRouterChatWithKey(messages, requireOpenRouterKey(), options);
 }
 
 export async function openRouterStream(

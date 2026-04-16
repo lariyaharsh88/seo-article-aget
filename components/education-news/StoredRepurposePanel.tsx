@@ -251,7 +251,7 @@ export function StoredRepurposePanel({ initialItems, syncKey = 0 }: Props) {
             Each sitemap item is upserted to Postgres. Use{" "}
             <strong className="text-text-primary">Repurpose</strong> to rewrite in the same
             RankFlowHQ / seo-agent style, capped at{" "}
-            <strong className="text-text-primary">800–1000 words</strong> (Gemini, server key).
+            <strong className="text-text-primary">800–1000 words</strong> (Gemini → OpenRouter → Groq fallback, server keys).
             Ready drafts get a stable URL under{" "}
             <Link href="/news" className="text-accent underline-offset-2 hover:underline">
               /news/

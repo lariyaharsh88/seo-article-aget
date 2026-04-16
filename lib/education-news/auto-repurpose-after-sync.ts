@@ -1,3 +1,7 @@
+import {
+  hasAnyRepurposeKey,
+  repurposeKeysFromEnv,
+} from "@/lib/education-news/repurpose-llm";
 import { runRepurposePending } from "@/lib/education-news/repurpose-runner";
 
 function autoRepurposeEnabled(): boolean {
@@ -18,12 +22,13 @@ function autoRepurposeLimit(): number {
 
 /**
  * After sitemap sync, process the pending/error queue (no button needed).
- * Uses `GEMINI_API_KEY`. Respects `EDUCATION_NEWS_AUTO_REPURPOSE` and `_LIMIT`.
+ * Uses `GEMINI_API_KEY` (primary), with OpenRouter/Groq env keys as fallbacks inside the runner.
+ * Respects `EDUCATION_NEWS_AUTO_REPURPOSE` and `_LIMIT`.
  */
 export async function runAutoRepurposeAfterSync(): Promise<void> {
   if (!autoRepurposeEnabled()) return;
-  const key = process.env.GEMINI_API_KEY?.trim();
-  if (!key) return;
+  const keys = repurposeKeysFromEnv();
+  if (!hasAnyRepurposeKey(keys)) return;
 
   const limit = autoRepurposeLimit();
   if (limit === 0) return;
@@ -31,7 +36,7 @@ export async function runAutoRepurposeAfterSync(): Promise<void> {
   // Process queue (pending + retriable errors), not only newly inserted ids.
   // This prevents old backlog rows from getting stuck forever.
   try {
-    await runRepurposePending(key, limit);
+    await runRepurposePending(keys, limit);
   } catch (e) {
     console.error("[education-news] auto-repurpose queue failed:", e);
   }

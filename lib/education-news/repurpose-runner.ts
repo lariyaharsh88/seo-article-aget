@@ -1,8 +1,12 @@
 import { revalidatePath } from "next/cache";
 import { DEFAULT_ARTICLE_AUTHOR_NAME } from "@/lib/article-author";
 import { slugify } from "@/lib/blog-slug";
-import { geminiText } from "@/lib/gemini";
 import { fetchArticlePlainText } from "@/lib/education-news/fetch-article-text";
+import {
+  generateRepurposeMarkdown,
+  hasAnyRepurposeKey,
+  type RepurposeLlmKeys,
+} from "@/lib/education-news/repurpose-llm";
 import { buildEducationNewsRepurposePrompt } from "@/lib/education-news/repurpose-prompt";
 import { ensureUniqueRepurposedSlug } from "@/lib/education-news/repurpose-news-slug";
 import { createAndStoreNewsHeroImage } from "@/lib/education-news/upload-news-hero-image";
@@ -47,10 +51,16 @@ function extractFirstMarkdownH1(markdown: string): string | null {
 
 export async function runRepurposeForArticleId(
   id: string,
-  geminiKey: string,
+  llmKeys: RepurposeLlmKeys,
   onProgress?: (u: RepurposeProgressUpdate) => void,
   range?: { min: number; max: number },
 ): Promise<void> {
+  if (!hasAnyRepurposeKey(llmKeys)) {
+    throw new Error(
+      "No LLM keys configured (set GEMINI_API_KEY, OPENROUTER_API_KEY, or GROQ_API_KEY).",
+    );
+  }
+
   const lo = range?.min ?? 0;
   const hi = range?.max ?? 100;
   const emit = (inner: number, step: string) =>
@@ -96,13 +106,9 @@ export async function runRepurposeForArticleId(
       plainTextFromPage: plain,
     });
 
-    emit(55, "Gemini is writing (800–1000 words)…");
-    const md = (
-      await geminiText(prompt, geminiKey, {
-        temperature: 0.55,
-        maxOutputTokens: 4096,
-      })
-    ).trim();
+    const md = await generateRepurposeMarkdown(prompt, llmKeys, (step) =>
+      emit(55, step),
+    );
 
     emit(88, "Validating output length…");
     if (md.length < 200) {
@@ -193,7 +199,7 @@ export async function runRepurposeForArticleId(
 
 /** Process up to `limit` rows stuck in pending/error (FIFO by updatedAt). */
 export async function runRepurposePending(
-  geminiKey: string,
+  llmKeys: RepurposeLlmKeys,
   limit: number,
   onProgress?: (u: RepurposeProgressUpdate) => void,
 ): Promise<{
@@ -227,7 +233,7 @@ export async function runRepurposePending(
     try {
       await runRepurposeForArticleId(
         r.id,
-        geminiKey,
+        llmKeys,
         (u) =>
           onProgress?.({
             percent: u.percent,

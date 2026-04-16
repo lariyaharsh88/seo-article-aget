@@ -104,3 +104,52 @@ export async function groqStream(
 
   return full;
 }
+
+/** Non-streaming chat completion (same API as streaming; used for repurpose fallback). */
+export async function groqChat(
+  prompt: string,
+  apiKey: string,
+  options?: { temperature?: number; maxOutputTokens?: number },
+): Promise<string> {
+  const temperature = options?.temperature ?? 0.55;
+  const maxCompletionTokens = options?.maxOutputTokens ?? 4096;
+  const model = process.env.GROQ_MODEL?.trim() || "llama-3.3-70b-versatile";
+
+  const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model,
+      stream: false,
+      messages: [{ role: "user", content: prompt }],
+      temperature,
+      max_completion_tokens: maxCompletionTokens,
+    }),
+  });
+
+  if (!res.ok) {
+    const detail = extractErrorMessage(await res.text());
+    throw new Error(`Groq error ${res.status}: ${detail}`);
+  }
+
+  const raw = await res.text();
+  let data: unknown;
+  try {
+    data = JSON.parse(raw) as unknown;
+  } catch {
+    throw new Error("Groq returned invalid JSON");
+  }
+
+  const obj = data as {
+    choices?: { message?: { content?: string } }[];
+  };
+  const content = obj?.choices?.[0]?.message?.content;
+  if (typeof content !== "string" || !content.trim()) {
+    throw new Error("Groq returned empty content");
+  }
+
+  return content.trim();
+}

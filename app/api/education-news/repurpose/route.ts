@@ -1,4 +1,9 @@
-import { resolveGeminiKey } from "@/lib/api-keys";
+import {
+  resolveGeminiKey,
+  resolveGroqKey,
+  resolveOpenRouterKey,
+} from "@/lib/api-keys";
+import { hasAnyRepurposeKey } from "@/lib/education-news/repurpose-llm";
 import {
   runRepurposeForArticleId,
   runRepurposePending,
@@ -43,10 +48,17 @@ function ndjsonStream(
 }
 
 export async function POST(request: Request) {
-  const geminiKey = resolveGeminiKey(request);
-  if (!geminiKey) {
+  const llmKeys = {
+    gemini: resolveGeminiKey(request),
+    openrouter: resolveOpenRouterKey(request),
+    groq: resolveGroqKey(request),
+  };
+  if (!hasAnyRepurposeKey(llmKeys)) {
     return new Response(
-      JSON.stringify({ error: "Missing Gemini API key (header or env)." }),
+      JSON.stringify({
+        error:
+          "Missing LLM key: set GEMINI_API_KEY, OPENROUTER_API_KEY, or GROQ_API_KEY (or x-gemini-key / x-openrouter-key / x-groq-key).",
+      }),
       { status: 401, headers: { "Content-Type": "application/json" } },
     );
   }
@@ -69,7 +81,7 @@ export async function POST(request: Request) {
   if (body.stream) {
     const stream = ndjsonStream(async (send) => {
       if (body.id?.trim()) {
-        await runRepurposeForArticleId(body.id.trim(), geminiKey, (u) =>
+        await runRepurposeForArticleId(body.id.trim(), llmKeys, (u) =>
           send({ type: "progress", ...u }),
         );
         send({ type: "complete", mode: "single", id: body.id.trim() });
@@ -80,7 +92,7 @@ export async function POST(request: Request) {
           typeof body.limit === "number" && body.limit > 0
             ? Math.min(body.limit, 20)
             : 5;
-        const out = await runRepurposePending(geminiKey, limit, (u) =>
+        const out = await runRepurposePending(llmKeys, limit, (u) =>
           send({ type: "progress", ...u }),
         );
         send({
@@ -107,7 +119,7 @@ export async function POST(request: Request) {
 
   try {
     if (body.id?.trim()) {
-      await runRepurposeForArticleId(body.id.trim(), geminiKey);
+      await runRepurposeForArticleId(body.id.trim(), llmKeys);
       return new Response(
         JSON.stringify({ ok: true, mode: "single", id: body.id.trim() }),
         { headers: { "Content-Type": "application/json" } },
@@ -118,7 +130,7 @@ export async function POST(request: Request) {
         typeof body.limit === "number" && body.limit > 0
           ? Math.min(body.limit, 20)
           : 5;
-      const out = await runRepurposePending(geminiKey, limit);
+      const out = await runRepurposePending(llmKeys, limit);
       return new Response(
         JSON.stringify({ ok: true, mode: "batch", ...out }),
         { headers: { "Content-Type": "application/json" } },
