@@ -54,8 +54,8 @@ export default function AboutPage() {
           structured output — always with human review before anything goes live.
         </p>
         <p>
-          APIs (such as Google Gemini, Tavily, Serper, and others) power different
-          features; availability and limits depend on your own keys and provider terms.
+          Platform services power different features; availability and limits may vary
+          by plan and environment configuration.
         </p>
         <p className="font-mono text-sm text-text-muted">
           Questions about policies? See our{" "}

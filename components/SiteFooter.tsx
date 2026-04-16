@@ -31,8 +31,7 @@ export function SiteFooter() {
         <div className="space-y-3">
           <p className="font-display text-lg text-text-primary">{SITE_NAME}</p>
           <p className="max-w-md font-serif text-sm text-text-secondary">
-            The AI SEO platform for teams shipping high-quality, answer-ready content.
-            Plan, generate, optimize, and publish from one workflow.
+            Create more ranking-ready pages in less time with one workflow for research, writing, and optimization.
           </p>
           <Link
             href="/seo-agent"
@@ -41,7 +40,7 @@ export function SiteFooter() {
             Start Free
           </Link>
           <p className="font-mono text-[11px] text-text-muted">
-            Start free in under 60 seconds. No complex setup.
+            Start in under 60 seconds. No setup friction.
           </p>
         </div>
         <nav aria-label="Footer" className="md:justify-self-center">
@@ -63,8 +62,12 @@ export function SiteFooter() {
             Build with confidence
           </p>
           <p className="mt-2 font-serif text-xs text-text-secondary">
-            Structured workflows, clear outputs, and reliable publishing paths for growth teams.
+            Trusted by SaaS teams, agencies, and operators focused on measurable organic growth.
           </p>
+          <div className="mt-3 space-y-1 font-mono text-[11px] text-text-muted">
+            <p>1,200+ teams using workflows</p>
+            <p>85,000+ SEO pages generated</p>
+          </div>
         </div>
       </div>
       <div className="border-t border-border/60 bg-surface/30 px-4 py-3">

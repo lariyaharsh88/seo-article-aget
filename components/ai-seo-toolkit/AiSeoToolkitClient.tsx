@@ -174,7 +174,7 @@ export function AiSeoToolkitClient() {
     <div className="space-y-8">
       <header className="space-y-2 border-b border-border pb-8">
         <p className="font-mono text-xs uppercase tracking-[0.2em] text-accent">
-          MVP · SQLite · OpenRouter
+          MVP · Lightweight stack
         </p>
         <h1 className="font-display text-3xl text-text-primary md:text-4xl">
           AI SEO Toolkit

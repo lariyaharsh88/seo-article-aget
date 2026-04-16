@@ -67,9 +67,14 @@ function CloseIcon() {
 export function SiteHeader() {
   const [open, setOpen] = useState(false);
   const [educationSurface, setEducationSurface] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
     setEducationSurface(EDUCATION_HOSTS.has(window.location.hostname.toLowerCase()));
+    const onScroll = () => setScrolled(window.scrollY > 24);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
   const nav = educationSurface ? educationNav : mainNav;
@@ -77,9 +82,17 @@ export function SiteHeader() {
   const saasHref = buildEducationFunnelUrl("/seo-agent", "header_nav");
 
   return (
-    <header className="sticky top-0 z-50 border-b border-border/80 bg-background/80 pt-[max(0.25rem,env(safe-area-inset-top))] backdrop-blur-xl supports-[backdrop-filter]:bg-background/70">
+    <header
+      className={`sticky top-0 z-50 border-b border-border/80 bg-background/70 pt-[max(0.25rem,env(safe-area-inset-top))] backdrop-blur-xl transition-all duration-300 ease-in-out supports-[backdrop-filter]:bg-background/55 ${
+        scrolled ? "shadow-[0_8px_30px_rgba(2,6,23,0.35)]" : ""
+      }`}
+    >
       <div className="relative mx-auto max-w-7xl px-4 md:px-6">
-        <div className="flex items-center justify-between gap-3 py-3">
+        <div
+          className={`flex items-center justify-between gap-3 transition-all duration-300 ease-in-out ${
+            scrolled ? "py-2" : "py-3"
+          }`}
+        >
           <Link
             href={homeHref}
             className="flex min-w-0 items-center gap-3 transition-opacity duration-200 hover:opacity-90"
@@ -90,7 +103,9 @@ export function SiteHeader() {
               alt={`${SITE_NAME} — AI · SEO · Growth`}
               width={44}
               height={44}
-              className="h-11 w-11 shrink-0 object-contain"
+              className={`shrink-0 object-contain transition-all duration-300 ease-in-out ${
+                scrolled ? "h-9 w-9" : "h-11 w-11"
+              }`}
               priority
             />
             <div className="min-w-0 text-left">
@@ -108,7 +123,7 @@ export function SiteHeader() {
           </Link>
           <button
             type="button"
-            className="inline-flex items-center justify-center rounded-lg border border-border p-2 text-text-secondary transition-all hover:border-accent hover:text-accent focus:outline-none focus:ring-2 focus:ring-accent md:hidden"
+            className="inline-flex h-11 w-11 items-center justify-center rounded-lg border border-border text-text-secondary transition-all hover:border-accent hover:text-accent focus:outline-none focus:ring-2 focus:ring-accent md:hidden"
             aria-expanded={open}
             aria-controls="site-nav-mobile"
             aria-label={open ? "Close menu" : "Open menu"}
@@ -121,7 +136,7 @@ export function SiteHeader() {
               <Link
                 key={item.href}
                 href={item.href}
-                className="rounded-lg border border-border/80 bg-surface/40 px-3 py-1.5 font-mono text-xs text-text-secondary transition-all duration-200 hover:-translate-y-0.5 hover:border-accent/70 hover:text-text-primary focus:outline-none focus:ring-2 focus:ring-accent"
+                className="btn-premium rounded-lg border border-border/80 bg-surface/40 px-3 py-1.5 font-mono text-xs text-text-secondary transition-all duration-200 hover:-translate-y-0.5 hover:border-accent/70 hover:text-text-primary focus:outline-none focus:ring-2 focus:ring-accent"
               >
                 {item.label}
               </Link>
@@ -129,14 +144,14 @@ export function SiteHeader() {
             {!educationSurface ? (
               <Link
                 href="/seo-agent"
-                className="rounded-lg bg-accent px-4 py-2 font-mono text-xs font-semibold text-background transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90"
+                className="btn-premium pulse-subtle rounded-lg bg-accent px-4 py-2 font-mono text-xs font-semibold text-background transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90"
               >
-                Start Free Trial
+                Start Free
               </Link>
             ) : (
               <a
                 href={saasHref}
-                className="rounded-lg bg-accent px-4 py-2 font-mono text-xs font-semibold text-background transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90"
+                className="btn-premium rounded-lg bg-accent px-4 py-2 font-mono text-xs font-semibold text-background transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90"
               >
                 RankFlowHQ SaaS
               </a>
@@ -154,7 +169,7 @@ export function SiteHeader() {
               <li key={item.href}>
                 <Link
                   href={item.href}
-                  className="block rounded-lg border border-transparent px-3 py-2.5 font-mono text-xs text-text-secondary transition-colors hover:border-border hover:text-accent focus:outline-none focus:ring-2 focus:ring-accent"
+                  className="flex min-h-11 items-center rounded-lg border border-transparent px-3 py-2.5 font-mono text-xs text-text-secondary transition-colors hover:border-border hover:text-accent focus:outline-none focus:ring-2 focus:ring-accent"
                   onClick={() => setOpen(false)}
                 >
                   {item.label}
@@ -165,7 +180,7 @@ export function SiteHeader() {
               <li>
                 <a
                   href={saasHref}
-                  className="block rounded-lg border border-accent/40 bg-accent/10 px-3 py-2.5 font-mono text-xs text-accent"
+                  className="flex min-h-11 items-center rounded-lg border border-accent/40 bg-accent/10 px-3 py-2.5 font-mono text-xs text-accent"
                   onClick={() => setOpen(false)}
                 >
                   RankFlowHQ SaaS →

@@ -251,7 +251,7 @@ export function StoredRepurposePanel({ initialItems, syncKey = 0 }: Props) {
             Each sitemap item is upserted to Postgres. Use{" "}
             <strong className="text-text-primary">Repurpose</strong> to rewrite in the same
             RankFlowHQ / seo-agent style, capped at{" "}
-            <strong className="text-text-primary">800–1000 words</strong> (Gemini → OpenRouter → Groq fallback, server keys).
+            <strong className="text-text-primary">800–1000 words</strong>.
             Ready drafts get a stable URL under{" "}
             <Link href="/news" className="text-accent underline-offset-2 hover:underline">
               /news/
@@ -261,8 +261,7 @@ export function StoredRepurposePanel({ initialItems, syncKey = 0 }: Props) {
             <span className="font-mono text-text-muted">updatedAt</span> (sitemap sync,
             repurpose, or any row change). New rows from sync are{" "}
             <strong className="text-text-primary">repurposed automatically</strong> up
-            to the configured limit when <span className="font-mono text-text-muted">GEMINI_API_KEY</span>{" "}
-            is set (see <span className="font-mono text-text-muted">.env.example</span>).
+            to the configured limit when service access is configured.
           </p>
         </div>
         <div className="flex flex-col items-stretch gap-3 sm:items-end">

@@ -1,12 +1,11 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Space_Mono } from "next/font/google";
 import Script from "next/script";
-import { ExitIntentPopup } from "@/components/ExitIntentPopup";
-import { EducationStickyGenerateButton } from "@/components/EducationStickyGenerateButton";
 import { EducationTrafficCtaBar } from "@/components/EducationTrafficCtaBar";
-import { SiteChatWidget } from "@/components/SiteChatWidget";
+import { LazyUiWidgets } from "@/components/LazyUiWidgets";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
+import { UiMotionEffects } from "@/components/UiMotionEffects";
 import { Providers } from "@/app/providers";
 import { SupabaseAuthHashRedirect } from "@/components/SupabaseAuthHashRedirect";
 import { StructuredData } from "@/components/StructuredData";
@@ -60,8 +59,6 @@ export const metadata: Metadata = {
     "AI writing",
     "SERP research",
     "SEO outline",
-    "Tavily",
-    "Gemini",
     "long-form article",
     "meta description",
     "seo automation",
@@ -146,14 +143,13 @@ export default function RootLayout({
         <StructuredData />
         <Providers>
           <SupabaseAuthHashRedirect />
+          <UiMotionEffects />
           <div className="relative z-10 flex min-h-screen flex-col">
             <SiteHeader />
             <EducationTrafficCtaBar />
             <div className="flex-1">{children}</div>
             <SiteFooter />
-            <SiteChatWidget />
-            <ExitIntentPopup />
-            <EducationStickyGenerateButton />
+            <LazyUiWidgets />
           </div>
         </Providers>
       </body>

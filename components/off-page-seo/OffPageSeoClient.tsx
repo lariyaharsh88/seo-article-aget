@@ -139,8 +139,8 @@ export function OffPageSeoClient() {
       <section className="rounded-xl border border-border bg-surface/80 p-6">
         <h2 className="font-display text-xl text-text-primary">Run prospecting</h2>
         <p className="mt-2 font-serif text-sm text-text-secondary">
-          Discovers sites from Google (via Serper), estimates authority, fetches public
-          contacts, prices in INR bands, then ranks targets (Gemini when configured).
+          Discovers relevant sites, estimates authority, fetches public contacts,
+          prices in INR bands, then ranks targets using smart prioritization.
         </p>
         <div className="mt-6 grid gap-4 md:grid-cols-3">
           <label className="block font-mono text-xs text-text-muted">

@@ -26,7 +26,6 @@ export const metadata: Metadata = buildPageMetadata({
     "answer engine optimization",
     "AI visibility",
     "prompt mining",
-    "OpenRouter",
   ],
 });
 

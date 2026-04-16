@@ -5,7 +5,7 @@ import { buildPageMetadata } from "@/lib/seo-page";
 import { buildToolWebApplicationSchema } from "@/lib/schema-org";
 
 const OFF_PAGE_DESC =
-  "Off-page SEO prospector: discover guest-post and link targets, estimate authority, extract contacts, and prioritize outreach—Serper discovery plus AI ranking.";
+  "Off-page SEO prospector: discover guest-post and link targets, estimate authority, extract contacts, and prioritize outreach with smart ranking.";
 
 const offPageSchema = buildToolWebApplicationSchema({
   path: "/off-page-seo",

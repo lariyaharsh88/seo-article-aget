@@ -9,18 +9,104 @@
 body {
   @apply min-h-screen bg-background font-serif text-text-primary antialiased;
   background-image:
-    radial-gradient(circle at 10% -10%, rgba(34, 211, 238, 0.12), transparent 35%),
-    radial-gradient(circle at 90% 0%, rgba(139, 92, 246, 0.1), transparent 38%);
+    radial-gradient(circle at 8% -12%, rgba(99, 102, 241, 0.16), transparent 35%),
+    radial-gradient(circle at 92% 2%, rgba(56, 189, 248, 0.12), transparent 40%);
 }
 
 a,
 button {
   transition:
-    color 0.24s ease,
-    background-color 0.24s ease,
-    border-color 0.24s ease,
-    transform 0.24s ease,
-    opacity 0.24s ease;
+    color 0.24s ease-in-out,
+    background-color 0.24s ease-in-out,
+    border-color 0.24s ease-in-out,
+    transform 0.24s ease-in-out,
+    box-shadow 0.24s ease-in-out,
+    opacity 0.24s ease-in-out;
+}
+
+a:active,
+button:active {
+  transform: scale(0.985);
+}
+
+.motion-ready .reveal-on-scroll {
+  opacity: 0;
+  transform: translateY(18px);
+  transition:
+    opacity 0.5s ease-in-out,
+    transform 0.5s ease-in-out;
+  transition-delay: var(--reveal-delay, 0ms);
+}
+
+.motion-ready .reveal-on-scroll.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.section-lazy {
+  content-visibility: auto;
+  contain-intrinsic-size: 1px 900px;
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(148, 163, 184, 0.14) 0%,
+    rgba(148, 163, 184, 0.26) 50%,
+    rgba(148, 163, 184, 0.14) 100%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.2s ease-in-out infinite;
+}
+
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.btn-premium {
+  transition:
+    transform 0.24s ease-in-out,
+    box-shadow 0.24s ease-in-out,
+    filter 0.24s ease-in-out;
+}
+
+.btn-premium:hover {
+  transform: translateY(-1px) scale(1.015);
+  box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.4), 0 10px 24px rgba(2, 132, 199, 0.22);
+  filter: saturate(1.04);
+}
+
+.card-premium {
+  transition:
+    transform 0.26s ease-in-out,
+    box-shadow 0.26s ease-in-out,
+    border-color 0.26s ease-in-out;
+}
+
+.card-premium:hover {
+  transform: translateY(-4px);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.05) inset,
+    0 18px 36px rgba(2, 6, 23, 0.42);
+}
+
+.pulse-subtle {
+  animation: pulse-subtle 2.8s ease-in-out infinite;
+}
+
+@keyframes pulse-subtle {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.16);
+  }
+  50% {
+    box-shadow: 0 0 0 5px rgba(56, 189, 248, 0.05);
+  }
 }
 
 :focus-visible {
@@ -55,6 +141,27 @@ button {
   background-image: radial-gradient(rgba(148, 163, 184, 0.08) 0.7px, transparent 0.7px);
   background-size: 3px 3px;
   opacity: 0.25;
+}
+
+.section-variant-a {
+  background: linear-gradient(180deg, rgba(17, 24, 39, 0.72), rgba(15, 23, 42, 0.55));
+}
+
+.section-variant-b {
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.55), rgba(2, 6, 23, 0.48));
+}
+
+.glass-surface {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03));
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(148, 163, 184, 0.24);
+}
+
+.depth-soft {
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.06) inset,
+    0 14px 28px rgba(2, 6, 23, 0.35);
 }
 
 .custom-scrollbar {
@@ -239,6 +346,11 @@ button {
     animation: none !important;
     transition: none !important;
     scroll-behavior: auto !important;
+  }
+
+  .motion-ready .reveal-on-scroll {
+    opacity: 1 !important;
+    transform: none !important;
   }
 }
 

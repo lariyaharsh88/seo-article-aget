@@ -86,12 +86,33 @@ export default async function BlogIndexPage({ searchParams }: Props) {
             Blog
           </p>
           <h1 className="font-display text-3xl text-text-primary sm:text-4xl md:text-5xl">
-            Articles
+            SEO Growth Articles
           </h1>
           <p className="mt-3 max-w-xl font-serif text-text-secondary">
-            Notes on SEO tooling, content workflows, and product updates.
+            Actionable guides on SEO content strategy, keyword planning, ranking workflows,
+            and AI-assisted optimization.
           </p>
         </header>
+        <section className="mb-8 rounded-xl border border-border bg-surface/40 p-4 sm:p-5">
+          <h2 className="font-display text-2xl text-text-primary">Popular SEO topics</h2>
+          <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+            {[
+              { href: "/seo-agent", label: "AI SEO article generation workflow" },
+              { href: "/free-tools/keyword-clustering", label: "Keyword clustering and topic maps" },
+              { href: "/free-tools/ai-search-grader", label: "AI search visibility and SEO quality checks" },
+              { href: "/pages", label: "Complete SEO tool stack and templates" },
+            ].map((item) => (
+              <li key={item.href}>
+                <Link
+                  href={item.href}
+                  className="inline-flex min-h-11 w-full items-center rounded-lg border border-border/70 bg-background/30 px-3 py-2 font-serif text-sm text-text-secondary hover:border-accent/60 hover:text-text-primary"
+                >
+                  {item.label}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
         <ul className="space-y-6">
           {!listError && posts.length === 0 ? (
             <li className="space-y-2 font-serif text-text-muted">
@@ -116,6 +137,9 @@ export default async function BlogIndexPage({ searchParams }: Props) {
                       {post.title}
                     </Link>
                   </h2>
+                  <p className="mt-2 font-mono text-[11px] uppercase tracking-[0.14em] text-text-muted">
+                    SEO guide
+                  </p>
                   {post.excerpt ? (
                     <p className="mt-2 font-serif text-sm text-text-secondary line-clamp-3">
                       {post.excerpt}
@@ -140,6 +164,23 @@ export default async function BlogIndexPage({ searchParams }: Props) {
             basePath="/blog"
           />
         ) : null}
+        <section className="mt-10 rounded-xl border border-border bg-surface/40 p-5">
+          <h2 className="font-display text-2xl text-text-primary">
+            Keep exploring SEO content optimization
+          </h2>
+          <p className="mt-2 font-serif text-sm leading-relaxed text-text-secondary">
+            Continue to related resources to deepen topical authority and improve retention through
+            stronger internal linking paths.
+          </p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Link href="/blogs" className="inline-flex min-h-11 items-center rounded-lg border border-border px-3 py-2 font-mono text-xs text-text-secondary hover:border-accent/70 hover:text-text-primary">
+              Browse full blog archive
+            </Link>
+            <Link href="/article" className="inline-flex min-h-11 items-center rounded-lg border border-border px-3 py-2 font-mono text-xs text-text-secondary hover:border-accent/70 hover:text-text-primary">
+              Read generated SEO articles
+            </Link>
+          </div>
+        </section>
       </main>
     </>
   );

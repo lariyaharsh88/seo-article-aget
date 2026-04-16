@@ -66,18 +66,18 @@ export function KeysPanel({ keys, onChange, serverKeysReady }: KeysPanelProps) {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <h2 id="keys-heading" className="font-mono text-sm uppercase text-accent">
-            API keys
+            Service connections
           </h2>
           {allSet ? (
             <span
               className="inline-flex items-center gap-1 rounded-full bg-success/15 px-2 py-0.5 font-mono text-xs text-success"
-              aria-label="All required API keys are configured"
+              aria-label="All required service connections are configured"
             >
               <span aria-hidden>✓</span> Ready
             </span>
           ) : (
             <span className="font-mono text-xs text-text-muted">
-              Add keys or set server env
+              Configure access to continue
             </span>
           )}
         </div>
@@ -97,7 +97,7 @@ export function KeysPanel({ keys, onChange, serverKeysReady }: KeysPanelProps) {
           className="mt-4 grid gap-4 md:grid-cols-3"
         >
           <label className="flex flex-col gap-1 font-mono text-xs text-text-secondary">
-            Gemini
+            Content service
             <input
               type="password"
               autoComplete="off"
@@ -108,7 +108,7 @@ export function KeysPanel({ keys, onChange, serverKeysReady }: KeysPanelProps) {
             />
           </label>
           <label className="flex flex-col gap-1 font-mono text-xs text-text-secondary">
-            Tavily
+            Research service
             <input
               type="password"
               autoComplete="off"
@@ -119,20 +119,19 @@ export function KeysPanel({ keys, onChange, serverKeysReady }: KeysPanelProps) {
             />
           </label>
           <label className="flex flex-col gap-1 font-mono text-xs text-text-secondary">
-            Serper
+            Search service
             <input
               type="password"
               autoComplete="off"
               value={keys.serper}
               onChange={set("serper")}
-              placeholder="Serper API key"
+              placeholder="Search service key"
               className="rounded-lg border border-border bg-background px-3 py-2 font-mono text-sm text-text-primary placeholder:text-text-muted focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
             />
           </label>
           {serverKeysReady && (
             <p className="md:col-span-3 font-mono text-xs text-info">
-              Server-side keys detected (.env). Local fields can stay empty for
-              the same keys on Vercel.
+              Server-side access detected. Local fields can stay empty.
             </p>
           )}
         </div>

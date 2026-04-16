@@ -556,7 +556,7 @@ export function SeoAgentClient() {
       </p>
       <header className="space-y-3 border-b border-border pb-6 sm:pb-8">
         <p className="font-mono text-xs uppercase tracking-[0.2em] text-accent">
-          Next.js · Gemini · Tavily · Serper
+          RankFlowHQ SEO Suite
         </p>
         <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between sm:gap-4">
           <div className="min-w-0">
@@ -586,7 +586,7 @@ export function SeoAgentClient() {
             </p>
           </div>
           <span className="w-fit shrink-0 rounded-full border border-accent/40 bg-accent/10 px-3 py-1 font-mono text-xs text-accent">
-            Free-tier APIs
+            Guided workflow
           </span>
         </div>
         <div className="mt-4 inline-flex rounded-lg border border-border bg-surface/70 p-1">

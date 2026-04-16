@@ -5,7 +5,7 @@ import { buildPageMetadata } from "@/lib/seo-page";
 import { buildToolWebApplicationSchema } from "@/lib/schema-org";
 
 const DESC =
-  "Paste any article URL and run the full RankFlowHQ SEO pipeline: keywords, Tavily research, SERP outline, Gemini article, audit, and optional visual HTML.";
+  "Paste any article URL and run the full RankFlowHQ SEO pipeline: keyword extraction, research, outline, optimized draft, audit, and optional visual HTML.";
 
 const schema = buildToolWebApplicationSchema({
   path: "/repurpose-url",

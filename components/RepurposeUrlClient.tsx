@@ -209,7 +209,7 @@ export function RepurposeUrlClient() {
         <p className="max-w-2xl font-serif text-base text-text-secondary sm:text-lg">
           Paste any public article URL. RankFlowHQ runs the same keyword →
           research → SERP → outline → streaming article → SEO audit pipeline as
-          the main article tool, using the page title (and Tavily context) so you
+          the main article tool, using page context signals so you
           get a fresh, SEO-oriented draft—not a verbatim copy.
         </p>
       </header>

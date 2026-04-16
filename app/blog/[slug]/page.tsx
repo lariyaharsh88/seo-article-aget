@@ -163,6 +163,28 @@ export default async function BlogPostPage({ params }: Props) {
                 {post.excerpt}
               </p>
             ) : null}
+            <section className="mt-5 rounded-xl border border-border/70 bg-surface/40 p-4">
+              <h2 className="font-display text-xl text-text-primary">
+                Related SEO resources
+              </h2>
+              <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+                {[
+                  { href: "/seo-agent", label: "AI SEO article generator and workflow" },
+                  { href: "/free-tools/keyword-clustering", label: "Keyword clustering for topic authority" },
+                  { href: "/free-tools/ai-search-grader", label: "SEO visibility grader for content quality" },
+                  { href: "/blog", label: "More SEO strategy guides and tutorials" },
+                ].map((item) => (
+                  <li key={item.href}>
+                    <Link
+                      href={item.href}
+                      className="inline-flex min-h-11 w-full items-center rounded-lg border border-border/70 bg-background/35 px-3 py-2 font-serif text-sm text-text-secondary hover:border-accent/60 hover:text-text-primary"
+                    >
+                      {item.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </section>
             <ArticleLeadCtaStrip className="mt-4" />
             <div
               className="blog-prose mt-10 overflow-x-auto font-serif text-text-primary"
@@ -187,6 +209,9 @@ export default async function BlogPostPage({ params }: Props) {
               <h2 className="font-display text-2xl text-text-primary">
                 Explore more AI SEO resources
               </h2>
+              <p className="mt-2 font-serif text-sm leading-relaxed text-text-secondary">
+                Follow these internal links to keep reading related SEO guides and increase topical depth.
+              </p>
               <ul className="mt-3 space-y-2 font-serif text-sm text-text-secondary">
                 <li>
                   <Link href="/ai-seo-tools" className="text-accent hover:underline">

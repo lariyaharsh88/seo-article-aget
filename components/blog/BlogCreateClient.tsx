@@ -266,7 +266,7 @@ export function BlogCreateClient({ initialPosts, loadError }: Props) {
         applyPublishFieldsFromResult(topics[0], result);
         if (!result.article.trim()) {
           setGenError(
-            "Article generation produced no text. Check API keys and try again.",
+            "Article generation produced no text. Check your service settings and try again.",
           );
         }
         return;
