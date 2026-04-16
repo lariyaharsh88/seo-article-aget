@@ -80,6 +80,8 @@ SEO + NEWS OPTIMISATION (strict; **total length 800–1000 words**):
      - Official Website
 6. Use clear SEO structure with keyword placement:
    - main keyword in H1, first 100 words, and at least 2 H2 headings.
+   - include the main keyword in at least 1 H3 heading too (for FAQ or detail sub-sections).
+   - do not use generic H2/H3 labels like "Important Details" without the keyword context.
 7. Human newsroom style:
    - Add context on why the update happened and why now.
    - Explain clear student impact (who should act, what changes for them, and by when).

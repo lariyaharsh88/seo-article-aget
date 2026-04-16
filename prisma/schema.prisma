@@ -112,3 +112,14 @@ model EducationNewsArticle {
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 }
+
+/// App-side profile for Supabase Auth users (synced via API; keyed by Supabase user id).
+model UserProfile {
+  id               String   @id @default(cuid())
+  /// `auth.users.id` from Supabase (UUID string).
+  supabaseUserId   String   @unique
+  email            String?
+  displayName      String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}

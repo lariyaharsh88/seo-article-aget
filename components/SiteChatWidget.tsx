@@ -15,10 +15,56 @@ function escapeHtml(s: string): string {
     .replace(/"/g, "&quot;");
 }
 
-/** Minimal **bold** + newlines for assistant text (no raw HTML). */
+function sanitizeHref(raw: string): string | null {
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  if (!/^https?:\/\//i.test(trimmed)) return null;
+  try {
+    const url = new URL(trimmed);
+    if (url.protocol !== "http:" && url.protocol !== "https:") return null;
+    return url.toString();
+  } catch {
+    return null;
+  }
+}
+
+function renderLinksAndEscape(input: string): string {
+  const mdLinkRe = /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/gi;
+  const out: string[] = [];
+  let last = 0;
+  let m: RegExpExecArray | null;
+
+  while ((m = mdLinkRe.exec(input)) !== null) {
+    out.push(escapeHtml(input.slice(last, m.index)));
+    const label = escapeHtml(m[1]);
+    const href = sanitizeHref(m[2]);
+    if (!href) {
+      out.push(escapeHtml(m[0]));
+    } else {
+      out.push(
+        `<a href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer" class="text-accent underline underline-offset-2 hover:opacity-90">${label}</a>`,
+      );
+    }
+    last = m.index + m[0].length;
+  }
+  out.push(escapeHtml(input.slice(last)));
+
+  // Linkify plain URLs that are not already part of an anchor tag.
+  const joined = out.join("");
+  return joined.replace(
+    /(^|[\s(>])(https?:\/\/[^\s<)]+)(?=$|[\s<)])/gi,
+    (full, prefix: string, url: string) => {
+      const href = sanitizeHref(url);
+      if (!href) return full;
+      return `${prefix}<a href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer" class="text-accent underline underline-offset-2 hover:opacity-90">${escapeHtml(url)}</a>`;
+    },
+  );
+}
+
+/** Minimal **bold** + links + newlines for assistant text (no raw HTML). */
 function formatAssistantHtml(text: string): string {
-  const esc = escapeHtml(text);
-  const withBold = esc.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+  const escapedWithLinks = renderLinksAndEscape(text);
+  const withBold = escapedWithLinks.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
   return withBold.replace(/\n/g, "<br />");
 }
 

@@ -49,6 +49,79 @@ function extractFirstMarkdownH1(markdown: string): string | null {
   return null;
 }
 
+function inferHeadingKeyword(title: string): string {
+  const clean = title
+    .replace(/\([^)]*\)/g, " ")
+    .replace(/[^a-zA-Z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!clean) return "Exam Update";
+  const tokens = clean.split(" ").filter(Boolean);
+  const stop = new Set([
+    "out",
+    "live",
+    "today",
+    "released",
+    "download",
+    "pdf",
+    "direct",
+    "link",
+    "check",
+    "details",
+    "result",
+    "admit",
+    "card",
+    "exam",
+    "date",
+    "notification",
+    "updates",
+    "update",
+  ]);
+  const selected = tokens
+    .filter((t) => !/^\d{4}$/.test(t))
+    .filter((t) => !stop.has(t.toLowerCase()))
+    .slice(0, 3);
+  return selected.join(" ").trim() || tokens.slice(0, 2).join(" ").trim() || "Exam Update";
+}
+
+function enforceKeywordInNewsHeadings(markdown: string, keyword: string): string {
+  const lines = markdown.split(/\r?\n/);
+  const key = keyword.trim();
+  if (!key) return markdown;
+  const keyRe = new RegExp(`\\b${key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "i");
+
+  const h2Idx: number[] = [];
+  const h3Idx: number[] = [];
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (/^##\s+/.test(line) && !/^###\s+/.test(line)) h2Idx.push(i);
+    if (/^###\s+/.test(line)) h3Idx.push(i);
+  }
+
+  const h2WithKey = h2Idx.filter((i) => keyRe.test(lines[i])).length;
+  const h3WithKey = h3Idx.filter((i) => keyRe.test(lines[i])).length;
+
+  let neededH2 = Math.max(0, 2 - h2WithKey);
+  for (const i of h2Idx) {
+    if (neededH2 <= 0) break;
+    if (keyRe.test(lines[i])) continue;
+    const heading = lines[i].replace(/^##\s+/, "").trim();
+    lines[i] = `## ${key} ${heading}`;
+    neededH2 -= 1;
+  }
+
+  if (h3Idx.length > 0 && h3WithKey === 0) {
+    for (const i of h3Idx) {
+      if (keyRe.test(lines[i])) continue;
+      const heading = lines[i].replace(/^###\s+/, "").trim();
+      lines[i] = `### ${key} ${heading}`;
+      break;
+    }
+  }
+
+  return lines.join("\n");
+}
+
 export async function runRepurposeForArticleId(
   id: string,
   llmKeys: RepurposeLlmKeys,
@@ -106,9 +179,10 @@ export async function runRepurposeForArticleId(
       plainTextFromPage: plain,
     });
 
-    const md = await generateRepurposeMarkdown(prompt, llmKeys, (step) =>
+    const mdRaw = await generateRepurposeMarkdown(prompt, llmKeys, (step) =>
       emit(55, step),
     );
+    const md = enforceKeywordInNewsHeadings(mdRaw, inferHeadingKeyword(row.title));
 
     emit(88, "Validating output length…");
     if (md.length < 200) {
