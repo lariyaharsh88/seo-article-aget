@@ -308,6 +308,7 @@ export async function runArticlePipeline(
         paas: paasList,
         searchConsoleQueries: input.searchConsoleQueries,
         googleSuggestions: input.googleSuggestions,
+        providerMode: "gemini-only",
       }),
     });
     if (!res.ok) {

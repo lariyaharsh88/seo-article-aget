@@ -123,3 +123,18 @@ model UserProfile {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 }
+
+/// Per-user generation history for dashboard (Supabase-authenticated users).
+model UserGeneratedArticle {
+  id             String   @id @default(cuid())
+  supabaseUserId String
+  title          String
+  topic          String
+  primaryKeyword String?
+  sourceUrl      String?
+  markdown       String   @db.Text
+  wordCount      Int      @default(0)
+  createdAt      DateTime @default(now())
+
+  @@index([supabaseUserId, createdAt])
+}

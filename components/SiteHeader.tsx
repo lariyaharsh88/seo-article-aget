@@ -12,6 +12,7 @@ const mainNav = [
   { href: "/ai-seo-tools", label: "AI SEO Tools" },
   { href: "/free-tools", label: "Free Tools" },
   { href: "/pages", label: "All Tools" },
+  { href: "/dashboard", label: "Dashboard" },
   { href: "/login?next=/seo-agent", label: "Login" },
   { href: "/blog", label: "Blog" },
   { href: "/pricing", label: "Pricing" },

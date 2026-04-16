@@ -23,6 +23,8 @@ interface ArticleBody {
   searchConsoleQueries?: string[];
   /** Google autocomplete suggestions for the primary phrase. */
   googleSuggestions?: string[];
+  /** Provider mode used by tool clients. */
+  providerMode?: "gemini-only" | "multi";
 }
 
 function encodeSseChunk(text: string): Uint8Array {
@@ -63,15 +65,6 @@ export async function POST(request: Request) {
   const geminiKey = resolveGeminiKey(request);
   const groqKey = resolveGroqKey(request);
   const openRouterKey = resolveOpenRouterKey(request);
-  if (!geminiKey && !groqKey && !openRouterKey) {
-    return new Response(
-      JSON.stringify({
-        error:
-          "Missing provider key. Set one of: Gemini (x-gemini-key/GEMINI_API_KEY), Groq (x-groq-key/GROQ_API_KEY), OpenRouter (x-openrouter-key/OPENROUTER_API_KEY).",
-      }),
-      { status: 401, headers: { "Content-Type": "application/json" } },
-    );
-  }
 
   let body: ArticleBody;
   try {
@@ -92,6 +85,24 @@ export async function POST(request: Request) {
   }
 
   const audience = body.audience?.trim() || "general readers";
+  const providerMode = body.providerMode === "gemini-only" ? "gemini-only" : "multi";
+  if (providerMode === "gemini-only" && !geminiKey) {
+    return new Response(
+      JSON.stringify({
+        error: "Gemini key is required for this tool run (GEMINI_API_KEY).",
+      }),
+      { status: 401, headers: { "Content-Type": "application/json" } },
+    );
+  }
+  if (providerMode === "multi" && !geminiKey && !groqKey && !openRouterKey) {
+    return new Response(
+      JSON.stringify({
+        error:
+          "Missing provider key. Set one of: Gemini (x-gemini-key/GEMINI_API_KEY), Groq (x-groq-key/GROQ_API_KEY), OpenRouter (x-openrouter-key/OPENROUTER_API_KEY).",
+      }),
+      { status: 401, headers: { "Content-Type": "application/json" } },
+    );
+  }
   const intent = body.intent ?? "informational";
   const keywords = body.keywords ?? [];
   const primary =
@@ -224,6 +235,26 @@ ${userPrompt}`;
 
   const stream = new ReadableStream({
     async start(controller) {
+      if (providerMode === "gemini-only") {
+        try {
+          await geminiStream(
+            fullPrompt,
+            (chunk) => {
+              controller.enqueue(encodeSseChunk(chunk));
+            },
+            geminiKey!,
+            { temperature: 0.7, maxOutputTokens },
+          );
+        } catch (e) {
+          const msg = e instanceof Error ? e.message : "Gemini article stream failed";
+          controller.enqueue(encodeSseChunk(`\n[Error] ${msg}\n`));
+        } finally {
+          controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+          controller.close();
+        }
+        return;
+      }
+
       const streamChunk = (provider: string, chunk: string) => {
         controller.enqueue(encodeSseChunk(`[${provider}] ${chunk}`));
       };

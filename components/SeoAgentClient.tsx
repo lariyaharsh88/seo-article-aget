@@ -74,6 +74,8 @@ export function SeoAgentClient() {
   const [profileLoading, setProfileLoading] = useState(false);
   const [savingProfile, setSavingProfile] = useState(false);
   const [profileHint, setProfileHint] = useState<string | null>(null);
+  const [historyNotice, setHistoryNotice] = useState<string | null>(null);
+  const [historyLink, setHistoryLink] = useState<string | null>(null);
   const [mode, setMode] = useState<PipelineMode>("simple");
   const [input, setInput] = useState<PipelineInput>({
     topic: "",
@@ -349,6 +351,8 @@ export function SeoAgentClient() {
     setStoredResearchContext("");
     setStoredResearchTopic("");
     setEnrichedHtml("");
+    setHistoryNotice(null);
+    setHistoryLink(null);
     setArticleViewMode("edit");
     setTab("article");
 
@@ -396,6 +400,36 @@ export function SeoAgentClient() {
       if (result.enrichedHtml) {
         setTab("visual");
       }
+      if (userSession?.access_token && result.article.trim().length > 80) {
+        try {
+          const saveRes = await fetch("/api/user-articles", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${userSession.access_token}`,
+            },
+            body: JSON.stringify({
+              markdown: result.article,
+              topic: effectiveInput.topic,
+              primaryKeyword: effectiveInput.primaryKeyword,
+              sourceUrl: effectiveInput.sourceUrl,
+              title: topicFirstLine || effectiveInput.primaryKeyword || "Generated article",
+            }),
+          });
+          const saveData = (await saveRes.json()) as {
+            dashboardLink?: string;
+            error?: string;
+          };
+          if (saveRes.ok && saveData.dashboardLink) {
+            setHistoryLink(saveData.dashboardLink);
+            setHistoryNotice("Saved to your dashboard history.");
+          } else if (saveData.error) {
+            setHistoryNotice(`History save skipped: ${saveData.error}`);
+          }
+        } catch {
+          setHistoryNotice("History save skipped due to network issue.");
+        }
+      }
       setArticleEditorEpoch((n) => n + 1);
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Unexpected pipeline error";
@@ -405,7 +439,18 @@ export function SeoAgentClient() {
       setRunning(false);
       setStage(null);
     }
-  }, [mode, simpleKeyword, input, pushLog, gscRows, gscNote, googleSuggestions, autoEnrich]);
+  }, [
+    mode,
+    simpleKeyword,
+    input,
+    pushLog,
+    gscRows,
+    gscNote,
+    googleSuggestions,
+    autoEnrich,
+    userSession?.access_token,
+    topicFirstLine,
+  ]);
 
   const runWithAuth = useCallback(async () => {
     if (!userSession) {
@@ -655,7 +700,23 @@ export function SeoAgentClient() {
             >
               Open login page
             </Link>
+            <Link
+              href="/dashboard"
+              className="font-mono text-[11px] text-accent underline-offset-2 hover:underline sm:text-xs"
+            >
+              Open dashboard
+            </Link>
           </div>
+          {historyNotice ? (
+            <p className="font-mono text-[11px] text-text-muted">
+              {historyNotice}{" "}
+              {historyLink ? (
+                <Link href={historyLink} className="text-accent underline-offset-2 hover:underline">
+                  View entry
+                </Link>
+              ) : null}
+            </p>
+          ) : null}
           {userSession?.user?.id ? (
             <div className="rounded-xl border border-border bg-surface/60 p-3">
               <p className="font-mono text-xs text-text-secondary">
