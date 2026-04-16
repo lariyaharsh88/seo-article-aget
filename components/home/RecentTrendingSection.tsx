@@ -89,11 +89,25 @@ export async function RecentTrendingSection() {
               </li>
             ))
           ) : (
-            <li className="rounded-lg border border-border/70 bg-background/40 px-3 py-2 font-serif text-sm text-text-muted">
-              No recent posts yet.
-              <Link href="/seo-agent" className="ml-1 font-mono text-xs text-accent hover:underline">
-                Get your first SEO article live →
-              </Link>
+            <li className="rounded-lg border border-border/70 bg-background/40 px-3 py-3">
+              <p className="font-serif text-sm text-text-secondary">
+                Your content library is empty right now, which means this is the best moment to publish your first ranking page.
+              </p>
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <Link
+                  href="/seo-agent?try=1"
+                  className="inline-flex min-h-9 items-center rounded-md bg-accent px-3 py-1.5 font-mono text-[11px] font-semibold text-background hover:opacity-90"
+                >
+                  Create first article
+                </Link>
+                <Link
+                  href="/blog"
+                  className="inline-flex min-h-9 items-center rounded-md border border-border px-3 py-1.5 font-mono text-[11px] text-text-secondary hover:border-accent hover:text-accent"
+                >
+                  View examples
+                </Link>
+              </div>
+              <p className="mt-2 font-mono text-[10px] text-text-muted">✨ One publish today starts your internal-link graph.</p>
             </li>
           )}
         </ul>
@@ -113,11 +127,25 @@ export async function RecentTrendingSection() {
               </li>
             ))
           ) : (
-            <li className="rounded-lg border border-border/70 bg-background/40 px-3 py-2 font-serif text-sm text-text-muted">
-              No trending signals yet.
-              <Link href="/free-tools" className="ml-1 font-mono text-xs text-accent hover:underline">
-                Find your next traffic topic →
-              </Link>
+            <li className="rounded-lg border border-border/70 bg-background/40 px-3 py-3">
+              <p className="font-serif text-sm text-text-secondary">
+                Trend signals are calm right now. You can still capture demand by proactively building topic clusters.
+              </p>
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <Link
+                  href="/free-tools"
+                  className="inline-flex min-h-9 items-center rounded-md bg-accent px-3 py-1.5 font-mono text-[11px] font-semibold text-background hover:opacity-90"
+                >
+                  Find next topic
+                </Link>
+                <Link
+                  href="/free-tools/keyword-clustering"
+                  className="inline-flex min-h-9 items-center rounded-md border border-border px-3 py-1.5 font-mono text-[11px] text-text-secondary hover:border-accent hover:text-accent"
+                >
+                  Build a cluster
+                </Link>
+              </div>
+              <p className="mt-2 font-mono text-[10px] text-text-muted">📈 Consistent publishing compounds even in low-noise windows.</p>
             </li>
           )}
         </ul>

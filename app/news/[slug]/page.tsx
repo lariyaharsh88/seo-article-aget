@@ -119,19 +119,6 @@ function inferPrimaryKeywordFromTitle(title: string): string {
   return selected.join(" ").trim() || tokens.slice(0, 3).join(" ").trim() || "Exam Update";
 }
 
-function inferSecondaryKeywordFromTitle(title: string): string {
-  const t = title.toLowerCase();
-  if (t.includes("admit card")) return "Admit Card";
-  if (t.includes("answer key")) return "Answer Key";
-  if (t.includes("result")) return "Result";
-  if (t.includes("exam date")) return "Exam Date";
-  if (t.includes("counselling")) return "Counselling";
-  if (t.includes("cut off") || t.includes("cutoff")) return "Cut Off";
-  if (t.includes("merit list")) return "Merit List";
-  if (t.includes("notification")) return "Notification";
-  return "Latest Update";
-}
-
 function lineHasKeyword(line: string, keywords: string[]): boolean {
   return keywords.some((k) => {
     const safe = k.trim();
@@ -144,12 +131,10 @@ function lineHasKeyword(line: string, keywords: string[]): boolean {
 function enforceKeywordHeadingsInMarkdown(
   markdown: string,
   primaryKeyword: string,
-  secondaryKeyword: string,
 ): string {
   const lines = markdown.split(/\r?\n/);
   const primary = primaryKeyword.trim();
-  const secondary = secondaryKeyword.trim();
-  const keywords = [primary, secondary].filter(Boolean);
+  const keywords = [primary].filter(Boolean);
   if (keywords.length === 0) return markdown;
 
   const headingIdx: number[] = [];
@@ -162,8 +147,7 @@ function enforceKeywordHeadingsInMarkdown(
     if (lineHasKeyword(lines[i], keywords)) continue;
     const prefix = lines[i].startsWith("###") ? "###" : "##";
     const heading = lines[i].replace(/^###?\s+/, "").trim();
-    const suffix = secondary || primary;
-    lines[i] = `${prefix} ${heading} - ${suffix}`;
+    lines[i] = `${prefix} ${heading} - ${primary}`;
   }
 
   return lines.join("\n");
@@ -258,10 +242,10 @@ export default async function RepurposedNewsArticlePage({ params }: Props) {
     console.error("[news/[slug]] peer articles:", e);
   }
 
+  const primaryKeyword = inferPrimaryKeywordFromTitle(post.title);
   const markdownForRender = enforceKeywordHeadingsInMarkdown(
     post.repurposedMarkdown,
-    inferPrimaryKeywordFromTitle(post.title),
-    inferSecondaryKeywordFromTitle(post.title),
+    primaryKeyword,
   );
 
   let html: string;
@@ -437,7 +421,7 @@ export default async function RepurposedNewsArticlePage({ params }: Props) {
         />
         <section className="mt-8 rounded-2xl border border-accent/30 bg-accent/10 p-6">
           <h2 className="font-display text-2xl text-text-primary">
-            Turn this topic into a ranked blog
+            Turn this {primaryKeyword} topic into a ranked blog
           </h2>
           <p className="mt-2 font-serif text-sm text-text-secondary">
             Use RankFlowHQ on the main site to go from keyword and SERP intent
@@ -452,7 +436,7 @@ export default async function RepurposedNewsArticlePage({ params }: Props) {
           </Link>
           <div className="mt-5 border-t border-border/70 pt-4">
             <h3 className="font-mono text-xs uppercase tracking-[0.16em] text-accent">
-              Related education articles
+              Related {primaryKeyword} education articles
             </h3>
             <ul className="mt-3 space-y-2 font-serif text-sm text-text-secondary">
               {peerNews.slice(0, 3).map((n) => (

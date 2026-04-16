@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
+import { trackEvent } from "@/lib/analytics";
 import { markdownToArticleHtml } from "@/lib/markdown-to-html";
 
 interface ArticleCopyBarProps {
@@ -15,6 +16,7 @@ export function ArticleCopyBar({
   disabled,
 }: ArticleCopyBarProps) {
   const [status, setStatus] = useState<string | null>(null);
+  const brandLine = "Generated with RankFlowHQ - rankflowhq.com";
 
   const flash = useCallback((msg: string) => {
     setStatus(msg);
@@ -25,6 +27,7 @@ export function ArticleCopyBar({
     if (!markdown.trim()) return;
     try {
       await navigator.clipboard.writeText(`${markdown}\n\nGenerated with RankFlowHQ`);
+      trackEvent("feature_usage", { feature_name: "article_export", action: "copy_markdown" });
       flash("Copied full article (Markdown)");
     } catch {
       flash("Copy failed — try HTTPS or allow clipboard");
@@ -34,8 +37,9 @@ export function ArticleCopyBar({
   const copyHtml = useCallback(async () => {
     if (!markdown.trim()) return;
     try {
-      const html = `${markdownToArticleHtml(markdown)}\n<p>Generated with RankFlowHQ</p>`;
+      const html = `${markdownToArticleHtml(markdown)}\n<p>${brandLine}</p>`;
       await navigator.clipboard.writeText(html);
+      trackEvent("feature_usage", { feature_name: "article_export", action: "copy_html" });
       flash("Copied HTML (tables, headings, lists)");
     } catch {
       flash("Copy failed — try HTTPS or allow clipboard");
@@ -53,8 +57,8 @@ export function ArticleCopyBar({
         .slice(0, 80) || "generated-article";
       const text =
         kind === "md"
-          ? `${markdown}\n\nGenerated with RankFlowHQ`
-          : `${markdownToArticleHtml(markdown)}\n<p>Generated with RankFlowHQ</p>`;
+          ? `${markdown}\n\n${brandLine}`
+          : `${markdownToArticleHtml(markdown)}\n<p>${brandLine}</p>`;
       const blob = new Blob([text], {
         type: kind === "md" ? "text/markdown;charset=utf-8" : "text/html;charset=utf-8",
       });
@@ -64,6 +68,7 @@ export function ArticleCopyBar({
       a.download = `${base}.${kind}`;
       a.click();
       URL.revokeObjectURL(url);
+      trackEvent("feature_usage", { feature_name: "article_export", action: `download_${kind}` });
       flash(kind === "md" ? "Downloaded Markdown" : "Downloaded HTML");
     },
     [markdown, title, flash],
@@ -85,11 +90,43 @@ export function ArticleCopyBar({
         throw new Error(data.error || `HTTP ${res.status}`);
       }
       await navigator.clipboard.writeText(`${window.location.origin}${data.url}`);
+      trackEvent("feature_usage", { feature_name: "article_export", action: "share_public_link" });
       flash("Public share link copied");
     } catch {
       flash("Share failed — try again");
     }
   }, [markdown, title, flash]);
+
+  const downloadShareKit = useCallback(() => {
+    if (!markdown.trim()) return;
+    const base = (title?.trim() || "generated-article")
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, "")
+      .trim()
+      .replace(/\s+/g, "-")
+      .slice(0, 80) || "generated-article";
+    const preview = markdown
+      .replace(/^#+\s+/gm, "")
+      .split("\n")
+      .filter((line) => line.trim().length > 0)
+      .slice(0, 8)
+      .join("\n");
+    const text =
+      `SEO RESULT SNAPSHOT\n` +
+      `Title: ${title?.trim() || "Generated article"}\n\n` +
+      `${preview}\n\n` +
+      `---\n${brandLine}\n` +
+      `Invite teammates and unlock advanced workflow templates.`;
+    const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${base}-share-kit.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+    trackEvent("feature_usage", { feature_name: "article_export", action: "download_share_kit" });
+    flash("Downloaded branded share kit");
+  }, [brandLine, flash, markdown, title]);
 
   const empty = !markdown.trim();
 
@@ -130,6 +167,14 @@ export function ArticleCopyBar({
           className="touch-manipulation w-full rounded-lg border border-border bg-background/80 px-3 py-2 font-mono text-xs text-text-secondary transition-colors hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto sm:py-1.5"
         >
           Export HTML
+        </button>
+        <button
+          type="button"
+          onClick={() => downloadShareKit()}
+          disabled={disabled || empty}
+          className="touch-manipulation w-full rounded-lg border border-accent/40 bg-accent/10 px-3 py-2 font-mono text-xs text-accent transition-colors hover:bg-accent/20 disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto sm:py-1.5"
+        >
+          Download & Share
         </button>
         <button
           type="button"

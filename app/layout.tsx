@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Space_Mono } from "next/font/google";
 import Script from "next/script";
+import { AnalyticsTracker } from "@/components/AnalyticsTracker";
 import { EducationTrafficCtaBar } from "@/components/EducationTrafficCtaBar";
 import { LazyUiWidgets } from "@/components/LazyUiWidgets";
 import { SiteFooter } from "@/components/SiteFooter";
@@ -142,6 +143,7 @@ export default function RootLayout({
         />
         <StructuredData />
         <Providers>
+          <AnalyticsTracker />
           <SupabaseAuthHashRedirect />
           <UiMotionEffects />
           <div className="relative z-10 flex min-h-screen flex-col">

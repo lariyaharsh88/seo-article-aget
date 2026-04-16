@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import type { CSSProperties } from "react";
 import { Suspense } from "react";
+import { HeroPlgDemo } from "@/components/home/HeroPlgDemo";
 import { JsonLd } from "@/components/JsonLd";
 import { RecentTrendingSection } from "@/components/home/RecentTrendingSection";
 import { buildPageMetadata } from "@/lib/seo-page";
@@ -53,21 +54,24 @@ export default async function HomePage() {
   const pricingTiers = [
     {
       name: "Starter",
-      price: "Free",
+      price: "$0/mo",
       subtitle: "Validate SEO gains before you commit",
-      points: ["Core free tools", "SEO workflow previews", "No credit card required"],
+      points: ["2 workflow runs", "SEO workflow previews", "No credit card required"],
       cta: "Start Free",
       href: "/free-tools",
       highlight: false,
+      badge: "Free",
     },
     {
-      name: "Growth",
-      price: "Most Popular",
+      name: "Pro",
+      price: "$49/mo",
+      oldPrice: "$79/mo",
       subtitle: "For teams that need predictable SEO output",
-      points: ["End-to-end SEO Agent flow", "Enriched research + optimization", "Publish-ready output formats"],
-      cta: "Start Free",
+      points: ["Unlimited workflow runs", "Enriched research + optimization", "Publish-ready output formats"],
+      cta: "Upgrade to Pro",
       href: "/seo-agent",
       highlight: true,
+      badge: "Most popular",
     },
     {
       name: "Enterprise",
@@ -77,6 +81,7 @@ export default async function HomePage() {
       cta: "Book Demo",
       href: "/pricing",
       highlight: false,
+      badge: "Custom",
     },
   ] as const;
   const testimonials = [
@@ -147,6 +152,37 @@ export default async function HomePage() {
     { href: "/free-tools/ai-search-grader", label: "AI search visibility grader" },
     { href: "/blog", label: "SEO strategy blog and optimization guides" },
   ] as const;
+  const audiencePaths = [
+    { label: "Founders", href: "/seo-agent?try=1", description: "Ship high-intent pages without adding headcount." },
+    { label: "Marketing teams", href: "/pages", description: "Standardize execution and publish with higher velocity." },
+    { label: "Agencies", href: "/pricing", description: "Run repeatable client workflows and protect margins." },
+  ] as const;
+  const platformBlocks = [
+    {
+      title: "Workflow engine",
+      body: "Move from keyword to publish-ready output in one guided path.",
+      href: "/seo-agent",
+    },
+    {
+      title: "Research and validation",
+      body: "Use demand signals, query context, and internal linking opportunities.",
+      href: "/free-tools",
+    },
+    {
+      title: "Optimization layer",
+      body: "Improve metadata, structure, and quality checks before publishing.",
+      href: "/seo-agent",
+    },
+    {
+      title: "Distribution and reuse",
+      body: "Export branded reports and share outputs across your team faster.",
+      href: "/dashboard",
+    },
+  ] as const;
+  const outcomeProof = [
+    { quote: "Publishing cycle reduced from 5 days to under 48 hours.", role: "Growth lead, B2B SaaS" },
+    { quote: "Content QA handoff time dropped by around 60%.", role: "SEO manager, agency team" },
+  ] as const;
   return (
     <>
       <JsonLd data={buildHomePageSchema()} />
@@ -169,43 +205,46 @@ export default async function HomePage() {
               </p>
               <div className="mt-6 flex flex-col gap-3 sm:mt-8 sm:flex-row sm:flex-wrap">
                 <Link
-                  href="/seo-agent"
+                  href="/seo-agent?try=1"
+                  data-track-cta
+                  data-cta-label="hero_primary_start_free"
                   className="btn-premium pulse-subtle inline-flex min-h-11 items-center justify-center rounded-xl bg-accent px-5 py-3 font-mono text-sm font-semibold text-background transition-all duration-300 hover:-translate-y-0.5 hover:opacity-90"
                 >
                   Start Free
                 </Link>
                 <Link
                   href="/pricing"
+                  data-track-cta
+                  data-cta-label="hero_secondary_get_demo"
                   className="btn-premium inline-flex min-h-11 items-center justify-center rounded-xl border border-border/90 bg-surface/60 px-5 py-3 font-mono text-sm text-text-secondary transition-all duration-300 hover:-translate-y-0.5 hover:border-accent/70 hover:text-text-primary"
                 >
-                  Watch Demo
+                  Get Demo
                 </Link>
               </div>
               <p className="mt-3 font-mono text-[11px] text-text-muted">
                 Limited onboarding slots each month for implementation support.
               </p>
             </div>
-            <div className="rounded-2xl border border-border/70 bg-background/45 p-4">
-              <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-accent">
-                What you get
-              </p>
-              <div className="mt-4 grid gap-2">
-                {[
-                  "Keyword intent clustering in seconds",
-                  "SERP-backed research context",
-                  "Outline + article generation",
-                  "Meta title, description, and SEO checks",
-                  "Publish-ready format for your CMS",
-                ].map((item) => (
-                  <div
-                    key={item}
-                    className="rounded-lg border border-border/70 bg-surface/60 px-3 py-2 font-serif text-sm text-text-secondary"
-                  >
-                    {item}
-                  </div>
-                ))}
-              </div>
-            </div>
+            <HeroPlgDemo />
+          </div>
+        </section>
+
+        <section className="reveal-on-scroll mt-6 rounded-2xl border border-border/80 bg-surface/45 p-4 md:p-5">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-accent">Choose your path</p>
+            <p className="font-mono text-[10px] text-text-muted">Built for different growth motions</p>
+          </div>
+          <div className="mt-3 grid gap-2 md:grid-cols-3">
+            {audiencePaths.map((path) => (
+              <Link
+                key={path.label}
+                href={path.href}
+                className="rounded-xl border border-border/70 bg-background/35 p-3 transition-all hover:-translate-y-0.5 hover:border-accent/60"
+              >
+                <p className="font-mono text-xs text-accent">{path.label}</p>
+                <p className="mt-1 font-serif text-sm text-text-secondary">{path.description}</p>
+              </Link>
+            ))}
           </div>
         </section>
 
@@ -311,6 +350,28 @@ export default async function HomePage() {
           </div>
         </section>
 
+        <section className="reveal-on-scroll mt-14 rounded-2xl border border-border/80 bg-surface/45 p-5 md:mt-20 md:p-8">
+          <p className="font-mono text-xs uppercase tracking-[0.16em] text-accent">Platform map</p>
+          <h2 className="mt-2 font-display text-3xl text-text-primary sm:text-4xl">
+            Modular system, one operating flow
+          </h2>
+          <p className="mt-3 max-w-3xl font-serif text-sm leading-relaxed text-text-secondary md:text-base">
+            Inspired by modern SaaS IA: each module solves one job, but all modules connect in a single workflow.
+          </p>
+          <div className="mt-6 grid gap-3 md:grid-cols-2">
+            {platformBlocks.map((block) => (
+              <Link
+                key={block.title}
+                href={block.href}
+                className="rounded-xl border border-border/70 bg-background/35 p-4 transition-all hover:border-accent/60"
+              >
+                <h3 className="font-display text-xl text-text-primary">{block.title}</h3>
+                <p className="mt-2 font-serif text-sm text-text-secondary">{block.body}</p>
+              </Link>
+            ))}
+          </div>
+        </section>
+
         {/* 5. Features (benefits-driven) */}
         <section className="reveal-on-scroll mt-14 md:mt-20" style={{ "--reveal-delay": "140ms" } as CSSProperties}>
           <div className="flex items-end justify-between gap-4">
@@ -394,6 +455,14 @@ export default async function HomePage() {
               </article>
             ))}
           </div>
+          <div className="mt-5 grid gap-3 md:grid-cols-2">
+            {outcomeProof.map((item) => (
+              <div key={item.quote} className="rounded-xl border border-border/70 bg-background/35 p-4">
+                <p className="font-serif text-sm text-text-secondary">&ldquo;{item.quote}&rdquo;</p>
+                <p className="mt-2 font-mono text-[11px] text-text-muted">{item.role}</p>
+              </div>
+            ))}
+          </div>
         </section>
 
         <section className="reveal-on-scroll mt-14 rounded-2xl border border-border/80 bg-surface/45 p-5 md:mt-20 md:p-8" style={{ "--reveal-delay": "205ms" } as CSSProperties}>
@@ -434,7 +503,15 @@ export default async function HomePage() {
                 }`}
               >
                 <p className="font-mono text-xs uppercase tracking-[0.14em] text-accent">{tier.name}</p>
+                <span className="mt-2 inline-flex rounded-full border border-accent/35 bg-accent/10 px-2 py-0.5 font-mono text-[10px] text-accent">
+                  {tier.badge}
+                </span>
                 <p className="mt-2 font-display text-3xl leading-none text-text-primary">{tier.price}</p>
+                {"oldPrice" in tier ? (
+                  <p className="mt-1 font-mono text-[11px] text-text-muted">
+                    <span className="line-through">{tier.oldPrice}</span> anchor price
+                  </p>
+                ) : null}
                 <p className="mt-1 font-serif text-sm text-text-secondary">{tier.subtitle}</p>
                 <ul className="mt-4 space-y-2 font-serif text-sm text-text-secondary">
                   {tier.points.map((point) => (
