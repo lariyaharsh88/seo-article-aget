@@ -89,6 +89,86 @@ function extractFaqsFromMarkdown(markdown: string): Array<{
   return out.slice(0, 5);
 }
 
+function inferPrimaryKeywordFromTitle(title: string): string {
+  const clean = title
+    .replace(/\([^)]*\)/g, " ")
+    .replace(/[^a-zA-Z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!clean) return "Exam Update";
+  const tokens = clean.split(" ").filter(Boolean);
+  const stop = new Set([
+    "out",
+    "live",
+    "today",
+    "released",
+    "download",
+    "pdf",
+    "direct",
+    "link",
+    "check",
+    "details",
+    "notification",
+    "updates",
+    "update",
+  ]);
+  const selected = tokens
+    .filter((t) => !/^\d{4}$/.test(t))
+    .filter((t) => !stop.has(t.toLowerCase()))
+    .slice(0, 4);
+  return selected.join(" ").trim() || tokens.slice(0, 3).join(" ").trim() || "Exam Update";
+}
+
+function inferSecondaryKeywordFromTitle(title: string): string {
+  const t = title.toLowerCase();
+  if (t.includes("admit card")) return "Admit Card";
+  if (t.includes("answer key")) return "Answer Key";
+  if (t.includes("result")) return "Result";
+  if (t.includes("exam date")) return "Exam Date";
+  if (t.includes("counselling")) return "Counselling";
+  if (t.includes("cut off") || t.includes("cutoff")) return "Cut Off";
+  if (t.includes("merit list")) return "Merit List";
+  if (t.includes("notification")) return "Notification";
+  return "Latest Update";
+}
+
+function lineHasKeyword(line: string, keywords: string[]): boolean {
+  return keywords.some((k) => {
+    const safe = k.trim();
+    if (!safe) return false;
+    const re = new RegExp(`\\b${safe.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "i");
+    return re.test(line);
+  });
+}
+
+function enforceKeywordHeadingsInMarkdown(
+  markdown: string,
+  primaryKeyword: string,
+  secondaryKeyword: string,
+): string {
+  const lines = markdown.split(/\r?\n/);
+  const primary = primaryKeyword.trim();
+  const secondary = secondaryKeyword.trim();
+  const keywords = [primary, secondary].filter(Boolean);
+  if (keywords.length === 0) return markdown;
+
+  const headingIdx: number[] = [];
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (/^##\s+/.test(line) || /^###\s+/.test(line)) headingIdx.push(i);
+  }
+
+  for (const i of headingIdx) {
+    if (lineHasKeyword(lines[i], keywords)) continue;
+    const prefix = lines[i].startsWith("###") ? "###" : "##";
+    const heading = lines[i].replace(/^###?\s+/, "").trim();
+    const suffix = secondary || primary;
+    lines[i] = `${prefix} ${heading} - ${suffix}`;
+  }
+
+  return lines.join("\n");
+}
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   let title = "News article";
   let description = SITE_NAME;
@@ -178,9 +258,15 @@ export default async function RepurposedNewsArticlePage({ params }: Props) {
     console.error("[news/[slug]] peer articles:", e);
   }
 
+  const markdownForRender = enforceKeywordHeadingsInMarkdown(
+    post.repurposedMarkdown,
+    inferPrimaryKeywordFromTitle(post.title),
+    inferSecondaryKeywordFromTitle(post.title),
+  );
+
   let html: string;
   try {
-    html = markdownToArticleBodyHtml(post.repurposedMarkdown);
+    html = markdownToArticleBodyHtml(markdownForRender);
   } catch (parseErr) {
     console.error("[news/[slug]] markdown parse error:", parseErr);
     html =
@@ -194,7 +280,7 @@ export default async function RepurposedNewsArticlePage({ params }: Props) {
       ? new Date(issuedParsedMs).toISOString()
       : undefined;
 
-  const faqEntries = extractFaqsFromMarkdown(post.repurposedMarkdown);
+  const faqEntries = extractFaqsFromMarkdown(markdownForRender);
   const clusterId = inferNewsClusterFromText(post.title, post.source, post.url);
   const cluster = clusterId ? getNewsClusterMeta(clusterId) : null;
 

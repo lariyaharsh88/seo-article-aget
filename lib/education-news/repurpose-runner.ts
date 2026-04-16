@@ -68,11 +68,6 @@ function inferHeadingKeyword(title: string): string {
     "link",
     "check",
     "details",
-    "result",
-    "admit",
-    "card",
-    "exam",
-    "date",
     "notification",
     "updates",
     "update",
@@ -84,11 +79,38 @@ function inferHeadingKeyword(title: string): string {
   return selected.join(" ").trim() || tokens.slice(0, 2).join(" ").trim() || "Exam Update";
 }
 
-function enforceKeywordInNewsHeadings(markdown: string, keyword: string): string {
+function inferSecondaryKeyword(title: string): string {
+  const t = title.toLowerCase();
+  if (t.includes("admit card")) return "Admit Card";
+  if (t.includes("answer key")) return "Answer Key";
+  if (t.includes("result")) return "Result";
+  if (t.includes("exam date")) return "Exam Date";
+  if (t.includes("counselling")) return "Counselling";
+  if (t.includes("cut off") || t.includes("cutoff")) return "Cut Off";
+  if (t.includes("merit list")) return "Merit List";
+  if (t.includes("notification")) return "Notification";
+  return "Latest Update";
+}
+
+function lineHasKeyword(line: string, keywords: string[]): boolean {
+  return keywords.some((k) => {
+    const safe = k.trim();
+    if (!safe) return false;
+    const re = new RegExp(`\\b${safe.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "i");
+    return re.test(line);
+  });
+}
+
+function enforceKeywordInNewsHeadings(
+  markdown: string,
+  primaryKeyword: string,
+  secondaryKeyword: string,
+): string {
   const lines = markdown.split(/\r?\n/);
-  const key = keyword.trim();
-  if (!key) return markdown;
-  const keyRe = new RegExp(`\\b${key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "i");
+  const primary = primaryKeyword.trim();
+  const secondary = secondaryKeyword.trim();
+  if (!primary && !secondary) return markdown;
+  const headingKeywords = [primary, secondary].filter(Boolean);
 
   const h2Idx: number[] = [];
   const h3Idx: number[] = [];
@@ -98,24 +120,22 @@ function enforceKeywordInNewsHeadings(markdown: string, keyword: string): string
     if (/^###\s+/.test(line)) h3Idx.push(i);
   }
 
-  const h2WithKey = h2Idx.filter((i) => keyRe.test(lines[i])).length;
-  const h3WithKey = h3Idx.filter((i) => keyRe.test(lines[i])).length;
-
-  let neededH2 = Math.max(0, 2 - h2WithKey);
-  for (const i of h2Idx) {
-    if (neededH2 <= 0) break;
-    if (keyRe.test(lines[i])) continue;
-    const heading = lines[i].replace(/^##\s+/, "").trim();
-    lines[i] = `## ${key} ${heading}`;
-    neededH2 -= 1;
+  for (const i of [...h2Idx, ...h3Idx]) {
+    if (lineHasKeyword(lines[i], headingKeywords)) continue;
+    const prefix = lines[i].startsWith("###") ? "###" : "##";
+    const heading = lines[i].replace(/^###?\s+/, "").trim();
+    const suffix = secondary || primary;
+    lines[i] = `${prefix} ${heading} - ${suffix}`;
   }
 
-  if (h3Idx.length > 0 && h3WithKey === 0) {
-    for (const i of h3Idx) {
-      if (keyRe.test(lines[i])) continue;
-      const heading = lines[i].replace(/^###\s+/, "").trim();
-      lines[i] = `### ${key} ${heading}`;
-      break;
+  if (secondary) {
+    const allHeadingIdx = [...h2Idx, ...h3Idx];
+    const hasSecondary = allHeadingIdx.some((i) => lineHasKeyword(lines[i], [secondary]));
+    if (!hasSecondary && allHeadingIdx.length > 0) {
+      const i = h3Idx[0] ?? h2Idx[0];
+      const prefix = lines[i].startsWith("###") ? "###" : "##";
+      const heading = lines[i].replace(/^###?\s+/, "").trim();
+      lines[i] = `${prefix} ${heading} - ${secondary}`;
     }
   }
 
@@ -182,7 +202,11 @@ export async function runRepurposeForArticleId(
     const mdRaw = await generateRepurposeMarkdown(prompt, llmKeys, (step) =>
       emit(55, step),
     );
-    const md = enforceKeywordInNewsHeadings(mdRaw, inferHeadingKeyword(row.title));
+    const md = enforceKeywordInNewsHeadings(
+      mdRaw,
+      inferHeadingKeyword(row.title),
+      inferSecondaryKeyword(row.title),
+    );
 
     emit(88, "Validating output length…");
     if (md.length < 200) {

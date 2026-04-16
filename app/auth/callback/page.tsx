@@ -10,6 +10,22 @@ function safeNextParam(raw: string | null): string {
   return "/seo-agent";
 }
 
+function parseAuthHash(hash: string): {
+  accessToken?: string;
+  refreshToken?: string;
+  error?: string;
+  errorDescription?: string;
+} {
+  const raw = hash.startsWith("#") ? hash.slice(1) : hash;
+  const params = new URLSearchParams(raw);
+  return {
+    accessToken: params.get("access_token") || undefined,
+    refreshToken: params.get("refresh_token") || undefined,
+    error: params.get("error") || undefined,
+    errorDescription: params.get("error_description") || undefined,
+  };
+}
+
 export default function AuthCallbackPage() {
   const router = useRouter();
   const [phase, setPhase] = useState<"working" | "done" | "error">("working");
@@ -41,8 +57,39 @@ export default function AuthCallbackPage() {
       try {
         const supabase = getSupabaseBrowserClient();
         const code = pageUrl.searchParams.get("code");
+        const tokenHash = pageUrl.searchParams.get("token_hash");
+        const otpType = pageUrl.searchParams.get("type");
+        const hashData = parseAuthHash(window.location.hash);
+
+        if (hashData.error) {
+          throw new Error(
+            hashData.errorDescription?.replace(/\+/g, " ") || hashData.error,
+          );
+        }
+
+        if (hashData.accessToken && hashData.refreshToken) {
+          const { error } = await supabase.auth.setSession({
+            access_token: hashData.accessToken,
+            refresh_token: hashData.refreshToken,
+          });
+          if (error) throw error;
+        }
+
         if (code) {
           const { error } = await supabase.auth.exchangeCodeForSession(code);
+          if (error) throw error;
+        }
+        if (tokenHash && otpType) {
+          const { error } = await supabase.auth.verifyOtp({
+            token_hash: tokenHash,
+            type: otpType as
+              | "signup"
+              | "invite"
+              | "magiclink"
+              | "recovery"
+              | "email_change"
+              | "email",
+          });
           if (error) throw error;
         }
 
@@ -61,7 +108,7 @@ export default function AuthCallbackPage() {
         if (!data.session) {
           setPhase("error");
           setDetail(
-            "Could not finish login. If you use localhost, run npm run dev before opening the email link.",
+            "Could not finish login. Missing session after callback. Check Supabase URL settings and use a fresh email link.",
           );
           return;
         }
