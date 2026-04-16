@@ -43,7 +43,7 @@ const GA_MEASUREMENT_ID =
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#0c0f14",
+  themeColor: "#070b14",
 };
 
 export const metadata: Metadata = {

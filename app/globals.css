@@ -8,6 +8,9 @@
 
 body {
   @apply min-h-screen bg-background font-serif text-text-primary antialiased;
+  background-image:
+    radial-gradient(circle at 10% -10%, rgba(34, 211, 238, 0.12), transparent 35%),
+    radial-gradient(circle at 90% 0%, rgba(139, 92, 246, 0.1), transparent 38%);
 }
 
 a,
@@ -18,6 +21,16 @@ button {
     border-color 0.24s ease,
     transform 0.24s ease,
     opacity 0.24s ease;
+}
+
+:focus-visible {
+  outline: 2px solid #22d3ee;
+  outline-offset: 2px;
+}
+
+::selection {
+  background: rgba(34, 211, 238, 0.3);
+  color: #f8fafc;
 }
 
 .page-grid::before {
@@ -46,7 +59,7 @@ button {
 
 .custom-scrollbar {
   scrollbar-width: thin;
-  scrollbar-color: rgba(245, 158, 11, 0.45) rgba(7, 17, 28, 0.8);
+  scrollbar-color: rgba(34, 211, 238, 0.45) rgba(7, 17, 28, 0.8);
 }
 
 .custom-scrollbar::-webkit-scrollbar {
@@ -60,7 +73,7 @@ button {
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, #f59e0b, #78350f);
+  background: linear-gradient(180deg, #22d3ee, #155e75);
   border-radius: 9999px;
 }
 
@@ -73,7 +86,7 @@ button {
   border: 1px solid #2a3f55;
   border-radius: 0.5rem;
   overflow: hidden;
-  box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.07);
+  box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.1);
 }
 
 .article-editor-prose .ProseMirror td,
@@ -86,8 +99,8 @@ button {
 .article-editor-prose .ProseMirror th {
   background: linear-gradient(
     180deg,
-    rgba(245, 158, 11, 0.18) 0%,
-    rgba(245, 158, 11, 0.07) 100%
+    rgba(34, 211, 238, 0.2) 0%,
+    rgba(34, 211, 238, 0.08) 100%
   );
   font-weight: 600;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
@@ -100,7 +113,7 @@ button {
 }
 
 .article-editor-prose .ProseMirror tbody tr:hover {
-  background: rgba(245, 158, 11, 0.09);
+  background: rgba(34, 211, 238, 0.12);
 }
 
 .article-editor-prose .ProseMirror .selectedCell:after {
@@ -111,7 +124,7 @@ button {
   right: 0;
   top: 0;
   bottom: 0;
-  background: rgba(245, 158, 11, 0.12);
+  background: rgba(34, 211, 238, 0.16);
   pointer-events: none;
 }
 
@@ -181,14 +194,14 @@ button {
   border: 1px solid #2a3f55;
   border-radius: 0.5rem;
   overflow: hidden;
-  box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.07);
+  box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.1);
 }
 
 .blog-prose thead {
   background: linear-gradient(
     180deg,
-    rgba(245, 158, 11, 0.18) 0%,
-    rgba(245, 158, 11, 0.07) 100%
+    rgba(34, 211, 238, 0.2) 0%,
+    rgba(34, 211, 238, 0.08) 100%
   );
 }
 
@@ -218,7 +231,15 @@ button {
 }
 
 .blog-prose tbody tr:hover {
-  background: rgba(245, 158, 11, 0.09);
+  background: rgba(34, 211, 238, 0.12);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 .blog-prose caption {
