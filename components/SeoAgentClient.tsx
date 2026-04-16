@@ -9,7 +9,6 @@ import { ArticleCopyBar } from "@/components/ArticleCopyBar";
 import { ArticleRenderer } from "@/components/ArticleRenderer";
 import { ResearchImagesPanel } from "@/components/ResearchImagesPanel";
 import { KeywordsPanel } from "@/components/KeywordsPanel";
-import { LiveLog } from "@/components/LiveLog";
 import { PipelineProgress } from "@/components/PipelineProgress";
 import { SeoPackage } from "@/components/SeoPackage";
 import { SourcesList } from "@/components/SourcesList";
@@ -54,7 +53,6 @@ type TabId =
   | "seo"
   | "keywords"
   | "sources"
-  | "log"
   | "visual";
 
 type PipelineMode = "simple" | "advanced";
@@ -219,7 +217,7 @@ export function SeoAgentClient() {
   const [running, setRunning] = useState(false);
   const [stage, setStage] = useState<string | null>(null);
   const [doneStages, setDoneStages] = useState<string[]>([]);
-  const [logLines, setLogLines] = useState<string[]>([]);
+  const [, setLogLines] = useState<string[]>([]);
   const [article, setArticle] = useState("");
   const [keywords, setKeywords] = useState<Keyword[]>([]);
   const [sources, setSources] = useState<Source[]>([]);
@@ -868,7 +866,6 @@ export function SeoAgentClient() {
     { id: "seo", label: "SEO package" },
     { id: "keywords", label: "Keywords" },
     { id: "sources", label: "Sources" },
-    { id: "log", label: "Live log" },
   ];
 
   return (
@@ -891,7 +888,7 @@ export function SeoAgentClient() {
               RankFlowHQ · Article pipeline
             </h1>
             <p className="mt-2 max-w-2xl font-serif text-base text-text-secondary sm:text-lg">
-              From SERP signals to a streaming long-form draft, with research
+              From search demand signals to a streaming long-form draft, with research
               citations and an exportable SEO pack.
             </p>
             <p className="mt-2 font-mono text-xs text-text-muted">
@@ -1443,7 +1440,7 @@ export function SeoAgentClient() {
               Auto-enrich (H2 images, charts, tables — last step)
             </label>
             <span className="font-mono text-[11px] text-text-muted sm:text-xs">
-              Using server keys from `.env.local`.
+              Service connections are handled securely.
             </span>
             <Link
               href="/login?next=/seo-agent"
@@ -1709,7 +1706,6 @@ export function SeoAgentClient() {
                 />
               )}
               {tab === "sources" && <SourcesList sources={sources} />}
-              {tab === "log" && <LiveLog lines={logLines} />}
             </div>
           </div>
         </div>

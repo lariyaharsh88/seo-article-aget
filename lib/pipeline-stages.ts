@@ -9,19 +9,19 @@ export const PIPELINE_STAGES: PipelineStageDef[] = [
   {
     id: "keywords",
     label: "Keywords",
-    description: "Serper signals + Gemini keyword map",
+    description: "Demand signals + keyword map",
     color: "#f59e0b",
   },
   {
     id: "research",
     label: "Research",
-    description: "Tavily deep crawl + stats pass",
+    description: "Source discovery + stats pass",
     color: "#06b6d4",
   },
   {
     id: "serp",
-    label: "SERP",
-    description: "Top results, PAA, related searches",
+    label: "Search landscape",
+    description: "Top results, common questions, related searches",
     color: "#8b5cf6",
   },
   {
@@ -39,7 +39,7 @@ export const PIPELINE_STAGES: PipelineStageDef[] = [
   {
     id: "article",
     label: "Article",
-    description: "Gemini long-form draft (streaming)",
+    description: "Long-form draft (streaming)",
     color: "#3b82f6",
   },
   {
