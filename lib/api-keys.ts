@@ -16,6 +16,12 @@ export function resolveSerperKey(request: Request): string | undefined {
   return process.env.SERPER_API_KEY?.trim() || undefined;
 }
 
+export function resolveUnsplashKey(request: Request): string | undefined {
+  const header = request.headers.get("x-unsplash-key")?.trim();
+  if (header) return header;
+  return process.env.UNSPLASH_ACCESS_KEY?.trim() || undefined;
+}
+
 /** OpenAI — optional if you add tools that call OpenAI APIs. */
 export function resolveOpenAIKey(request: Request): string | undefined {
   const header = request.headers.get("x-openai-key")?.trim();
@@ -41,6 +47,7 @@ export function serverKeyStatus(): {
   openrouter: boolean;
   tavily: boolean;
   serper: boolean;
+  unsplash: boolean;
   searchConsole: boolean;
 } {
   const gscSite = Boolean(process.env.GSC_SITE_URL?.trim());
@@ -57,6 +64,7 @@ export function serverKeyStatus(): {
     openrouter: Boolean(process.env.OPENROUTER_API_KEY?.trim()),
     tavily: Boolean(process.env.TAVILY_API_KEY?.trim()),
     serper: Boolean(process.env.SERPER_API_KEY?.trim()),
+    unsplash: Boolean(process.env.UNSPLASH_ACCESS_KEY?.trim()),
     searchConsole: gsc,
   };
 }

@@ -6,25 +6,27 @@ export interface ApiKeys {
   gemini: string;
   tavily: string;
   serper: string;
+  unsplash: string;
 }
 
 const STORAGE = "rankflowhq-agent-keys";
 
 function loadKeys(): ApiKeys {
   if (typeof window === "undefined") {
-    return { gemini: "", tavily: "", serper: "" };
+    return { gemini: "", tavily: "", serper: "", unsplash: "" };
   }
   try {
     const raw = localStorage.getItem(STORAGE);
-    if (!raw) return { gemini: "", tavily: "", serper: "" };
+    if (!raw) return { gemini: "", tavily: "", serper: "", unsplash: "" };
     const parsed = JSON.parse(raw) as Partial<ApiKeys>;
     return {
       gemini: typeof parsed.gemini === "string" ? parsed.gemini : "",
       tavily: typeof parsed.tavily === "string" ? parsed.tavily : "",
       serper: typeof parsed.serper === "string" ? parsed.serper : "",
+      unsplash: typeof parsed.unsplash === "string" ? parsed.unsplash : "",
     };
   } catch {
-    return { gemini: "", tavily: "", serper: "" };
+    return { gemini: "", tavily: "", serper: "", unsplash: "" };
   }
 }
 
@@ -94,7 +96,7 @@ export function KeysPanel({ keys, onChange, serverKeysReady }: KeysPanelProps) {
       {open && (
         <div
           id="keys-panel-fields"
-          className="mt-4 grid gap-4 md:grid-cols-3"
+          className="mt-4 grid gap-4 md:grid-cols-4"
         >
           <label className="flex flex-col gap-1 font-mono text-xs text-text-secondary">
             Content service
@@ -129,8 +131,19 @@ export function KeysPanel({ keys, onChange, serverKeysReady }: KeysPanelProps) {
               className="rounded-lg border border-border bg-background px-3 py-2 font-mono text-sm text-text-primary placeholder:text-text-muted focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
             />
           </label>
+          <label className="flex flex-col gap-1 font-mono text-xs text-text-secondary">
+            Image service (optional)
+            <input
+              type="password"
+              autoComplete="off"
+              value={keys.unsplash}
+              onChange={set("unsplash")}
+              placeholder="Unsplash access key"
+              className="rounded-lg border border-border bg-background px-3 py-2 font-mono text-sm text-text-primary placeholder:text-text-muted focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+            />
+          </label>
           {serverKeysReady && (
-            <p className="md:col-span-3 font-mono text-xs text-info">
+            <p className="md:col-span-4 font-mono text-xs text-info">
               Server-side access detected. Local fields can stay empty.
             </p>
           )}
