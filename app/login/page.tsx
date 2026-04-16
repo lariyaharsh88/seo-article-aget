@@ -18,7 +18,8 @@ function LoginContent() {
   const redirectTo = useMemo(() => {
     if (typeof window === "undefined") return undefined;
     const base = window.location.origin;
-    return `${base}${nextPath.startsWith("/") ? nextPath : "/seo-agent"}`;
+    const n = nextPath.startsWith("/") ? nextPath : "/seo-agent";
+    return `${base}/auth/callback?next=${encodeURIComponent(n)}`;
   }, [nextPath]);
 
   async function sendMagicLink() {
@@ -88,6 +89,10 @@ function LoginContent() {
       <p className="mt-3 font-serif text-sm text-text-secondary">
         Use email magic link (recommended) or phone OTP. After login, article tools
         will personalize to your account.
+      </p>
+      <p className="mt-2 font-mono text-[11px] text-text-muted">
+        Local testing: keep <code className="text-accent">npm run dev</code> running before you
+        open the link in the email (otherwise localhost will refuse the connection).
       </p>
 
       <section className="mt-8 space-y-4 rounded-xl border border-border bg-surface/70 p-4">

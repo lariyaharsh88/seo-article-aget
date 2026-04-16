@@ -424,7 +424,9 @@ export function SeoAgentClient() {
     try {
       const supabase = getSupabaseBrowserClient();
       const redirectTo =
-        typeof window !== "undefined" ? `${window.location.origin}/seo-agent` : undefined;
+        typeof window !== "undefined"
+          ? `${window.location.origin}/auth/callback?next=${encodeURIComponent("/seo-agent")}`
+          : undefined;
       const { error } = await supabase.auth.signInWithOtp({
         email: authEmail.trim().toLowerCase(),
         options: { emailRedirectTo: redirectTo },

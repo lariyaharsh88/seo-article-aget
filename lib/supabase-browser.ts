@@ -17,6 +17,7 @@ export function getSupabaseBrowserClient(): SupabaseClient {
 
   client = createClient(url, anon, {
     auth: {
+      flowType: "pkce",
       persistSession: true,
       autoRefreshToken: true,
       detectSessionInUrl: true,

@@ -8,6 +8,7 @@ import { SiteChatWidget } from "@/components/SiteChatWidget";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { Providers } from "@/app/providers";
+import { SupabaseAuthHashRedirect } from "@/components/SupabaseAuthHashRedirect";
 import { StructuredData } from "@/components/StructuredData";
 import { ADSENSE_CLIENT_ID } from "@/lib/adsense-config";
 import {
@@ -151,6 +152,7 @@ export default function RootLayout({
         />
         <StructuredData />
         <Providers>
+          <SupabaseAuthHashRedirect />
           <div className="relative z-10 flex min-h-screen flex-col">
             <SiteHeader />
             <EducationTrafficCtaBar />
