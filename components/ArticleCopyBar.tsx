@@ -16,7 +16,8 @@ export function ArticleCopyBar({
   disabled,
 }: ArticleCopyBarProps) {
   const [status, setStatus] = useState<string | null>(null);
-  const brandLine = "Generated with RankFlowHQ - rankflowhq.com";
+  const [shareUrl, setShareUrl] = useState<string | null>(null);
+  const brandLine = "Powered by RankFlowHQ - rankflowhq.com";
 
   const flash = useCallback((msg: string) => {
     setStatus(msg);
@@ -26,11 +27,11 @@ export function ArticleCopyBar({
   const copyMarkdown = useCallback(async () => {
     if (!markdown.trim()) return;
     try {
-      await navigator.clipboard.writeText(`${markdown}\n\nGenerated with RankFlowHQ`);
+      await navigator.clipboard.writeText(`${markdown}\n\n${brandLine}`);
       trackEvent("feature_usage", { feature_name: "article_export", action: "copy_markdown" });
-      flash("Copied full article (Markdown)");
+      flash("Article copied as Markdown");
     } catch {
-      flash("Copy failed — try HTTPS or allow clipboard");
+      flash("Couldn't copy right now. Please try again.");
     }
   }, [markdown, flash]);
 
@@ -40,9 +41,9 @@ export function ArticleCopyBar({
       const html = `${markdownToArticleHtml(markdown)}\n<p>${brandLine}</p>`;
       await navigator.clipboard.writeText(html);
       trackEvent("feature_usage", { feature_name: "article_export", action: "copy_html" });
-      flash("Copied HTML (tables, headings, lists)");
+      flash("HTML copied and ready to paste");
     } catch {
-      flash("Copy failed — try HTTPS or allow clipboard");
+      flash("Couldn't copy right now. Please try again.");
     }
   }, [markdown, flash]);
 
@@ -69,7 +70,7 @@ export function ArticleCopyBar({
       a.click();
       URL.revokeObjectURL(url);
       trackEvent("feature_usage", { feature_name: "article_export", action: `download_${kind}` });
-      flash(kind === "md" ? "Downloaded Markdown" : "Downloaded HTML");
+      flash(kind === "md" ? "Markdown downloaded" : "HTML downloaded");
     },
     [markdown, title, flash],
   );
@@ -89,13 +90,57 @@ export function ArticleCopyBar({
       if (!res.ok || !data.url) {
         throw new Error(data.error || `HTTP ${res.status}`);
       }
-      await navigator.clipboard.writeText(`${window.location.origin}${data.url}`);
+      const fullUrl = `${window.location.origin}${data.url}`;
+      setShareUrl(fullUrl);
+      await navigator.clipboard.writeText(fullUrl);
       trackEvent("feature_usage", { feature_name: "article_export", action: "share_public_link" });
-      flash("Public share link copied");
+      flash("Public link copied. You can share it now.");
+      return fullUrl;
     } catch {
-      flash("Share failed — try again");
+      flash("Couldn't create a share link. Please try again.");
+      return null;
     }
   }, [markdown, title, flash]);
+
+  const copyEmbedSnippet = useCallback(async () => {
+    if (!markdown.trim()) return;
+    try {
+      const publicUrl = shareUrl || (await createShareLink());
+      if (!publicUrl) {
+        flash("Generate a public link first.");
+        return;
+      }
+      const embed = [
+        `<iframe src="${publicUrl}" width="100%" height="560" style="border:1px solid #d4d4d8;border-radius:12px;" loading="lazy"></iframe>`,
+        `<p style="font-size:12px;color:#64748b;">Powered by <a href="https://rankflowhq.com?ref=embed" target="_blank" rel="noopener noreferrer">RankFlowHQ</a></p>`,
+      ].join("\n");
+      await navigator.clipboard.writeText(embed);
+      trackEvent("feature_usage", { feature_name: "article_export", action: "copy_embed_snippet" });
+      flash("Embed code copied");
+    } catch {
+      flash("Couldn't copy embed code. Please try again.");
+    }
+  }, [createShareLink, flash, markdown, shareUrl]);
+
+  const copySocialShare = useCallback(async () => {
+    if (!markdown.trim()) return;
+    try {
+      const publicUrl = shareUrl || (await createShareLink());
+      if (!publicUrl) return;
+      const socialText = [
+        `Just generated an SEO-ready article in minutes: ${title?.trim() || "New SEO workflow output"}`,
+        publicUrl,
+        "",
+        "Powered by RankFlowHQ",
+        "Try it free: https://rankflowhq.com/seo-agent?try=1",
+      ].join("\n");
+      await navigator.clipboard.writeText(socialText);
+      trackEvent("feature_usage", { feature_name: "article_export", action: "copy_social_share" });
+      flash("Social caption copied");
+    } catch {
+      flash("Couldn't create social caption. Please try again.");
+    }
+  }, [createShareLink, flash, markdown, shareUrl, title]);
 
   const downloadShareKit = useCallback(() => {
     if (!markdown.trim()) return;
@@ -116,7 +161,7 @@ export function ArticleCopyBar({
       `Title: ${title?.trim() || "Generated article"}\n\n` +
       `${preview}\n\n` +
       `---\n${brandLine}\n` +
-      `Invite teammates and unlock advanced workflow templates.`;
+      `Try it: https://rankflowhq.com/seo-agent?try=1`;
     const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -125,7 +170,7 @@ export function ArticleCopyBar({
     a.click();
     URL.revokeObjectURL(url);
     trackEvent("feature_usage", { feature_name: "article_export", action: "download_share_kit" });
-    flash("Downloaded branded share kit");
+    flash("Share kit downloaded");
   }, [brandLine, flash, markdown, title]);
 
   const empty = !markdown.trim();
@@ -133,7 +178,7 @@ export function ArticleCopyBar({
   return (
     <div className="mb-4 flex flex-col gap-2 border-b border-border pb-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-2">
       <span className="font-mono text-[10px] uppercase tracking-wide text-text-muted">
-        Export
+        Share & export
       </span>
       <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
         <button
@@ -142,7 +187,7 @@ export function ArticleCopyBar({
           disabled={disabled || empty}
           className="touch-manipulation w-full rounded-lg border border-border bg-background/80 px-3 py-2 font-mono text-xs text-text-secondary transition-colors hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto sm:py-1.5"
         >
-          Copy Markdown
+          Copy article (Markdown)
         </button>
         <button
           type="button"
@@ -150,7 +195,7 @@ export function ArticleCopyBar({
           disabled={disabled || empty}
           className="touch-manipulation w-full rounded-lg border border-accent/40 bg-accent/10 px-3 py-2 font-mono text-xs text-accent transition-colors hover:bg-accent/20 disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto sm:py-1.5"
         >
-          Copy HTML
+          Copy article (HTML)
         </button>
         <button
           type="button"
@@ -158,7 +203,7 @@ export function ArticleCopyBar({
           disabled={disabled || empty}
           className="touch-manipulation w-full rounded-lg border border-border bg-background/80 px-3 py-2 font-mono text-xs text-text-secondary transition-colors hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto sm:py-1.5"
         >
-          Export Markdown
+          Download Markdown
         </button>
         <button
           type="button"
@@ -166,7 +211,7 @@ export function ArticleCopyBar({
           disabled={disabled || empty}
           className="touch-manipulation w-full rounded-lg border border-border bg-background/80 px-3 py-2 font-mono text-xs text-text-secondary transition-colors hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto sm:py-1.5"
         >
-          Export HTML
+          Download HTML
         </button>
         <button
           type="button"
@@ -174,7 +219,7 @@ export function ArticleCopyBar({
           disabled={disabled || empty}
           className="touch-manipulation w-full rounded-lg border border-accent/40 bg-accent/10 px-3 py-2 font-mono text-xs text-accent transition-colors hover:bg-accent/20 disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto sm:py-1.5"
         >
-          Download & Share
+          Download share kit
         </button>
         <button
           type="button"
@@ -182,9 +227,30 @@ export function ArticleCopyBar({
           disabled={disabled || empty}
           className="touch-manipulation w-full rounded-lg border border-accent/40 bg-accent/10 px-3 py-2 font-mono text-xs text-accent transition-colors hover:bg-accent/20 disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto sm:py-1.5"
         >
-          Share Public Link
+          Copy public link
+        </button>
+        <button
+          type="button"
+          onClick={() => void copyEmbedSnippet()}
+          disabled={disabled || empty}
+          className="touch-manipulation w-full rounded-lg border border-accent/40 bg-accent/10 px-3 py-2 font-mono text-xs text-accent transition-colors hover:bg-accent/20 disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto sm:py-1.5"
+        >
+          Copy embed code
+        </button>
+        <button
+          type="button"
+          onClick={() => void copySocialShare()}
+          disabled={disabled || empty}
+          className="touch-manipulation w-full rounded-lg border border-border bg-background/80 px-3 py-2 font-mono text-xs text-text-secondary transition-colors hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto sm:py-1.5"
+        >
+          Copy social caption
         </button>
       </div>
+      {shareUrl ? (
+        <span className="w-full font-mono text-[11px] text-text-muted">
+          Your public link is ready. Every share includes Powered by RankFlowHQ branding.
+        </span>
+      ) : null}
       {status ? (
         <span className="font-mono text-xs text-success" role="status">
           {status}

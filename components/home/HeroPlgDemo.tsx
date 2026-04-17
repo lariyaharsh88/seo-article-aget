@@ -4,9 +4,9 @@ import { useMemo, useState } from "react";
 import { trackEvent, trackHeatmapTrigger } from "@/lib/analytics";
 
 const STEPS = [
-  "Reading keyword intent",
-  "Building optimized structure",
-  "Preparing publish-ready preview",
+  "Great start - understanding your topic intent",
+  "Nice momentum - shaping a clear structure",
+  "Almost there - preparing your first preview",
 ] as const;
 
 function sleep(ms: number) {
@@ -60,7 +60,7 @@ export function HeroPlgDemo() {
         Interactive demo (no signup)
       </p>
       <p className="mt-2 font-serif text-sm text-text-secondary">
-        Enter one keyword and see a live preview in seconds.
+        Enter one keyword and see value in under 5 seconds.
       </p>
       <label className="mt-3 block">
         <span className="font-mono text-[11px] text-text-muted">Keyword</span>
@@ -82,7 +82,7 @@ export function HeroPlgDemo() {
         data-cta-label="hero_try_instant_demo"
         className="btn-premium mt-3 inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-accent px-4 py-2 font-mono text-xs font-semibold text-background disabled:opacity-50"
       >
-        {running ? "Generating preview..." : "Try Instant Demo"}
+        {running ? "Building your first result..." : "Let's generate your first result"}
       </button>
       <div className="mt-3 h-1.5 w-full rounded-full bg-surface/80">
         <div
@@ -91,7 +91,11 @@ export function HeroPlgDemo() {
         />
       </div>
       <p className="mt-2 font-mono text-[11px] text-text-muted">
-        {running ? STEPS[step] : output ? "Preview ready." : "Ready in under 10 seconds."}
+        {running
+          ? STEPS[step]
+          : output
+            ? "You're doing great - your preview is ready."
+            : "Ready when you are. Your first win starts here."}
       </p>
       <div className="mt-3 min-h-[110px] rounded-lg border border-border/70 bg-surface/50 p-3">
         {output ? (
@@ -100,7 +104,7 @@ export function HeroPlgDemo() {
           </pre>
         ) : (
           <p className="font-serif text-xs text-text-muted">
-            Your sample output preview appears here instantly after the demo run.
+            Your first sample output appears here. One click, one quick win.
           </p>
         )}
       </div>

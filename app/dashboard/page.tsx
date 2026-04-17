@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
 
 type Row = {
@@ -14,6 +14,7 @@ type Row = {
   createdAt: string;
   dashboardLink: string;
 };
+const FREE_LOGGED_RUN_LIMIT = 5;
 
 async function parseJsonSafe<T>(res: Response): Promise<T | null> {
   const raw = await res.text();
@@ -30,43 +31,45 @@ export default function DashboardPage() {
   const [error, setError] = useState<string | null>(null);
   const [rows, setRows] = useState<Row[]>([]);
   const [signedIn, setSignedIn] = useState(false);
+  const [retrying, setRetrying] = useState(false);
+
+  const loadDashboard = useCallback(async () => {
+    try {
+      setError(null);
+      const supabase = getSupabaseBrowserClient();
+      const { data } = await supabase.auth.getSession();
+      const token = data.session?.access_token;
+      setSignedIn(Boolean(token));
+      if (!token) {
+        setRows([]);
+        setError("Please log in to view your dashboard.");
+        return;
+      }
+      const res = await fetch("/api/user-articles", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const payload = (await parseJsonSafe<{
+        items?: Row[];
+        error?: string;
+      }>(res)) || { error: "" };
+      if (!res.ok) {
+        throw new Error(
+          payload.error ||
+            `Dashboard API failed (HTTP ${res.status}). If this is a fresh deploy, run prisma migrate deploy.`,
+        );
+      }
+      setRows(Array.isArray(payload.items) ? payload.items : []);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Something went wrong. Please refresh.");
+    } finally {
+      setLoading(false);
+      setRetrying(false);
+    }
+  }, []);
 
   useEffect(() => {
-    let dead = false;
-    void (async () => {
-      try {
-        const supabase = getSupabaseBrowserClient();
-        const { data } = await supabase.auth.getSession();
-        const token = data.session?.access_token;
-        setSignedIn(Boolean(token));
-        if (!token) {
-          setError("Please login to view your dashboard history.");
-          return;
-        }
-        const res = await fetch("/api/user-articles", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const payload = (await parseJsonSafe<{
-          items?: Row[];
-          error?: string;
-        }>(res)) || { error: "" };
-        if (!res.ok) {
-          throw new Error(
-            payload.error ||
-              `Dashboard API failed (HTTP ${res.status}). If this is a fresh deploy, run prisma migrate deploy.`,
-          );
-        }
-        if (!dead) setRows(Array.isArray(payload.items) ? payload.items : []);
-      } catch (e) {
-        if (!dead) setError(e instanceof Error ? e.message : "Failed to load dashboard.");
-      } finally {
-        if (!dead) setLoading(false);
-      }
-    })();
-    return () => {
-      dead = true;
-    };
-  }, []);
+    void loadDashboard();
+  }, [loadDashboard]);
 
   const totalWords = rows.reduce((sum, row) => sum + row.wordCount, 0);
   const avgWords = rows.length ? Math.round(totalWords / rows.length) : 0;
@@ -82,6 +85,18 @@ export default function DashboardPage() {
       })
     : "No runs yet";
   const uniqueTopics = new Set(rows.map((r) => r.topic.trim().toLowerCase()).filter(Boolean)).size;
+  const thisWeekRuns = rows.filter((row) => {
+    const now = Date.now();
+    const created = new Date(row.createdAt).getTime();
+    return Number.isFinite(created) && now - created <= 7 * 24 * 60 * 60 * 1000;
+  }).length;
+  const estimatedCreditsLeft = Math.max(0, FREE_LOGGED_RUN_LIMIT - thisWeekRuns);
+  const statSkeleton = (
+    <div className="rounded-xl border border-border/80 bg-background/35 p-4">
+      <div className="skeleton h-3 w-24 rounded-md" />
+      <div className="skeleton mt-2 h-8 w-16 rounded-md" />
+    </div>
+  );
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-8 md:px-6 md:py-10">
@@ -92,13 +107,13 @@ export default function DashboardPage() {
       </p>
       <div className="mt-4 grid gap-5 lg:grid-cols-[220px_1fr]">
         <aside className="rounded-2xl border border-border/80 bg-surface/50 p-4 lg:sticky lg:top-6 lg:h-fit">
-          <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-accent">Dashboard</p>
+          <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-accent">Your dashboard</p>
           <nav className="mt-3 space-y-1">
             {[
               { href: "#overview", label: "Overview" },
               { href: "#quick-actions", label: "Quick actions" },
               { href: "#recent-activity", label: "Recent activity" },
-              { href: "#insights", label: "Insights" },
+              { href: "#insights", label: "Usage stats" },
             ].map((item) => (
               <a
                 key={item.href}
@@ -110,30 +125,48 @@ export default function DashboardPage() {
             ))}
           </nav>
           <div className="mt-4 rounded-lg border border-border/80 bg-background/40 p-3">
-            <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-text-muted">Last run</p>
+            <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-text-muted">Latest run</p>
             <p className="mt-1 font-serif text-sm text-text-secondary">{lastRun}</p>
           </div>
         </aside>
         <section className="space-y-5">
           <header id="overview" className="rounded-2xl border border-border/80 bg-surface/50 p-5">
-            <p className="font-mono text-xs uppercase tracking-[0.16em] text-accent">User Dashboard</p>
-            <h1 className="mt-2 font-display text-3xl text-text-primary">Content command center</h1>
+            <p className="font-mono text-xs uppercase tracking-[0.16em] text-accent">Dashboard overview</p>
+            <h1 className="mt-2 font-display text-3xl text-text-primary">Manage your content workflow</h1>
             <p className="mt-2 font-serif text-sm text-text-secondary">
-              Track publishing momentum, reopen recent work, and launch your next high-intent article in one place.
+              Track progress, reopen recent work, and launch your next article from one place.
             </p>
           </header>
+
+          <section className="rounded-2xl border border-accent/40 bg-accent/10 p-5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-accent">Do this first</p>
+                <h2 className="mt-1 font-display text-2xl text-text-primary">Generate your next article</h2>
+                <p className="mt-1 font-serif text-sm text-text-secondary">
+                  Start a guided run, then optimize and share. This is your fastest next step.
+                </p>
+              </div>
+              <Link
+                href="/seo-agent?try=1"
+                className="inline-flex min-h-11 items-center rounded-lg bg-accent px-4 py-2 font-mono text-xs font-semibold text-background hover:opacity-90"
+              >
+                Generate article
+              </Link>
+            </div>
+          </section>
 
           <section id="quick-actions" className="rounded-2xl border border-border/80 bg-surface/50 p-5">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h2 className="font-display text-2xl text-text-primary">Quick actions</h2>
-              <span className="font-mono text-[11px] text-text-muted">Start in under 10 seconds</span>
+              <span className="font-mono text-[11px] text-text-muted">Pick one and continue</span>
             </div>
             <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
               {[
-                { href: "/seo-agent?try=1", label: "Generate new article", meta: "Start guided workflow" },
+                { href: "/seo-agent?try=1", label: "Generate article", meta: "Recommended first" },
                 { href: "/free-tools/keyword-clustering", label: "Cluster keywords", meta: "Plan topic map" },
                 { href: "/free-tools/ai-search-grader", label: "Grade search visibility", meta: "Benchmark discoverability" },
-                { href: "/pricing", label: "Upgrade plan", meta: "Unlock Pro features" },
+                { href: "/pricing", label: "Upgrade to Pro", meta: "Unlock advanced tools" },
               ].map((item) => (
                 <Link
                   key={item.href}
@@ -150,20 +183,29 @@ export default function DashboardPage() {
           {!signedIn ? (
             <div className="rounded-xl border border-border bg-surface/70 p-4">
               <p className="font-serif text-sm text-text-secondary">
-                You are not logged in.
+                You&apos;re not logged in yet.
               </p>
               <Link
                 href="/login?next=/dashboard"
                 className="mt-3 inline-block rounded-lg bg-accent px-4 py-2 font-mono text-xs text-background"
               >
-                Login to open dashboard
+                Log in to continue
               </Link>
             </div>
           ) : null}
 
           <section id="insights" className="rounded-2xl border border-border/80 bg-surface/50 p-5">
-            <h2 className="font-display text-2xl text-text-primary">Insights</h2>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h2 className="font-display text-2xl text-text-primary">Usage stats</h2>
+              <span className="font-mono text-[11px] text-text-muted">See your current progress</span>
+            </div>
             <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              {loading
+                ? Array.from({ length: 6 }).map((_, idx) => (
+                    <div key={`stat-skeleton-${idx}`}>{statSkeleton}</div>
+                  ))
+                : (
+                  <>
               <div className="rounded-xl border border-border/80 bg-background/35 p-4">
                 <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-text-muted">Total articles</p>
                 <p className="mt-1 font-display text-3xl text-text-primary">{rows.length}</p>
@@ -180,28 +222,69 @@ export default function DashboardPage() {
                 <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-text-muted">Unique topics</p>
                 <p className="mt-1 font-display text-3xl text-text-primary">{uniqueTopics}</p>
               </div>
+              <div className="rounded-xl border border-border/80 bg-background/35 p-4">
+                <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-text-muted">This week runs</p>
+                <p className="mt-1 font-display text-3xl text-text-primary">{thisWeekRuns}</p>
+              </div>
+              <div className="rounded-xl border border-border/80 bg-background/35 p-4">
+                <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-text-muted">Est. free credits left</p>
+                <p className="mt-1 font-display text-3xl text-text-primary">{estimatedCreditsLeft}</p>
+              </div>
+                  </>
+                )}
             </div>
           </section>
 
           {loading ? (
-            <p className="font-mono text-sm text-text-muted">Loading history...</p>
+            <div className="rounded-xl border border-border/80 bg-surface/60 p-4">
+              <p className="font-mono text-sm text-text-muted">Loading your dashboard...</p>
+              <p className="mt-1 font-mono text-[11px] text-text-muted">
+                We&apos;re pulling your latest activity and usage stats.
+              </p>
+            </div>
           ) : null}
           {error ? (
-            <p className="rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 font-mono text-sm text-red-200">
-              {error}
-            </p>
+            <div className="rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-3">
+              <p className="font-mono text-sm text-red-200">{error}</p>
+              <p className="mt-1 font-mono text-[11px] text-red-100">
+                Try again now. If this keeps happening, log out and back in once.
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRetrying(true);
+                    setLoading(true);
+                    void loadDashboard();
+                  }}
+                  disabled={retrying}
+                  className="rounded-md border border-red-300/40 bg-red-500/10 px-3 py-1.5 font-mono text-xs text-red-100 hover:bg-red-500/20 disabled:opacity-40"
+                >
+                  {retrying ? "Retrying..." : "Retry"}
+                </button>
+                <Link
+                  href="/login?next=/dashboard"
+                  className="rounded-md border border-border px-3 py-1.5 font-mono text-xs text-text-secondary hover:border-accent hover:text-accent"
+                >
+                  Re-login
+                </Link>
+              </div>
+            </div>
           ) : null}
 
           {!loading && !error && rows.length === 0 ? (
             <div className="rounded-xl border border-border/80 bg-surface/60 p-4">
               <p className="font-serif text-sm text-text-secondary">
-                No activity yet. Start your first run to unlock recent activity and analytics.
+                No activity yet. Generate your first article to unlock activity and stats.
+              </p>
+              <p className="mt-1 font-mono text-[11px] text-text-muted">
+                Tip: start with one primary keyword for the fastest first result.
               </p>
               <Link
                 href="/seo-agent?try=1"
                 className="mt-3 inline-flex rounded-lg bg-accent px-4 py-2 font-mono text-xs font-semibold text-background"
               >
-                Create first article
+                Generate your first article
               </Link>
             </div>
           ) : null}
@@ -214,7 +297,7 @@ export default function DashboardPage() {
                   href="/seo-agent"
                   className="font-mono text-xs text-accent underline-offset-2 hover:underline"
                 >
-                  Generate another article →
+                  Generate another article
                 </Link>
               </div>
               <ul className="mt-4 space-y-3">
@@ -249,14 +332,14 @@ export default function DashboardPage() {
                           rel="noopener noreferrer"
                           className="text-accent underline-offset-2 hover:underline"
                         >
-                          Source link
+                          Open source
                         </a>
                       ) : null}
                       <Link
                         href={row.dashboardLink}
                         className="text-accent underline-offset-2 hover:underline"
                       >
-                        Open details
+                        Open article details
                       </Link>
                     </div>
                   </li>

@@ -46,7 +46,7 @@ function CopyRow({
           onClick={onCopy}
           className="rounded-md border border-border px-2 py-1 font-mono text-xs text-accent transition-colors duration-200 hover:bg-accent/10 focus:outline-none focus:ring-2 focus:ring-accent"
         >
-          {ok ? "✓ copied" : "Copy"}
+          {ok ? "✓ Copied" : "Copy"}
         </button>
       </div>
       <p className="mt-2 whitespace-pre-wrap break-words font-serif text-sm text-text-primary">
@@ -59,7 +59,8 @@ function CopyRow({
 export function SeoPackage({ meta, article }: SeoPackageProps) {
   const [fullOk, setFullOk] = useState(false);
   const [shareOk, setShareOk] = useState(false);
-  const brandLine = "Generated with RankFlowHQ - rankflowhq.com";
+  const [publicLinkOk, setPublicLinkOk] = useState(false);
+  const brandLine = "Powered by RankFlowHQ - rankflowhq.com";
 
   const onCopyFull = useCallback(() => {
     if (!meta) return;
@@ -117,6 +118,39 @@ export function SeoPackage({ meta, article }: SeoPackageProps) {
     window.setTimeout(() => setShareOk(false), 1600);
   }, [brandLine, meta]);
 
+  const onCopyPublicShareLink = useCallback(async () => {
+    if (!meta) return;
+    try {
+      const shareMarkdown = [
+        `# ${meta.metaTitle || "SEO report snapshot"}`,
+        "",
+        `Focus keyword: ${meta.focusKeyword}`,
+        `Readability: ${meta.readabilityGrade}`,
+        `Estimated words: ${meta.estimatedWordCount}`,
+        "",
+        brandLine,
+      ].join("\n");
+      const res = await fetch("/api/article-share", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: meta.metaTitle || "SEO report snapshot",
+          markdown: shareMarkdown,
+        }),
+      });
+      const data = (await res.json()) as { error?: string; url?: string };
+      if (!res.ok || !data.url) {
+        throw new Error(data.error || `HTTP ${res.status}`);
+      }
+      await navigator.clipboard.writeText(`${window.location.origin}${data.url}`);
+      trackEvent("feature_usage", { feature_name: "seo_package", action: "copy_public_share_link" });
+      setPublicLinkOk(true);
+      window.setTimeout(() => setPublicLinkOk(false), 1600);
+    } catch {
+      setPublicLinkOk(false);
+    }
+  }, [brandLine, meta]);
+
   if (!meta) {
     return (
       <div className="rounded-xl border border-border/80 bg-surface/50 p-4">
@@ -125,9 +159,9 @@ export function SeoPackage({ meta, article }: SeoPackageProps) {
             SEO
           </div>
           <div>
-            <p className="font-display text-lg text-text-primary">Your SEO package will appear here</p>
+            <p className="font-display text-lg text-text-primary">Your SEO package appears here</p>
             <p className="mt-1 font-serif text-sm text-text-secondary">
-              Run one workflow to auto-generate title tags, descriptions, URL slug, and keyword guidance.
+              Run one workflow to generate titles, descriptions, URL slug, and keyword guidance.
             </p>
           </div>
         </div>
@@ -136,17 +170,17 @@ export function SeoPackage({ meta, article }: SeoPackageProps) {
             href="/seo-agent?try=1"
             className="inline-flex min-h-10 items-center rounded-lg bg-accent px-4 py-2 font-mono text-xs font-semibold text-background hover:opacity-90"
           >
-            Generate SEO package
+            Generate SEO package now
           </Link>
           <Link
             href="/blog"
             className="inline-flex min-h-10 items-center rounded-lg border border-border px-4 py-2 font-mono text-xs text-text-secondary hover:border-accent hover:text-accent"
           >
-            See published examples
+            View sample outputs
           </Link>
         </div>
         <p className="mt-3 font-mono text-[11px] text-text-muted">
-          💡 Tip: start with one primary keyword for faster first output.
+          Tip: use one clear primary keyword to get a faster first result.
         </p>
       </div>
     );
@@ -191,15 +225,25 @@ export function SeoPackage({ meta, article }: SeoPackageProps) {
         onClick={onCopyFull}
         className="w-full rounded-lg bg-accent px-4 py-3 font-mono text-sm font-semibold text-background transition-opacity duration-200 hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-accent"
       >
-        {fullOk ? "✓ Copied full package" : "Copy full package (meta + article)"}
+        {fullOk ? "✓ Full package copied" : "Copy full SEO package"}
       </button>
       <button
         type="button"
         onClick={onDownloadAndShare}
         className="w-full rounded-lg border border-accent/40 bg-accent/10 px-4 py-3 font-mono text-sm font-semibold text-accent transition-colors duration-200 hover:bg-accent/20 focus:outline-none focus:ring-2 focus:ring-accent"
       >
-        {shareOk ? "✓ Downloaded branded share report" : "Download & Share SEO Report"}
+        {shareOk ? "✓ SEO report downloaded" : "Download SEO share report"}
       </button>
+      <button
+        type="button"
+        onClick={() => void onCopyPublicShareLink()}
+        className="w-full rounded-lg border border-border bg-background/80 px-4 py-3 font-mono text-sm font-semibold text-text-secondary transition-colors duration-200 hover:border-accent hover:text-accent focus:outline-none focus:ring-2 focus:ring-accent"
+      >
+        {publicLinkOk ? "✓ Public link copied" : "Copy public SEO share link"}
+      </button>
+      <p className="font-mono text-[11px] text-text-muted">
+        Every shared package includes Powered by RankFlowHQ branding and a built-in invite line.
+      </p>
     </div>
   );
 }

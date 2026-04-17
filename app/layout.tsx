@@ -123,6 +123,24 @@ export default function RootLayout({
         className={`${inter.variable} ${spaceMono.variable} page-grid`}
       >
         <Script
+          id="theme-init"
+          strategy="beforeInteractive"
+        >
+          {`
+            (function () {
+              try {
+                var stored = localStorage.getItem("rfh:theme");
+                var theme = stored === "light" || stored === "dark"
+                  ? stored
+                  : (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+                document.documentElement.setAttribute("data-theme", theme);
+              } catch (e) {
+                document.documentElement.setAttribute("data-theme", "dark");
+              }
+            })();
+          `}
+        </Script>
+        <Script
           src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
           strategy="afterInteractive"
         />

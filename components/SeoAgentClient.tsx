@@ -7,13 +7,7 @@ import { useSearchParams } from "next/navigation";
 import type { Session } from "@supabase/supabase-js";
 import { ArticleCopyBar } from "@/components/ArticleCopyBar";
 import { ArticleRenderer } from "@/components/ArticleRenderer";
-import { ResearchImagesPanel } from "@/components/ResearchImagesPanel";
-import { KeywordsPanel } from "@/components/KeywordsPanel";
 import { PipelineProgress } from "@/components/PipelineProgress";
-import { SeoPackage } from "@/components/SeoPackage";
-import { SourcesList } from "@/components/SourcesList";
-import { ArticleSeoScorecard } from "@/components/ArticleSeoScorecard";
-import { ArticleGeoPanel } from "@/components/ArticleGeoPanel";
 import { TopicForm } from "@/components/TopicForm";
 import { AdSenseSlot } from "@/components/AdSenseSlot";
 import { ADSENSE_SLOTS } from "@/lib/adsense-config";
@@ -40,11 +34,91 @@ const ArticleEditor = dynamic(
     ssr: false,
     loading: () => (
       <p className="animate-pulse font-mono text-sm text-text-muted">
-        Loading editor…
+        Preparing editor...
       </p>
     ),
   },
 );
+
+const ResearchImagesPanel = dynamic(
+  () =>
+    import("@/components/ResearchImagesPanel").then((mod) => ({
+      default: mod.ResearchImagesPanel,
+    })),
+  {
+    ssr: false,
+    loading: () => <PanelSkeleton lines={4} />,
+  },
+);
+
+const KeywordsPanel = dynamic(
+  () =>
+    import("@/components/KeywordsPanel").then((mod) => ({
+      default: mod.KeywordsPanel,
+    })),
+  {
+    ssr: false,
+    loading: () => <PanelSkeleton lines={5} />,
+  },
+);
+
+const SeoPackage = dynamic(
+  () =>
+    import("@/components/SeoPackage").then((mod) => ({
+      default: mod.SeoPackage,
+    })),
+  {
+    ssr: false,
+    loading: () => <PanelSkeleton lines={5} />,
+  },
+);
+
+const SourcesList = dynamic(
+  () =>
+    import("@/components/SourcesList").then((mod) => ({
+      default: mod.SourcesList,
+    })),
+  {
+    ssr: false,
+    loading: () => <PanelSkeleton lines={5} />,
+  },
+);
+
+const ArticleSeoScorecard = dynamic(
+  () =>
+    import("@/components/ArticleSeoScorecard").then((mod) => ({
+      default: mod.ArticleSeoScorecard,
+    })),
+  {
+    ssr: false,
+    loading: () => <PanelSkeleton lines={4} />,
+  },
+);
+
+const ArticleGeoPanel = dynamic(
+  () =>
+    import("@/components/ArticleGeoPanel").then((mod) => ({
+      default: mod.ArticleGeoPanel,
+    })),
+  {
+    ssr: false,
+    loading: () => <PanelSkeleton lines={4} />,
+  },
+);
+
+function PanelSkeleton({ lines = 4 }: { lines?: number }) {
+  return (
+    <div className="space-y-2 rounded-lg border border-border/70 bg-background/40 p-4">
+      <div className="skeleton h-4 w-36 rounded-md" />
+      {Array.from({ length: lines }).map((_, idx) => (
+        <div
+          key={`s-${idx}`}
+          className={`skeleton h-3.5 rounded-md ${idx === lines - 1 ? "w-3/4" : "w-full"}`}
+        />
+      ))}
+    </div>
+  );
+}
 
 type TabId =
   | "article"
@@ -60,6 +134,7 @@ type ArticleViewMode = "edit" | "preview";
 const FREE_GUEST_RUN_LIMIT = 2;
 const FREE_LOGGED_RUN_LIMIT = 5;
 const WEEKLY_GOAL = 5;
+const ONBOARDING_TOTAL_STEPS = 3;
 
 type LocalHistoryEntry = {
   id: string;
@@ -202,7 +277,7 @@ export function SeoAgentClient() {
         if (!cancelled) {
           const stored = localStorage.getItem(`rfh:name:${uid}`) || "";
           setDisplayName(stored || email.split("@")[0] || "");
-          setProfileHint("Could not load profile from server.");
+          setProfileHint("We couldn't load your profile right now. Please try again.");
         }
       } finally {
         if (!cancelled) setProfileLoading(false);
@@ -244,6 +319,10 @@ export function SeoAgentClient() {
   const [weeklyRuns, setWeeklyRuns] = useState(0);
   const [localHistory, setLocalHistory] = useState<LocalHistoryEntry[]>([]);
   const [habitNudge, setHabitNudge] = useState<string | null>(null);
+  const [rewardNotice, setRewardNotice] = useState<string | null>(null);
+  const [pinnedKeyword, setPinnedKeyword] = useState("");
+  const [showDidYouKnow, setShowDidYouKnow] = useState(true);
+  const [didYouKnowIndex, setDidYouKnowIndex] = useState(0);
   const [onboardingOpen, setOnboardingOpen] = useState(false);
   const [onboardingStep, setOnboardingStep] = useState(1);
   const [onboarding, setOnboarding] = useState<OnboardingState>({
@@ -259,6 +338,14 @@ export function SeoAgentClient() {
       setMode("simple");
     }
   }, [quickTryMode, simpleKeyword]);
+
+  useEffect(() => {
+    const bucket = userSession?.user?.id?.trim() || "guest";
+    const storedPinned = localStorage.getItem(`rfh:pinned-keyword:${bucket}`) || "";
+    setPinnedKeyword(storedPinned);
+    const dismissed = localStorage.getItem(`rfh:dismissed:did-you-know:${bucket}`) === "1";
+    setShowDidYouKnow(!dismissed);
+  }, [userSession?.user?.id]);
 
   useEffect(() => {
     const bucket = userSession?.user?.id?.trim() || "guest";
@@ -284,14 +371,14 @@ export function SeoAgentClient() {
     const lastActive = localStorage.getItem(`rfh:last-active:${bucket}`);
     if (!lastActive) {
       localStorage.setItem(`rfh:last-active:${bucket}`, today);
-      setHabitNudge("Welcome back. Keep your streak alive with one quick run today.");
+      setHabitNudge("Welcome back. You're doing great - one quick run keeps your streak alive.");
       return;
     }
     const prev = new Date(`${lastActive}T00:00:00Z`);
     const curr = new Date(`${today}T00:00:00Z`);
     const diffDays = Math.round((curr.getTime() - prev.getTime()) / 86400000);
     if (diffDays >= 1) {
-      setHabitNudge("New day, new ranking opportunity. Run one workflow to keep momentum.");
+      setHabitNudge("New day, new opportunity. You're doing great - one run keeps momentum alive.");
       if (diffDays === 1) {
         const nextStreak = (streakRaw ? Number.parseInt(streakRaw, 10) || 1 : 1) + 1;
         setStreakDays(nextStreak);
@@ -302,7 +389,7 @@ export function SeoAgentClient() {
       }
       localStorage.setItem(`rfh:last-active:${bucket}`, today);
     } else {
-      setHabitNudge("You are in flow. One more run strengthens your publishing habit.");
+      setHabitNudge("You are in flow. One more run and you'll feel the compounding effect.");
     }
   }, [userSession?.user?.id]);
 
@@ -322,7 +409,9 @@ export function SeoAgentClient() {
   const hasVisitedOptimizationStep =
     tab === "seo" || tab === "score" || (hasFirstOutput && !running);
 
-  const onboardingProgress = Math.round((onboardingStep / 4) * 100);
+  const onboardingProgress = Math.round(
+    (onboardingStep / ONBOARDING_TOTAL_STEPS) * 100,
+  );
   const onboardingChecklistItems = [
     { id: "setup", label: "Finish quick setup", done: !onboardingOpen },
     { id: "output", label: "Generate your first output", done: hasFirstOutput },
@@ -333,6 +422,14 @@ export function SeoAgentClient() {
     },
   ] as const;
   const onboardingChecklistDone = onboardingChecklistItems.filter((item) => item.done).length;
+  const triggerPrompt = useMemo(() => {
+    if (rewardNotice) return rewardNotice;
+    if (pinnedKeyword) {
+      return `Trigger: your pinned keyword "${pinnedKeyword}" is ready for a fresh run.`;
+    }
+    if (habitNudge) return habitNudge;
+    return "Trigger: run one quick workflow to keep your momentum alive.";
+  }, [habitNudge, pinnedKeyword, rewardNotice]);
 
   const completeOnboarding = useCallback(() => {
     const bucket = userSession?.user?.id?.trim() || "guest";
@@ -366,7 +463,8 @@ export function SeoAgentClient() {
           : prev.topic,
     }));
 
-    setHabitNudge("Setup complete. Run your first workflow now to unlock your quick win.");
+    setHabitNudge("Setup complete. You're doing great - let's generate your first result.");
+    setHistoryNotice("Quick setup done. Tap \"Let's generate your first result\" to unlock your first output.");
     trackEvent("onboarding_complete", {
       role: onboarding.role || "unknown",
       objective: onboarding.objective || "unknown",
@@ -605,10 +703,10 @@ export function SeoAgentClient() {
             setHistoryLink(saveData.dashboardLink);
             setHistoryNotice("Saved to your dashboard history.");
           } else if (saveData.error) {
-            setHistoryNotice(`History save skipped: ${saveData.error}`);
+          setHistoryNotice(`We couldn't save this to history: ${saveData.error}`);
           }
         } catch {
-          setHistoryNotice("History save skipped due to network issue.");
+          setHistoryNotice("We couldn't save to history due to a network issue. Please try again.");
         }
       }
       const bucket = userSession?.user?.id?.trim() || "guest";
@@ -627,10 +725,15 @@ export function SeoAgentClient() {
       setLocalHistory(nextHistory);
       localStorage.setItem(`rfh:history:list:${bucket}`, JSON.stringify(nextHistory));
       setArticleEditorEpoch((n) => n + 1);
+      const keywordLabel = effectiveInput.primaryKeyword.trim() || "your keyword";
+      setRewardNotice(
+        `Reward unlocked: fresh output generated for "${keywordLabel}". Share it or optimize it in one click.`,
+      );
+      window.setTimeout(() => setRewardNotice(null), 5000);
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Unexpected pipeline error";
       setError(msg);
-      pushLog(`Fatal: ${msg}`);
+      pushLog(`Something went wrong: ${msg}`);
       trackEvent("funnel_dropoff", {
         funnel_name: "seo_agent_generation",
         step_name: "generation_error",
@@ -721,6 +824,8 @@ export function SeoAgentClient() {
       estimatedWordCount: "750",
     });
     setHistoryNotice("Instant demo ready. Sign in to generate full production outputs.");
+    setRewardNotice("Reward unlocked: instant demo is ready. Upgrade to run your full workflow.");
+    window.setTimeout(() => setRewardNotice(null), 4500);
     trackEvent("funnel_step", {
       funnel_name: "plg_try_without_signup",
       step_name: "instant_demo_completed",
@@ -732,7 +837,7 @@ export function SeoAgentClient() {
 
   const runWithAuth = useCallback(async () => {
     if (usageLimitReached) {
-      setError("Free limit reached. Upgrade to Pro to continue generating unlimited workflows.");
+      setError("You've reached your free limit. Upgrade to Pro to keep generating without limits.");
       trackEvent("funnel_dropoff", {
         funnel_name: "upgrade_nudge",
         step_name: "usage_limit_blocked",
@@ -750,7 +855,7 @@ export function SeoAgentClient() {
       });
       setLoginPromptOpen(true);
       setAuthError(null);
-      setAuthNotice("Login required before generating an article.");
+      setAuthNotice("Please log in to generate your article.");
       return;
     }
     await runPipeline();
@@ -773,7 +878,7 @@ export function SeoAgentClient() {
       if (error) throw error;
       setAuthNotice("Magic link sent. Open your email, then come back and click Generate.");
     } catch (e) {
-      setAuthError(e instanceof Error ? e.message : "Could not send magic link.");
+      setAuthError(e instanceof Error ? e.message : "We couldn't send the magic link. Please try again.");
     } finally {
       setAuthLoading(false);
     }
@@ -811,7 +916,7 @@ export function SeoAgentClient() {
       localStorage.setItem(`rfh:name:${uid}`, displayName.trim());
       setProfileHint("Saved to your account.");
     } catch (e) {
-      setProfileHint(e instanceof Error ? e.message : "Save failed.");
+      setProfileHint(e instanceof Error ? e.message : "We couldn't save your changes. Please try again.");
     } finally {
       setSavingProfile(false);
     }
@@ -842,7 +947,7 @@ export function SeoAgentClient() {
       });
       trackHeatmapTrigger("invite_link_copied", { page_path: "/seo-agent" });
     } catch {
-      setInviteStatus("Could not copy invite link. Try again.");
+      setInviteStatus("We couldn't copy your invite link. Please try again.");
     }
   }, [inviteCode]);
 
@@ -855,7 +960,7 @@ export function SeoAgentClient() {
       });
       return next;
     });
-    setInviteStatus("Invite tracked. Bonus feature progress updated.");
+    setInviteStatus("Invite recorded. Your bonus unlock progress has been updated.");
   }, []);
 
   const tabs: { id: TabId; label: string }[] = [
@@ -867,6 +972,71 @@ export function SeoAgentClient() {
     { id: "keywords", label: "Keywords" },
     { id: "sources", label: "Sources" },
   ];
+  const didYouKnowItems = [
+    "Did you know? The Visual HTML tab gives publish-ready blocks (images/tables) for faster CMS publishing.",
+    "Did you know? SEO package lets you copy metadata instantly for title, description, and social snippets.",
+    "Did you know? Export and share actions add Powered by RankFlowHQ branding for organic reach.",
+    "Did you know? You can pin a keyword and return to a one-click run next session.",
+  ] as const;
+  const contextualFeatureHint = useMemo(() => {
+    if (running) return "Tip: while generation runs, open Keywords or Sources next for deeper insights.";
+    if (!article.trim()) return "Try Simple Mode for fastest first output, then open SEO package.";
+    if (tab === "article") return "Next best step: open SEO package to copy metadata and share confidently.";
+    if (tab === "seo") return "Next best step: copy full package or download share report for your team.";
+    if (tab === "visual") return "Next best step: copy HTML and publish enriched blocks directly.";
+    if (tab === "keywords") return "Next best step: use these terms for your next cluster or internal links.";
+    return "Explore one adjacent tab to discover extra capabilities in this workflow.";
+  }, [article, running, tab]);
+  const errorGuidance = useMemo(() => {
+    if (!error) return null;
+    const msg = error.toLowerCase();
+    if (msg.includes("limit")) {
+      return "Suggestion: open Pricing to upgrade, or come back after your next reset window.";
+    }
+    if (msg.includes("network") || msg.includes("fetch") || msg.includes("failed")) {
+      return "Suggestion: check your internet connection, then try again.";
+    }
+    if (msg.includes("login") || msg.includes("auth")) {
+      return "Suggestion: log in again and retry generation.";
+    }
+    return "Suggestion: try generating again. If this keeps happening, refresh the page.";
+  }, [error]);
+
+  const applyQuickKeyword = useCallback(
+    (value: string) => {
+      setMode("simple");
+      setSimpleKeyword(value);
+      setHistoryNotice(`Quick action applied: "${value}". Tap generate to get an instant result.`);
+      trackEvent("feature_usage", {
+        feature_name: "hook_model_quick_action",
+        action: "apply_keyword",
+        keyword: value,
+      });
+    },
+    [],
+  );
+
+  const savePinnedKeyword = useCallback(() => {
+    const value = simpleKeyword.trim();
+    if (!value) {
+      setHistoryNotice("Add a keyword first, then pin it for one-click return.");
+      return;
+    }
+    const bucket = userSession?.user?.id?.trim() || "guest";
+    localStorage.setItem(`rfh:pinned-keyword:${bucket}`, value);
+    setPinnedKeyword(value);
+    setHistoryNotice(`Investment saved: "${value}" pinned for your next session.`);
+    trackEvent("feature_usage", {
+      feature_name: "hook_model_investment",
+      action: "pin_keyword",
+    });
+  }, [simpleKeyword, userSession?.user?.id]);
+
+  const dismissDidYouKnow = useCallback(() => {
+    const bucket = userSession?.user?.id?.trim() || "guest";
+    localStorage.setItem(`rfh:dismissed:did-you-know:${bucket}`, "1");
+    setShowDidYouKnow(false);
+  }, [userSession?.user?.id]);
 
   return (
     <main className="mx-auto flex min-w-0 max-w-6xl flex-col gap-6 px-4 py-8 sm:gap-8 sm:py-10 md:px-6">
@@ -891,13 +1061,16 @@ export function SeoAgentClient() {
               From search demand signals to a streaming long-form draft, with research
               citations and an exportable SEO pack.
             </p>
+            <p className="mt-2 font-serif text-sm text-text-secondary">
+              Instant value first. Clear progress second. Satisfaction after every step.
+            </p>
             <p className="mt-2 font-mono text-xs text-text-muted">
               {authReady
                 ? userSession?.user?.email
                   ? `Logged in as ${userSession.user.email}`
                   : quickTryMode
                     ? "Try mode enabled: run an instant demo without signup."
-                    : "Login required before Generate Article."
+                    : "Let's generate your first result."
                 : "Checking login status..."}
             </p>
             <p className="mt-2 font-mono text-xs text-text-muted">
@@ -925,7 +1098,7 @@ export function SeoAgentClient() {
                 : "text-text-secondary hover:text-text-primary"
             }`}
           >
-            Simple Mode
+            Quick Start
           </button>
           <button
             type="button"
@@ -936,12 +1109,121 @@ export function SeoAgentClient() {
                 : "text-text-secondary hover:text-text-primary"
             }`}
           >
-            Advanced Mode
+            Advanced Setup
           </button>
         </div>
         {habitNudge ? (
           <div className="rounded-lg border border-accent/35 bg-accent/10 px-3 py-2">
             <p className="font-mono text-[11px] text-accent">{habitNudge}</p>
+          </div>
+        ) : null}
+        <div className="rounded-lg border border-border/70 bg-background/40 px-3 py-2">
+          <p className="font-mono text-[11px] text-text-secondary">{triggerPrompt}</p>
+        </div>
+        <div className="rounded-xl border border-border/80 bg-surface/60 p-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="font-mono text-xs uppercase tracking-[0.14em] text-accent">
+              Quick actions
+            </p>
+            <span className="font-mono text-[10px] text-text-muted">
+              Action in one click
+            </span>
+          </div>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => applyQuickKeyword("ai seo tools for startups")}
+              className="rounded-md border border-border px-2.5 py-1.5 font-mono text-[11px] text-text-secondary hover:border-accent hover:text-accent"
+            >
+              Use startup keyword
+            </button>
+            <button
+              type="button"
+              onClick={() => applyQuickKeyword("how to improve seo traffic")}
+              className="rounded-md border border-border px-2.5 py-1.5 font-mono text-[11px] text-text-secondary hover:border-accent hover:text-accent"
+            >
+              Use traffic keyword
+            </button>
+            <button
+              type="button"
+              onClick={() => setTab("seo")}
+              className="rounded-md border border-border px-2.5 py-1.5 font-mono text-[11px] text-text-secondary hover:border-accent hover:text-accent"
+            >
+              Open SEO package
+            </button>
+            <button
+              type="button"
+              onClick={() => savePinnedKeyword()}
+              className="rounded-md border border-accent/40 bg-accent/10 px-2.5 py-1.5 font-mono text-[11px] text-accent hover:bg-accent/20"
+            >
+              Pin current keyword
+            </button>
+          </div>
+          {pinnedKeyword ? (
+            <p className="mt-2 font-mono text-[10px] text-text-muted">
+              Investment active: &ldquo;{pinnedKeyword}&rdquo; is pinned for your next return.
+            </p>
+          ) : null}
+        </div>
+        <div className="rounded-xl border border-border/80 bg-surface/60 p-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="font-mono text-xs uppercase tracking-[0.14em] text-accent">
+              Feature highlights
+            </p>
+            <span className="font-mono text-[10px] text-text-muted">Explore without guessing</span>
+          </div>
+          <div className="mt-2 grid gap-2 sm:grid-cols-3">
+            <button
+              type="button"
+              onClick={() => setTab("visual")}
+              className="rounded-lg border border-border/70 bg-background/40 px-3 py-2 text-left hover:border-accent/60"
+              title="Open Visual HTML to publish enriched content blocks"
+            >
+              <p className="font-mono text-[11px] text-accent">Visual HTML</p>
+              <p className="mt-1 font-serif text-xs text-text-secondary">Publish-ready enriched output</p>
+            </button>
+            <button
+              type="button"
+              onClick={() => setTab("seo")}
+              className="rounded-lg border border-border/70 bg-background/40 px-3 py-2 text-left hover:border-accent/60"
+              title="Open SEO package for metadata and sharing"
+            >
+              <p className="font-mono text-[11px] text-accent">SEO Package</p>
+              <p className="mt-1 font-serif text-xs text-text-secondary">Meta tags and share-ready copy</p>
+            </button>
+            <button
+              type="button"
+              onClick={() => setTab("keywords")}
+              className="rounded-lg border border-border/70 bg-background/40 px-3 py-2 text-left hover:border-accent/60"
+              title="Open Keywords for next content ideas"
+            >
+              <p className="font-mono text-[11px] text-accent">Keywords + PAA</p>
+              <p className="mt-1 font-serif text-xs text-text-secondary">Find expansion opportunities</p>
+            </button>
+          </div>
+        </div>
+        {showDidYouKnow ? (
+          <div className="rounded-xl border border-accent/35 bg-accent/10 p-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="font-mono text-xs uppercase tracking-[0.14em] text-accent">Did you know?</p>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setDidYouKnowIndex((i) => (i + 1) % didYouKnowItems.length)}
+                  className="rounded-md border border-accent/40 px-2 py-1 font-mono text-[10px] text-accent hover:bg-accent/20"
+                >
+                  Next tip
+                </button>
+                <button
+                  type="button"
+                  onClick={() => dismissDidYouKnow()}
+                  className="rounded-md border border-border px-2 py-1 font-mono text-[10px] text-text-secondary hover:border-accent hover:text-accent"
+                >
+                  Hide
+                </button>
+              </div>
+            </div>
+            <p className="mt-2 font-serif text-sm text-text-secondary">{didYouKnowItems[didYouKnowIndex]}</p>
           </div>
         ) : null}
         <div className="rounded-xl border border-border/80 bg-surface/60 p-3">
@@ -1005,7 +1287,7 @@ export function SeoAgentClient() {
         <section className="rounded-2xl border border-accent/40 bg-surface/70 p-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="font-mono text-xs uppercase tracking-[0.14em] text-accent">
-              Quick setup ({onboardingStep}/4)
+              Quick setup guide ({onboardingStep}/{ONBOARDING_TOTAL_STEPS})
             </p>
             <button
               type="button"
@@ -1018,10 +1300,16 @@ export function SeoAgentClient() {
           <div className="mt-2 h-1.5 rounded-full bg-background/70">
             <div className="h-full rounded-full bg-accent transition-all duration-300" style={{ width: `${onboardingProgress}%` }} />
           </div>
+          <p className="mt-2 font-mono text-[11px] text-text-muted">
+            Step {onboardingStep}/{ONBOARDING_TOTAL_STEPS} - you are under 30 seconds away from your first &ldquo;aha&rdquo; moment.
+          </p>
 
           {onboardingStep === 1 ? (
             <div className="mt-4 space-y-3">
               <p className="font-display text-lg text-text-primary">What best describes you?</p>
+              <p className="font-serif text-sm text-text-secondary">
+                We will personalize your first quick win.
+              </p>
               <div className="grid gap-2 sm:grid-cols-3">
                 {[
                   { id: "founder", label: "Founder" },
@@ -1049,7 +1337,13 @@ export function SeoAgentClient() {
 
           {onboardingStep === 2 ? (
             <div className="mt-4 space-y-3">
-              <p className="font-display text-lg text-text-primary">Main goal for this week?</p>
+              <p className="font-display text-lg text-text-primary">Set your goal and publishing pace</p>
+              <p className="font-serif text-sm text-text-secondary">
+                Pick what success looks like this week.
+              </p>
+              <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-accent">
+                Main goal
+              </p>
               <div className="grid gap-2 sm:grid-cols-3">
                 {[
                   { id: "traffic", label: "Grow traffic" },
@@ -1075,12 +1369,9 @@ export function SeoAgentClient() {
                   </button>
                 ))}
               </div>
-            </div>
-          ) : null}
-
-          {onboardingStep === 3 ? (
-            <div className="mt-4 space-y-3">
-              <p className="font-display text-lg text-text-primary">How often do you want to publish?</p>
+              <p className="pt-1 font-mono text-[11px] uppercase tracking-[0.14em] text-accent">
+                Publishing pace
+              </p>
               <div className="grid gap-2 sm:grid-cols-3">
                 {[
                   { id: "daily", label: "Daily" },
@@ -1106,9 +1397,34 @@ export function SeoAgentClient() {
             </div>
           ) : null}
 
-          {onboardingStep === 4 ? (
+          {onboardingStep === 3 ? (
             <div className="mt-4 space-y-3">
-              <p className="font-display text-lg text-text-primary">Pick one starter keyword (quick win)</p>
+              <p className="font-display text-lg text-text-primary">Pick one starter keyword</p>
+              <p className="font-serif text-sm text-text-secondary">
+                This powers your first result immediately.
+              </p>
+              <div className="grid gap-2 sm:grid-cols-3">
+                {[
+                  "ai seo tools for startups",
+                  "how to improve seo traffic",
+                  "best content workflow for saas",
+                ].map((item) => (
+                  <button
+                    key={item}
+                    type="button"
+                    onClick={() =>
+                      setOnboarding((prev) => ({ ...prev, starterKeyword: item }))
+                    }
+                    className={`rounded-lg border px-3 py-2 font-mono text-xs ${
+                      onboarding.starterKeyword === item
+                        ? "border-accent bg-accent/10 text-accent"
+                        : "border-border text-text-secondary hover:border-accent/60"
+                    }`}
+                  >
+                    {item}
+                  </button>
+                ))}
+              </div>
               <input
                 type="text"
                 value={onboarding.starterKeyword}
@@ -1119,7 +1435,7 @@ export function SeoAgentClient() {
                 className="w-full rounded-lg border border-border bg-background px-3 py-2 font-serif text-sm text-text-primary focus:border-accent focus:outline-none"
               />
               <p className="font-mono text-[11px] text-text-muted">
-                Aha moment: you will see your first draft and SEO package in minutes.
+                Guided path: keep this keyword, then tap the highlighted generate button.
               </p>
             </div>
           ) : null}
@@ -1133,10 +1449,12 @@ export function SeoAgentClient() {
             >
               Back
             </button>
-            {onboardingStep < 4 ? (
+            {onboardingStep < ONBOARDING_TOTAL_STEPS ? (
               <button
                 type="button"
-                onClick={() => setOnboardingStep((s) => Math.min(4, s + 1))}
+                onClick={() =>
+                  setOnboardingStep((s) => Math.min(ONBOARDING_TOTAL_STEPS, s + 1))
+                }
                 className="rounded-lg bg-accent px-4 py-2 font-mono text-xs font-semibold text-background hover:opacity-90"
               >
                 Continue
@@ -1147,7 +1465,7 @@ export function SeoAgentClient() {
                 onClick={() => completeOnboarding()}
                 className="rounded-lg bg-accent px-4 py-2 font-mono text-xs font-semibold text-background hover:opacity-90"
               >
-                Finish & Get Quick Win
+                Finish & unlock my quick win
               </button>
             )}
           </div>
@@ -1158,7 +1476,7 @@ export function SeoAgentClient() {
         <section className="rounded-2xl border border-border/80 bg-surface/60 p-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="font-mono text-xs uppercase tracking-[0.14em] text-accent">
-              Quick win checklist
+              Quick win progress
             </p>
             <span className="rounded-full border border-accent/35 bg-accent/10 px-2 py-0.5 font-mono text-[10px] text-accent">
               {onboardingChecklistDone}/3 complete
@@ -1191,11 +1509,11 @@ export function SeoAgentClient() {
           </ul>
           {onboardingChecklistDone < 3 ? (
             <p className="mt-3 font-mono text-[11px] text-text-muted">
-              Complete these 3 steps to reach your first meaningful result quickly.
+              You&apos;re doing great. Complete these 3 steps to hit your first real &ldquo;aha&rdquo; moment.
             </p>
           ) : (
             <p className="mt-3 font-mono text-[11px] text-accent">
-              Aha unlocked: you have setup + output + optimization in place.
+              Aha unlocked: setup + output + optimization complete. Momentum is now on your side.
             </p>
           )}
         </section>
@@ -1219,15 +1537,15 @@ export function SeoAgentClient() {
           {quickTryMode && !userSession ? (
             <section className="rounded-xl border border-accent/40 bg-accent/10 p-3">
               <p className="font-mono text-xs uppercase tracking-[0.14em] text-accent">
-                Try without signup
+                Try instantly (no signup)
               </p>
               <p className="mt-1 font-serif text-sm text-text-secondary">
-                Experience first value instantly. This mode shows a live product preview in under 10 seconds.
+                Experience first value instantly. This mode shows a live preview in seconds so you can feel progress right away.
               </p>
               <ol className="mt-2 flex flex-wrap gap-2 font-mono text-[11px] text-text-muted">
                 <li className="rounded-md border border-border/70 px-2 py-1">1. Add keyword</li>
-                <li className="rounded-md border border-border/70 px-2 py-1">2. Run instant demo</li>
-                <li className="rounded-md border border-border/70 px-2 py-1">3. Unlock full run</li>
+                <li className="rounded-md border border-border/70 px-2 py-1">2. See your first result</li>
+                <li className="rounded-md border border-border/70 px-2 py-1">3. Keep the momentum</li>
               </ol>
             </section>
           ) : null}
@@ -1266,7 +1584,7 @@ export function SeoAgentClient() {
                 data-cta-label="copy_invite_link"
                 className="rounded-lg border border-accent/40 bg-accent/10 px-3 py-2 font-mono text-xs text-accent transition-colors hover:bg-accent/20"
               >
-                Copy Invite Link
+                Copy invite link
               </button>
               <button
                 type="button"
@@ -1275,7 +1593,7 @@ export function SeoAgentClient() {
                 data-cta-label="track_invite_unlock"
                 className="rounded-lg border border-border px-3 py-2 font-mono text-xs text-text-secondary transition-colors hover:border-accent hover:text-accent"
               >
-                Track Invite
+                Mark invite sent
               </button>
             </div>
             {inviteStatus ? (
@@ -1311,7 +1629,7 @@ export function SeoAgentClient() {
                 href="/pricing"
                 className="inline-flex min-h-10 items-center rounded-lg bg-accent px-4 py-2 font-mono text-xs font-semibold text-background hover:opacity-90"
               >
-                Unlock Pro
+                Unlock Pro features
               </Link>
               <Link
                 href="/pricing"
@@ -1370,17 +1688,23 @@ export function SeoAgentClient() {
               </ul>
             ) : (
               <p className="mt-3 font-serif text-sm text-text-muted">
-                Your generated outputs appear here so you can quickly continue where you left off.
+                Your generated outputs appear here so you can quickly continue where you left off. You are one run away from your next win.
               </p>
             )}
           </section>
           {mode === "simple" ? (
-            <section className="rounded-xl border border-border bg-surface/80 p-4">
+            <section
+              className={`rounded-xl border bg-surface/80 p-4 ${
+                onboardingOpen && onboardingStep === ONBOARDING_TOTAL_STEPS
+                  ? "border-accent/70 shadow-[0_0_0_1px_rgba(34,211,238,0.25)]"
+                  : "border-border"
+              }`}
+            >
               <h2 className="font-mono text-sm uppercase text-accent">
                 Simple brief
               </h2>
               <p className="mt-2 font-serif text-sm text-text-secondary">
-                Add one keyword and generate a full article in one click.
+                Add one keyword and get your first meaningful output in one click.
               </p>
               <label className="mt-3 block text-sm text-text-secondary">
                 <span className="font-medium text-text-primary">Keyword</span>
@@ -1388,11 +1712,16 @@ export function SeoAgentClient() {
                   type="text"
                   value={simpleKeyword}
                   onChange={(e) => setSimpleKeyword(e.target.value)}
-                  placeholder="e.g. how to rank in chatgpt search"
+                  placeholder="e.g. ai tools for startup seo"
                   disabled={running}
                   className="mt-2 w-full rounded-lg border border-border bg-background px-3 py-2 font-serif text-text-primary placeholder:text-text-muted focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
                 />
               </label>
+              {onboardingOpen && onboardingStep === ONBOARDING_TOTAL_STEPS ? (
+                <p className="mt-2 rounded-md border border-accent/40 bg-accent/10 px-2 py-1 font-mono text-[11px] text-accent">
+                  Tooltip: this keyword is ready. Next, click &ldquo;Let&apos;s generate your first result&rdquo;.
+                </p>
+              ) : null}
             </section>
           ) : (
             <TopicForm
@@ -1413,21 +1742,30 @@ export function SeoAgentClient() {
           )}
 
           <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
+            {onboardingOpen && onboardingStep === ONBOARDING_TOTAL_STEPS ? (
+              <p className="w-full rounded-md border border-accent/40 bg-accent/10 px-3 py-2 font-mono text-[11px] text-accent">
+                Highlighted action: tap the main button to reach your first output now.
+              </p>
+            ) : null}
             <button
               type="button"
               onClick={() => void runWithAuth()}
               disabled={!canRun || usageLimitReached}
               data-track-cta
               data-cta-label={quickTryMode && !userSession ? "run_instant_demo" : "run_pipeline"}
-              className="touch-manipulation w-full rounded-lg bg-accent px-5 py-2.5 font-mono text-sm font-semibold text-background transition-all duration-200 enabled:hover:opacity-90 enabled:focus:outline-none enabled:focus:ring-2 enabled:focus:ring-accent disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto"
+              className={`touch-manipulation w-full rounded-lg bg-accent px-5 py-2.5 font-mono text-sm font-semibold text-background transition-all duration-200 enabled:hover:opacity-90 enabled:focus:outline-none enabled:focus:ring-2 enabled:focus:ring-accent disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto ${
+                onboardingOpen && onboardingStep === ONBOARDING_TOTAL_STEPS
+                  ? "ring-2 ring-accent ring-offset-2 ring-offset-background"
+                  : ""
+              }`}
             >
               {running
-                ? "Running pipeline…"
+                ? "Working on it - this feels fast for a reason..."
                 : !userSession && quickTryMode
-                  ? "Run Instant Demo"
+                  ? "Let's generate your first result"
                 : mode === "simple"
-                  ? "Generate Article"
-                  : "Run pipeline"}
+                  ? "Generate my first result"
+                  : "Generate full article"}
             </button>
             <label className="flex cursor-pointer items-center gap-2 font-mono text-[11px] text-text-secondary sm:text-xs">
               <input
@@ -1446,13 +1784,13 @@ export function SeoAgentClient() {
               href="/login?next=/seo-agent"
               className="font-mono text-[11px] text-accent underline-offset-2 hover:underline sm:text-xs"
             >
-              Open login page
+              Log in
             </Link>
             <Link
               href="/dashboard"
               className="font-mono text-[11px] text-accent underline-offset-2 hover:underline sm:text-xs"
             >
-              Open dashboard
+              View dashboard
             </Link>
               {usageLimitReached ? (
                 <Link
@@ -1463,6 +1801,13 @@ export function SeoAgentClient() {
                 </Link>
               ) : null}
           </div>
+          {running ? (
+            <div className="rounded-lg border border-info/35 bg-info/10 px-3 py-2">
+              <p className="font-mono text-[11px] text-info">
+                We&apos;re generating your output now. Keep this tab open for best results.
+              </p>
+            </div>
+          ) : null}
           {historyNotice ? (
             <p className="font-mono text-[11px] text-text-muted">
               {historyNotice}{" "}
@@ -1472,6 +1817,11 @@ export function SeoAgentClient() {
                 </Link>
               ) : null}
             </p>
+          ) : null}
+          {rewardNotice ? (
+            <div className="rounded-lg border border-success/45 bg-success/10 px-3 py-2">
+              <p className="font-mono text-[11px] text-success">{rewardNotice}</p>
+            </div>
           ) : null}
           {userSession?.user?.id ? (
             <div className="rounded-xl border border-border bg-surface/60 p-3">
@@ -1528,13 +1878,33 @@ export function SeoAgentClient() {
           {error && (
             <div
               role="alert"
-              className="rounded-lg border border-red-500/50 bg-red-950/40 px-4 py-3 font-mono text-sm text-red-200"
+              className="rounded-lg border border-red-500/50 bg-red-950/40 px-4 py-3"
             >
-              {error}
+              <p className="font-mono text-sm text-red-200">{error}</p>
+              {errorGuidance ? (
+                <p className="mt-1 font-mono text-[11px] text-red-100">{errorGuidance}</p>
+              ) : null}
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => void runWithAuth()}
+                  disabled={running || !canRun || usageLimitReached}
+                  className="rounded-md border border-red-300/40 bg-red-500/10 px-3 py-1.5 font-mono text-xs text-red-100 hover:bg-red-500/20 disabled:opacity-40"
+                >
+                  Try again
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setError(null)}
+                  className="rounded-md border border-border px-3 py-1.5 font-mono text-xs text-text-secondary hover:border-accent hover:text-accent"
+                >
+                  Dismiss
+                </button>
+              </div>
             </div>
           )}
 
-          <div className="rounded-xl border border-border bg-surface/80">
+          <div className="rounded-xl border border-border bg-surface/80 transition-all duration-200 ease-out">
             <div
               className="custom-scrollbar flex gap-1 overflow-x-auto border-b border-border p-2 [-webkit-overflow-scrolling:touch]"
               role="tablist"
@@ -1563,6 +1933,9 @@ export function SeoAgentClient() {
                   {t.label}
                 </button>
               ))}
+            </div>
+            <div className="border-b border-border/70 bg-background/30 px-3 py-2">
+              <p className="font-mono text-[11px] text-text-muted">{contextualFeatureHint}</p>
             </div>
             <div className="custom-scrollbar max-h-[min(70vh,32rem)] overflow-y-auto p-3 sm:max-h-[70vh] sm:p-4">
               {tab === "visual" &&
@@ -1646,7 +2019,11 @@ export function SeoAgentClient() {
                     }
                   />
                   {running || articleViewMode === "preview" ? (
-                    <ArticleRenderer markdown={article} streaming={running} />
+                    article.trim() ? (
+                      <ArticleRenderer markdown={article} streaming={running} />
+                    ) : (
+                      <PanelSkeleton lines={6} />
+                    )
                   ) : (
                     <ArticleEditor
                       key={articleEditorEpoch}
@@ -1657,6 +2034,16 @@ export function SeoAgentClient() {
                   {showSeoScore ? (
                     <div className="mt-6">
                       <ArticleSeoScorecard result={seoScoreResult} compact />
+                    </div>
+                  ) : null}
+                  {article.trim() ? (
+                    <div className="mt-4 rounded-xl border border-accent/35 bg-accent/10 p-3">
+                      <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-accent">
+                        Growth loop
+                      </p>
+                      <p className="mt-1 font-serif text-sm text-text-secondary">
+                        Export, share, or embed this output. Every share carries Powered by RankFlowHQ and can bring your next user.
+                      </p>
                     </div>
                   ) : null}
                   {article.trim() ? (
@@ -1721,10 +2108,9 @@ export function SeoAgentClient() {
       {loginPromptOpen ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
           <div className="w-full max-w-md rounded-xl border border-border bg-background p-5">
-            <h2 className="font-display text-2xl text-text-primary">Authorize first</h2>
+            <h2 className="font-display text-2xl text-text-primary">Log in to continue</h2>
             <p className="mt-2 font-serif text-sm text-text-secondary">
-              To prevent abuse, Generate Article requires login. Use email OTP magic
-              link and then continue.
+              To keep the workflow secure, please log in before generating. We&apos;ll send a magic link to your email.
             </p>
             <label className="mt-4 block space-y-2">
               <span className="font-mono text-xs uppercase text-text-muted">Email</span>
@@ -1753,20 +2139,20 @@ export function SeoAgentClient() {
                 disabled={authLoading || !authEmail.trim()}
                 className="rounded-lg bg-accent px-4 py-2 font-mono text-xs font-semibold text-background disabled:opacity-40"
               >
-                {authLoading ? "Sending..." : "Send Magic Link"}
+                {authLoading ? "Sending..." : "Send magic link"}
               </button>
               <button
                 type="button"
                 onClick={() => setLoginPromptOpen(false)}
                 className="rounded-lg border border-border px-4 py-2 font-mono text-xs text-text-secondary hover:border-accent hover:text-accent"
               >
-                Close
+                Not now
               </button>
               <Link
                 href="/login?next=/seo-agent"
                 className="rounded-lg border border-border px-4 py-2 font-mono text-xs text-text-secondary hover:border-accent hover:text-accent"
               >
-                Full login page
+                Open full login
               </Link>
             </div>
           </div>

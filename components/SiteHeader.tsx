@@ -3,18 +3,19 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { buildEducationFunnelUrl } from "@/lib/education-funnel-url";
 import { EDUCATION_HOSTS } from "@/lib/education-hosts";
 import { SITE_LOGO_PATH, SITE_NAME } from "@/lib/seo-site";
 
 const mainNav = [
   { href: "/", label: "Home" },
-  { href: "/seo-agent", label: "Product" },
+  { href: "/seo-agent", label: "Platform" },
   { href: "/ai-seo-tools", label: "Solutions" },
   { href: "/free-tools", label: "Resources" },
   { href: "/dashboard", label: "Dashboard" },
   { href: "/pricing", label: "Pricing" },
-  { href: "/login?next=/seo-agent", label: "Login" },
+  { href: "/login?next=/seo-agent", label: "Sign in" },
 ] as const;
 
 /** Stays on education.rankflowhq.com — avoids middleware redirects to apex. */
@@ -132,6 +133,7 @@ export function SiteHeader() {
             {open ? <CloseIcon /> : <MenuIcon />}
           </button>
           <nav className="hidden flex-wrap items-center justify-end gap-2 md:flex" aria-label="Primary">
+            <ThemeToggle />
             {nav.map((item) => (
               <Link
                 key={item.href}
@@ -146,7 +148,7 @@ export function SiteHeader() {
                 href="/seo-agent"
                 className="btn-premium pulse-subtle rounded-lg bg-accent px-4 py-2 font-mono text-xs font-semibold text-background transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90"
               >
-                Start Free
+                Start Building
               </Link>
             ) : (
               <a
@@ -165,6 +167,9 @@ export function SiteHeader() {
           aria-label="Primary"
         >
           <ul className="flex flex-col gap-1 py-3">
+            <li className="px-1 pb-1">
+              <ThemeToggle />
+            </li>
             {nav.map((item) => (
               <li key={item.href}>
                 <Link

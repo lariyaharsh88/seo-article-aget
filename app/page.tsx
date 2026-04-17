@@ -107,9 +107,15 @@ export default async function HomePage() {
   const trustLogos = ["SaaS Teams", "SEO Agencies", "Content Ops", "Growth Teams", "Founders"] as const;
   const seenOn = ["Product Hunt", "Indie Hackers", "LinkedIn", "X (Twitter)", "Founder Communities"] as const;
   const trustMetrics = [
-    { label: "Teams using workflows", value: "1,200+" },
-    { label: "SEO pages generated", value: "85,000+" },
-    { label: "Estimated traffic influenced", value: "12.4M+ monthly visits" },
+    { label: "Active teams", value: "1,200+" },
+    { label: "Pages generated", value: "85,000+" },
+    { label: "Estimated monthly traffic impact", value: "12.4M+" },
+  ] as const;
+  const investorSignals = [
+    "Fast onboarding to first value",
+    "Expansion-ready multi-surface product",
+    "Recurring usage through workflow retention loops",
+    "Clear monetization path with freemium-to-pro upgrades",
   ] as const;
   const caseStudies = [
     {
@@ -194,14 +200,17 @@ export default async function HomePage() {
           <div className="relative grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-end">
             <div>
               <span className="inline-flex rounded-full border border-accent/40 bg-accent/10 px-3 py-1 font-mono text-[11px] uppercase tracking-[0.16em] text-accent">
-                AI SEO Workflow Platform
+                SEO Growth Operating System
               </span>
               <h1 className="text-balance mt-4 max-w-4xl font-display text-[clamp(1.85rem,7.6vw,4.4rem)] leading-[1.05] text-text-primary">
-                Publish 3x more SEO pages per week with one clear workflow.
+                The execution layer for teams scaling SEO with speed and consistency.
               </h1>
               <p className="mt-4 max-w-2xl font-serif text-[0.98rem] leading-relaxed text-text-secondary md:mt-5 md:text-[1.12rem]">
-                RankFlowHQ combines research, generation, and optimization so your team can ship
-                faster, keep quality consistent, and stop losing ranking windows to slower execution.
+                RankFlowHQ combines research, generation, optimization, and distribution in one
+                workflow so growth teams ship more, protect quality, and compound outcomes every week.
+              </p>
+              <p className="mt-3 font-serif text-sm text-text-secondary">
+                Built for founders, marketing leaders, and agencies that need predictable content velocity.
               </p>
               <div className="mt-6 flex flex-col gap-3 sm:mt-8 sm:flex-row sm:flex-wrap">
                 <Link
@@ -210,7 +219,7 @@ export default async function HomePage() {
                   data-cta-label="hero_primary_start_free"
                   className="btn-premium pulse-subtle inline-flex min-h-11 items-center justify-center rounded-xl bg-accent px-5 py-3 font-mono text-sm font-semibold text-background transition-all duration-300 hover:-translate-y-0.5 hover:opacity-90"
                 >
-                  Start Free
+                  Start Building
                 </Link>
                 <Link
                   href="/pricing"
@@ -218,14 +227,31 @@ export default async function HomePage() {
                   data-cta-label="hero_secondary_get_demo"
                   className="btn-premium inline-flex min-h-11 items-center justify-center rounded-xl border border-border/90 bg-surface/60 px-5 py-3 font-mono text-sm text-text-secondary transition-all duration-300 hover:-translate-y-0.5 hover:border-accent/70 hover:text-text-primary"
                 >
-                  Get Demo
+                  View Platform
                 </Link>
               </div>
               <p className="mt-3 font-mono text-[11px] text-text-muted">
-                Limited onboarding slots each month for implementation support.
+                From first draft to publish-ready output in minutes.
               </p>
             </div>
             <HeroPlgDemo />
+          </div>
+        </section>
+
+        <section className="reveal-on-scroll mt-5 rounded-2xl border border-border/80 bg-surface/45 p-4 md:p-5">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-accent">Investor-ready signals</p>
+            <p className="font-mono text-[10px] text-text-muted">Product, growth, and monetization aligned</p>
+          </div>
+          <div className="mt-3 grid gap-2 md:grid-cols-2">
+            {investorSignals.map((signal) => (
+              <div
+                key={signal}
+                className="rounded-xl border border-border/70 bg-background/35 px-3 py-2 font-serif text-sm text-text-secondary"
+              >
+                {signal}
+              </div>
+            ))}
           </div>
         </section>
 
@@ -251,7 +277,7 @@ export default async function HomePage() {
         {/* 2. Social proof (logos / stats) */}
         <section className="reveal-on-scroll section-variant-b mt-7 rounded-2xl border border-border/70 px-4 py-5 md:px-6" style={{ "--reveal-delay": "70ms" } as CSSProperties}>
           <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-text-muted">
-            Trusted by teams that ship content weekly
+            Trusted by teams running repeatable SEO growth programs
           </p>
           <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
             {trustLogos.map((logo) => (
@@ -272,7 +298,7 @@ export default async function HomePage() {
             ))}
           </div>
           <div className="mt-4 rounded-xl border border-border/70 bg-background/35 px-3 py-3">
-            <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-text-muted">Where our team shares playbooks</p>
+            <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-text-muted">Ecosystem presence</p>
             <div className="mt-2 grid gap-2 sm:grid-cols-3 lg:grid-cols-5">
               {seenOn.map((logo) => (
                 <div
@@ -284,7 +310,7 @@ export default async function HomePage() {
               ))}
             </div>
             <p className="mt-2 font-mono text-[10px] text-text-muted">
-              Snapshot based on internal usage and workflow logs (last 90 days).
+              Internal product usage snapshot (rolling 90-day view).
             </p>
           </div>
         </section>

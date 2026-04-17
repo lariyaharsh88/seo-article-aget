@@ -9,17 +9,17 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        background: "#0a0f1c",
-        surface: "#111827",
-        border: "#2b3648",
-        accent: "#38bdf8",
-        "accent-dim": "#0284c7",
-        "text-primary": "#f8fafc",
-        "text-secondary": "#cbd5e1",
-        "text-muted": "#94a3b8",
-        success: "#10b981",
-        info: "#06b6d4",
-        purple: "#6366f1",
+        background: "hsl(var(--color-background) / <alpha-value>)",
+        surface: "hsl(var(--color-surface) / <alpha-value>)",
+        border: "hsl(var(--color-border) / <alpha-value>)",
+        accent: "hsl(var(--color-accent) / <alpha-value>)",
+        "accent-dim": "hsl(var(--color-accent-dim) / <alpha-value>)",
+        "text-primary": "hsl(var(--color-text-primary) / <alpha-value>)",
+        "text-secondary": "hsl(var(--color-text-secondary) / <alpha-value>)",
+        "text-muted": "hsl(var(--color-text-muted) / <alpha-value>)",
+        success: "hsl(var(--color-success) / <alpha-value>)",
+        info: "hsl(var(--color-info) / <alpha-value>)",
+        purple: "hsl(var(--color-purple) / <alpha-value>)",
       },
       fontFamily: {
         display: ["var(--font-inter)", "Inter", "sans-serif"],
