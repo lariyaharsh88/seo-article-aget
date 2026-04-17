@@ -1,0 +1,160 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://rankflowhq.com/schemas/programmatic-seo-template-catalog.json",
+  "title": "Programmatic SEO template catalog",
+  "description": "Reusable article blueprints for mass content generation: structure, inputs, dynamic sections, link slots, and CTAs.",
+  "type": "object",
+  "required": ["version", "templates"],
+  "properties": {
+    "version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+    "templates": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/programmaticSeoTemplate" }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "headingLevel": {
+      "type": "integer",
+      "enum": [1, 2, 3]
+    },
+    "ctaPlacement": {
+      "type": "object",
+      "required": ["id", "afterSectionId", "intent"],
+      "properties": {
+        "id": { "type": "string" },
+        "afterSectionId": {
+          "type": "string",
+          "description": "Insert CTA block after this section id (or use anchor convention in generators)."
+        },
+        "intent": {
+          "type": "string",
+          "enum": ["primary", "secondary", "soft", "newsletter", "compare"]
+        },
+        "labelPattern": {
+          "type": "string",
+          "description": "Optional copy pattern; placeholders {tool}, {z}, etc."
+        }
+      },
+      "additionalProperties": false
+    },
+    "internalLinkSlot": {
+      "type": "object",
+      "required": ["id", "purpose", "suggestedAnchorPatterns"],
+      "properties": {
+        "id": { "type": "string" },
+        "purpose": { "type": "string" },
+        "minCount": { "type": "integer", "minimum": 0, "default": 1 },
+        "maxCount": { "type": "integer", "minimum": 1 },
+        "suggestedAnchorPatterns": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "targetUrlPatterns": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Site path patterns with placeholders, e.g. /category/{y} or /tools/{slug}"
+        }
+      },
+      "additionalProperties": false
+    },
+    "sectionBlueprint": {
+      "type": "object",
+      "required": ["id", "headingLevel", "titlePattern"],
+      "properties": {
+        "id": { "type": "string" },
+        "headingLevel": { "$ref": "#/$defs/headingLevel" },
+        "titlePattern": {
+          "type": "string",
+          "description": "H1/H2/H3 title with placeholders {x}, {y}, {z}, {tool}, {year}, etc."
+        },
+        "dynamic": {
+          "type": "boolean",
+          "description": "If true, section repeats per entity (e.g. one block per tool)."
+        },
+        "repeatOver": {
+          "type": "string",
+          "description": "Input key that holds the array to iterate (e.g. entities, tools, steps)."
+        },
+        "optional": { "type": "boolean", "default": false },
+        "blocks": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Suggested content blocks: intro_paragraph, bullet_list, comparison_table, faq_item, step_list"
+        }
+      },
+      "additionalProperties": false
+    },
+    "dataInputField": {
+      "type": "object",
+      "required": ["key", "type", "description"],
+      "properties": {
+        "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9_]*$" },
+        "type": {
+          "type": "string",
+          "enum": ["string", "number", "boolean", "string[]", "object[]", "object"]
+        },
+        "required": { "type": "boolean", "default": true },
+        "description": { "type": "string" },
+        "example": {}
+      },
+      "additionalProperties": false
+    },
+    "programmaticSeoTemplate": {
+      "type": "object",
+      "required": [
+        "id",
+        "patternName",
+        "slugPattern",
+        "primaryKeywordPattern",
+        "structure",
+        "requiredInputs",
+        "internalLinkSlots",
+        "ctaPlacements"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]*$"
+        },
+        "patternName": { "type": "string" },
+        "description": { "type": "string" },
+        "slugPattern": {
+          "type": "string",
+          "description": "URL slug template with placeholders."
+        },
+        "primaryKeywordPattern": { "type": "string" },
+        "structure": {
+          "type": "object",
+          "required": ["sections"],
+          "properties": {
+            "h1Pattern": { "type": "string" },
+            "sections": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/sectionBlueprint" }
+            }
+          },
+          "additionalProperties": false
+        },
+        "requiredInputs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/dataInputField" }
+        },
+        "dynamicSectionNotes": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "internalLinkSlots": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/internalLinkSlot" }
+        },
+        "ctaPlacements": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/ctaPlacement" }
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

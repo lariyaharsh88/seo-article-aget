@@ -99,6 +99,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticBlogPosts = await listStaticBlogPosts();
   const blogMainUrls: MetadataRoute.Sitemap = [
     {
+      url: `${base}/feed.xml`,
+      lastModified: now,
+      changeFrequency: "daily",
+      priority: 0.45,
+    },
+    {
       url: `${base}/blog`,
       lastModified: now,
       changeFrequency: "weekly",

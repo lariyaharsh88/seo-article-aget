@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { analyzeArticleQuality } from "@/lib/article-publish-middleware";
 import { prisma } from "@/lib/prisma";
 import { getSupabaseUserFromRequest } from "@/lib/supabase-server";
 
@@ -73,6 +74,12 @@ export async function POST(request: Request) {
     primaryKeyword?: string;
     sourceUrl?: string;
     title?: string;
+    /** Run publish-quality analysis and include in response. */
+    qualityCheck?: boolean;
+    /** If true and quality has errors, reject save with 422 + report. */
+    enforceQuality?: boolean;
+    /** Optional: detect duplicate heading skeleton vs these fingerprints. */
+    previousHeadingFingerprints?: string[];
   };
   try {
     body = (await request.json()) as typeof body;
@@ -89,13 +96,33 @@ export async function POST(request: Request) {
     );
   }
 
+  const primaryKw = body.primaryKeyword?.trim() || null;
+  let quality: ReturnType<typeof analyzeArticleQuality> | undefined;
+  if (body.qualityCheck || body.enforceQuality) {
+    quality = analyzeArticleQuality(
+      markdown,
+      primaryKw ?? extractTitleFromMarkdown(markdown, topic).slice(0, 120),
+      {
+        previousHeadingFingerprints: Array.isArray(body.previousHeadingFingerprints)
+          ? body.previousHeadingFingerprints
+          : undefined,
+      },
+    );
+    if (body.enforceQuality && !quality.ok) {
+      return NextResponse.json(
+        { error: "Quality gate failed", quality },
+        { status: 422 },
+      );
+    }
+  }
+
   try {
     const row = await prisma.userGeneratedArticle.create({
       data: {
         supabaseUserId: user.id,
         title: extractTitleFromMarkdown(markdown, body.title?.trim() || topic),
         topic,
-        primaryKeyword: body.primaryKeyword?.trim() || null,
+        primaryKeyword: primaryKw,
         sourceUrl: body.sourceUrl?.trim() || null,
         markdown,
         wordCount: readWordCount(markdown),
@@ -108,6 +135,7 @@ export async function POST(request: Request) {
       id: row.id,
       createdAt: row.createdAt.toISOString(),
       dashboardLink: `/dashboard/articles/${encodeURIComponent(row.id)}`,
+      ...(quality ? { quality } : {}),
     });
   } catch (e) {
     console.error("[user-articles] POST failed:", e);

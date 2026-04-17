@@ -111,6 +111,7 @@ export default function DashboardPage() {
           <nav className="mt-3 space-y-1">
             {[
               { href: "#overview", label: "Overview" },
+              { href: "#workflow", label: "Workflow" },
               { href: "#quick-actions", label: "Quick actions" },
               { href: "#recent-activity", label: "Recent activity" },
               { href: "#insights", label: "Usage stats" },
@@ -137,6 +138,41 @@ export default function DashboardPage() {
               Track progress, reopen recent work, and launch your next article from one place.
             </p>
           </header>
+
+          <section
+            id="workflow"
+            className="rounded-2xl border border-border/70 bg-background/30 p-5"
+            aria-label="Three-step workflow"
+          >
+            <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-accent">Simple workflow</p>
+            <h2 className="mt-2 font-display text-xl text-text-primary">Keyword → Article → Publish</h2>
+            <ol className="mt-4 grid gap-3 sm:grid-cols-3">
+              {[
+                { step: "1", title: "Keyword", body: "Define one primary topic or paste a URL for context." },
+                { step: "2", title: "Article", body: "Generate and edit your draft with research and structure." },
+                { step: "3", title: "Publish", body: "Copy SEO metadata, HTML, and share links to go live." },
+              ].map((w) => (
+                <li
+                  key={w.step}
+                  className="rounded-xl border border-border/80 bg-surface/50 p-4"
+                >
+                  <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-accent/20 font-mono text-sm font-semibold text-accent">
+                    {w.step}
+                  </span>
+                  <p className="mt-2 font-mono text-sm text-text-primary">{w.title}</p>
+                  <p className="mt-1 font-serif text-xs text-text-secondary">{w.body}</p>
+                </li>
+              ))}
+            </ol>
+            <div className="mt-4">
+              <Link
+                href="/seo-agent?try=1"
+                className="inline-flex min-h-11 items-center rounded-lg bg-accent px-4 py-2 font-mono text-xs font-semibold text-background hover:opacity-90"
+              >
+                Start in SEO agent
+              </Link>
+            </div>
+          </section>
 
           <section className="rounded-2xl border border-accent/40 bg-accent/10 p-5">
             <div className="flex flex-wrap items-center justify-between gap-3">
@@ -273,19 +309,26 @@ export default function DashboardPage() {
           ) : null}
 
           {!loading && !error && rows.length === 0 ? (
-            <div className="rounded-xl border border-border/80 bg-surface/60 p-4">
-              <p className="font-serif text-sm text-text-secondary">
-                No activity yet. Generate your first article to unlock activity and stats.
+            <div className="rounded-2xl border border-dashed border-accent/35 bg-accent/5 p-6 text-center sm:p-8">
+              <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-accent">Empty state</p>
+              <p className="mt-2 font-display text-2xl text-text-primary">Nothing here yet — that means a clean slate</p>
+              <p className="mx-auto mt-2 max-w-md font-serif text-sm text-text-secondary">
+                Run one article in the SEO agent. Your drafts, word counts, and shortcuts will show up here automatically.
               </p>
-              <p className="mt-1 font-mono text-[11px] text-text-muted">
-                Tip: start with one primary keyword for the fastest first result.
-              </p>
-              <Link
-                href="/seo-agent?try=1"
-                className="mt-3 inline-flex rounded-lg bg-accent px-4 py-2 font-mono text-xs font-semibold text-background"
-              >
-                Generate your first article
-              </Link>
+              <div className="mt-6 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+                <Link
+                  href="/seo-agent?try=1"
+                  className="inline-flex min-h-11 w-full max-w-xs items-center justify-center rounded-lg bg-accent px-5 py-2.5 font-mono text-sm font-semibold text-background hover:opacity-90 sm:w-auto"
+                >
+                  Generate your first article
+                </Link>
+                <Link
+                  href="/free-tools/keyword-clustering"
+                  className="inline-flex min-h-11 w-full max-w-xs items-center justify-center rounded-lg border border-border px-5 py-2.5 font-mono text-sm text-text-secondary hover:border-accent hover:text-accent sm:w-auto"
+                >
+                  Plan keywords first
+                </Link>
+              </div>
             </div>
           ) : null}
 

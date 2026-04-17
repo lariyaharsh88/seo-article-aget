@@ -45,6 +45,17 @@ export interface GscQueryRow {
   impressions: number;
 }
 
+/** Query row with CTR and average position (Search Analytics API). */
+export interface GscQueryMetricRow {
+  query: string;
+  clicks: number;
+  impressions: number;
+  /** 0–1 (e.g. 0.035 = 3.5%). */
+  ctr: number;
+  /** Average position in SERP (approximate). */
+  position: number;
+}
+
 const WEBMASTERS_READONLY = "https://www.googleapis.com/auth/webmasters.readonly";
 
 /** True when GSC_SITE_URL is set and either service account JSON or full OAuth is set. */
@@ -144,6 +155,35 @@ function mapAnalyticsRows(
       (a, b) =>
         b.clicks - a.clicks ||
         b.impressions - a.impressions ||
+        a.query.localeCompare(b.query),
+    );
+}
+
+function mapAnalyticsRowsWithMetrics(
+  rows:
+    | Array<{
+        keys?: string[] | null;
+        clicks?: number | null;
+        impressions?: number | null;
+        ctr?: number | null;
+        position?: number | null;
+      }>
+    | null
+    | undefined,
+): GscQueryMetricRow[] {
+  return (rows ?? [])
+    .map((row) => ({
+      query: row.keys?.[0] ?? "",
+      clicks: row.clicks ?? 0,
+      impressions: row.impressions ?? 0,
+      ctr: typeof row.ctr === "number" ? row.ctr : 0,
+      position: typeof row.position === "number" ? row.position : 0,
+    }))
+    .filter((r) => r.query.length > 0)
+    .sort(
+      (a, b) =>
+        b.impressions - a.impressions ||
+        a.position - b.position ||
         a.query.localeCompare(b.query),
     );
 }
@@ -264,5 +304,99 @@ export async function fetchSearchConsoleTopQueries(options: {
       siteWide.length > 0
         ? "No query rows matched this page URL in the last 28 days (GSC stores an exact URL). Showing site-wide top queries instead. Tip: open Search Console → Performance → Pages, copy the page URL from there, or clear the reference URL to always load site-wide."
         : "No query data for this page or for the whole site in the last 28 days. Confirm the URL matches Performance → Pages, or wait for data processing.",
+  };
+}
+
+export type GscDateRange = { startDate: string; endDate: string; days: number };
+
+function defaultLastNDaysRange(days: number): GscDateRange {
+  const end = new Date();
+  const start = new Date();
+  start.setDate(start.getDate() - days);
+  return {
+    startDate: start.toISOString().slice(0, 10),
+    endDate: end.toISOString().slice(0, 10),
+    days,
+  };
+}
+
+/**
+ * Per-query **impressions**, **CTR**, and average **position** for a single page (last N days).
+ * Use for SEO feedback loops and content refresh prioritization.
+ */
+export async function fetchSearchConsolePageQueryMetrics(options: {
+  pageUrl: string;
+  rowLimit?: number;
+  /** Default 28 to match Search Console performance default window. */
+  days?: number;
+}): Promise<{
+  rows: GscQueryMetricRow[];
+  note?: string;
+  dateRange: GscDateRange;
+}> {
+  const { webmasters, siteUrl } = await getAuthenticatedWebmasters();
+  const days = options.days ?? 28;
+  const { startDate, endDate } = defaultLastNDaysRange(days);
+  const rowLimit = Math.min(options.rowLimit ?? 250, 25000);
+
+  type FilterGroup = {
+    filters: Array<{
+      dimension: string;
+      operator: string;
+      expression: string;
+    }>;
+  };
+
+  const baseBody: {
+    startDate: string;
+    endDate: string;
+    dimensions: string[];
+    rowLimit: number;
+  } = {
+    startDate,
+    endDate,
+    dimensions: ["query"],
+    rowLimit,
+  };
+
+  const run = async (
+    body: typeof baseBody & { dimensionFilterGroups?: FilterGroup[] },
+  ): Promise<GscQueryMetricRow[]> => {
+    const response = await webmasters.searchanalytics.query({
+      siteUrl,
+      requestBody: body,
+    });
+    return mapAnalyticsRowsWithMetrics(response.data?.rows);
+  };
+
+  for (const expression of pageUrlFilterVariants(options.pageUrl.trim())) {
+    const body = {
+      ...baseBody,
+      dimensionFilterGroups: [
+        {
+          filters: [
+            {
+              dimension: "page",
+              operator: "equals",
+              expression,
+            },
+          ],
+        },
+      ],
+    };
+    const rows = await run(body);
+    if (rows.length > 0) {
+      return {
+        rows,
+        dateRange: { startDate, endDate, days },
+      };
+    }
+  }
+
+  return {
+    rows: [],
+    note:
+      "No query rows matched this page URL for the selected window. Use the exact URL from GSC Performance → Pages.",
+    dateRange: { startDate, endDate, days },
   };
 }

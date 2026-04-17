@@ -1,0 +1,483 @@
+{
+  "version": "1.0.0",
+  "templates": [
+    {
+      "id": "best-x-in-y",
+      "patternName": "Best [X] in [Y]",
+      "description": "Roundup / listicle for category X in market or geography Y. Strong commercial and local intent.",
+      "slugPattern": "best-{x_slug}-in-{y_slug}",
+      "primaryKeywordPattern": "best {x} in {y}",
+      "structure": {
+        "h1Pattern": "Best {x} in {y} ({year})",
+        "sections": [
+          {
+            "id": "intro",
+            "headingLevel": 2,
+            "titlePattern": "Why {y} readers compare {x} options now",
+            "dynamic": false,
+            "optional": false,
+            "blocks": ["intro_paragraph", "bullet_list"]
+          },
+          {
+            "id": "quick_picks",
+            "headingLevel": 2,
+            "titlePattern": "Quick picks: best {x} at a glance",
+            "dynamic": false,
+            "blocks": ["bullet_list"]
+          },
+          {
+            "id": "methodology",
+            "headingLevel": 2,
+            "titlePattern": "How we chose the best {x} in {y}",
+            "dynamic": false,
+            "blocks": ["intro_paragraph", "bullet_list"]
+          },
+          {
+            "id": "pick_entity",
+            "headingLevel": 2,
+            "titlePattern": "Best for {entity.label}: {entity.name}",
+            "dynamic": true,
+            "repeatOver": "entities",
+            "blocks": ["intro_paragraph", "bullet_list", "pros_cons"]
+          },
+          {
+            "id": "comparison_table",
+            "headingLevel": 2,
+            "titlePattern": "Compare the top {x} in {y}",
+            "dynamic": false,
+            "blocks": ["comparison_table"]
+          },
+          {
+            "id": "buyers_guide",
+            "headingLevel": 2,
+            "titlePattern": "How to choose {x} in {y}",
+            "dynamic": false,
+            "blocks": ["intro_paragraph", "bullet_list"]
+          },
+          {
+            "id": "faq",
+            "headingLevel": 2,
+            "titlePattern": "Frequently asked questions",
+            "dynamic": false,
+            "blocks": ["faq_item"]
+          },
+          {
+            "id": "conclusion",
+            "headingLevel": 2,
+            "titlePattern": "Final recommendation",
+            "dynamic": false,
+            "blocks": ["intro_paragraph"]
+          }
+        ]
+      },
+      "requiredInputs": [
+        { "key": "x", "type": "string", "required": true, "description": "Category or product type (e.g. CRM software).", "example": "project management software" },
+        { "key": "y", "type": "string", "required": true, "description": "Geo, market, or niche slice (e.g. India, startups).", "example": "India" },
+        { "key": "year", "type": "number", "required": true, "description": "Freshness year for title/meta.", "example": 2026 },
+        { "key": "entities", "type": "object[]", "required": true, "description": "Ranked picks with name, url, label (e.g. best overall), pros, cons, price_band.", "example": [] },
+        { "key": "criteria", "type": "string[]", "required": true, "description": "Evaluation dimensions for methodology.", "example": ["pricing", "support hours", "local billing"] },
+        { "key": "x_slug", "type": "string", "required": true, "description": "URL-safe slug for x.", "example": "project-management-software" },
+        { "key": "y_slug", "type": "string", "required": true, "description": "URL-safe slug for y.", "example": "india" }
+      ],
+      "dynamicSectionNotes": [
+        "Repeat section pick_entity once per entities[] item; keep H2 order stable for programmatic consistency.",
+        "Inject unique copy per entity to avoid duplicate paragraphs across URLs."
+      ],
+      "internalLinkSlots": [
+        {
+          "id": "hub_y",
+          "purpose": "Pillar or location hub for {y}",
+          "minCount": 1,
+          "maxCount": 2,
+          "suggestedAnchorPatterns": ["{y} market guide", "doing business in {y}", "{y} overview"],
+          "targetUrlPatterns": ["/locations/{y_slug}", "/hub/{y_slug}"]
+        },
+        {
+          "id": "category_x",
+          "purpose": "Category or topic cluster for {x}",
+          "minCount": 1,
+          "maxCount": 3,
+          "suggestedAnchorPatterns": ["complete guide to {x}", "{x} explained"],
+          "targetUrlPatterns": ["/topics/{x_slug}", "/category/{x_slug}"]
+        },
+        {
+          "id": "related_vs",
+          "purpose": "Cross-link to comparison URLs for top entities",
+          "minCount": 0,
+          "maxCount": 4,
+          "suggestedAnchorPatterns": ["{entity_a} vs {entity_b}", "compare {entity_a} and {entity_b}"],
+          "targetUrlPatterns": ["/compare/{slug_a}-vs-{slug_b}"]
+        }
+      ],
+      "ctaPlacements": [
+        {
+          "id": "cta_after_table",
+          "afterSectionId": "comparison_table",
+          "intent": "primary",
+          "labelPattern": "Shortlist {x} for your team in {y}"
+        },
+        {
+          "id": "cta_conclusion",
+          "afterSectionId": "conclusion",
+          "intent": "secondary",
+          "labelPattern": "See pricing and trials for top {x}"
+        }
+      ]
+    },
+    {
+      "id": "x-vs-y",
+      "patternName": "[X] vs [Y]",
+      "description": "Head-to-head comparison. Captures vs-intent and feature queries.",
+      "slugPattern": "{x_slug}-vs-{y_slug}",
+      "primaryKeywordPattern": "{x} vs {y}",
+      "structure": {
+        "h1Pattern": "{x} vs {y}: which fits you better?",
+        "sections": [
+          {
+            "id": "intro",
+            "headingLevel": 2,
+            "titlePattern": "{x} vs {y} in 60 seconds",
+            "dynamic": false,
+            "blocks": ["intro_paragraph"]
+          },
+          {
+            "id": "at_a_glance",
+            "headingLevel": 2,
+            "titlePattern": "At a glance",
+            "dynamic": false,
+            "blocks": ["comparison_table", "bullet_list"]
+          },
+          {
+            "id": "feature_comparison",
+            "headingLevel": 2,
+            "titlePattern": "Feature comparison",
+            "dynamic": false,
+            "blocks": ["comparison_table", "bullet_list"]
+          },
+          {
+            "id": "pricing",
+            "headingLevel": 2,
+            "titlePattern": "Pricing and plans",
+            "dynamic": false,
+            "blocks": ["intro_paragraph", "bullet_list"]
+          },
+          {
+            "id": "pros_x",
+            "headingLevel": 2,
+            "titlePattern": "Where {x_name} wins",
+            "dynamic": false,
+            "blocks": ["bullet_list", "intro_paragraph"]
+          },
+          {
+            "id": "pros_y",
+            "headingLevel": 2,
+            "titlePattern": "Where {y_name} wins",
+            "dynamic": false,
+            "blocks": ["bullet_list", "intro_paragraph"]
+          },
+          {
+            "id": "use_cases",
+            "headingLevel": 2,
+            "titlePattern": "Best choice by use case",
+            "dynamic": false,
+            "blocks": ["bullet_list"]
+          },
+          {
+            "id": "faq",
+            "headingLevel": 2,
+            "titlePattern": "FAQ: {x} vs {y}",
+            "dynamic": false,
+            "blocks": ["faq_item"]
+          },
+          {
+            "id": "verdict",
+            "headingLevel": 2,
+            "titlePattern": "Verdict: {x} or {y}?",
+            "dynamic": false,
+            "blocks": ["intro_paragraph"]
+          }
+        ]
+      },
+      "requiredInputs": [
+        { "key": "x", "type": "string", "required": true, "description": "First product or option name.", "example": "Notion" },
+        { "key": "y", "type": "string", "required": true, "description": "Second product or option name.", "example": "Confluence" },
+        { "key": "x_name", "type": "string", "required": true, "description": "Display name for x.", "example": "Notion" },
+        { "key": "y_name", "type": "string", "required": true, "description": "Display name for y.", "example": "Confluence" },
+        { "key": "x_slug", "type": "string", "required": true, "description": "URL slug for x.", "example": "notion" },
+        { "key": "y_slug", "type": "string", "required": true, "description": "URL slug for y.", "example": "confluence" },
+        { "key": "features", "type": "object[]", "required": true, "description": "Rows: { name, x_value, y_value, winner? }.", "example": [] },
+        { "key": "pricing_summary", "type": "string", "required": false, "description": "Short pricing narrative or table caption context.", "example": "" }
+      ],
+      "dynamicSectionNotes": [
+        "Optional H3 under feature_comparison per feature group if many rows.",
+        "Keep winner language balanced unless data clearly favors one side."
+      ],
+      "internalLinkSlots": [
+        {
+          "id": "review_x",
+          "purpose": "Deep-dive or review of {x}",
+          "minCount": 1,
+          "maxCount": 2,
+          "suggestedAnchorPatterns": ["full {x_name} review", "{x_name} pricing explained"],
+          "targetUrlPatterns": ["/reviews/{x_slug}", "/tools/{x_slug}"]
+        },
+        {
+          "id": "review_y",
+          "purpose": "Deep-dive or review of {y}",
+          "minCount": 1,
+          "maxCount": 2,
+          "suggestedAnchorPatterns": ["full {y_name} review", "{y_name} pricing explained"],
+          "targetUrlPatterns": ["/reviews/{y_slug}", "/tools/{y_slug}"]
+        },
+        {
+          "id": "alternatives",
+          "purpose": "Alternatives cluster",
+          "minCount": 0,
+          "maxCount": 2,
+          "suggestedAnchorPatterns": ["alternatives to {x_name}", "more tools like {x_name}"],
+          "targetUrlPatterns": ["/alternatives/{x_slug}"]
+        }
+      ],
+      "ctaPlacements": [
+        {
+          "id": "cta_after_glance",
+          "afterSectionId": "at_a_glance",
+          "intent": "compare",
+          "labelPattern": "Try {x_name} or {y_name} side by side"
+        },
+        {
+          "id": "cta_verdict",
+          "afterSectionId": "verdict",
+          "intent": "primary",
+          "labelPattern": "Start with our recommended pick"
+        }
+      ]
+    },
+    {
+      "id": "top-tools-for-z",
+      "patternName": "Top tools for [Z]",
+      "description": "Tool roundup for outcome or role Z. Strong tool + commercial intent.",
+      "slugPattern": "top-tools-for-{z_slug}",
+      "primaryKeywordPattern": "top tools for {z}",
+      "structure": {
+        "h1Pattern": "Top tools for {z} ({year})",
+        "sections": [
+          {
+            "id": "intro",
+            "headingLevel": 2,
+            "titlePattern": "What “tools for {z}” should solve",
+            "dynamic": false,
+            "blocks": ["intro_paragraph"]
+          },
+          {
+            "id": "selection_criteria",
+            "headingLevel": 2,
+            "titlePattern": "What we looked for",
+            "dynamic": false,
+            "blocks": ["bullet_list"]
+          },
+          {
+            "id": "tool_spotlight",
+            "headingLevel": 2,
+            "titlePattern": "{n}. {tool.name} — best for {tool.tagline}",
+            "dynamic": true,
+            "repeatOver": "tools",
+            "blocks": ["intro_paragraph", "bullet_list", "pros_cons"]
+          },
+          {
+            "id": "comparison",
+            "headingLevel": 2,
+            "titlePattern": "Compare tools for {z}",
+            "dynamic": false,
+            "blocks": ["comparison_table"]
+          },
+          {
+            "id": "buying_guide",
+            "headingLevel": 2,
+            "titlePattern": "Buying guide: choosing tools for {z}",
+            "dynamic": false,
+            "blocks": ["intro_paragraph", "bullet_list"]
+          },
+          {
+            "id": "faq",
+            "headingLevel": 2,
+            "titlePattern": "FAQ",
+            "dynamic": false,
+            "blocks": ["faq_item"]
+          },
+          {
+            "id": "conclusion",
+            "headingLevel": 2,
+            "titlePattern": "Our top pick for {z}",
+            "dynamic": false,
+            "blocks": ["intro_paragraph"]
+          }
+        ]
+      },
+      "requiredInputs": [
+        { "key": "z", "type": "string", "required": true, "description": "Outcome, role, or job-to-be-done (e.g. SEO reporting).", "example": "SEO reporting" },
+        { "key": "z_slug", "type": "string", "required": true, "description": "URL slug for z.", "example": "seo-reporting" },
+        { "key": "year", "type": "number", "required": true, "description": "Year for freshness.", "example": 2026 },
+        { "key": "tools", "type": "object[]", "required": true, "description": "Ordered list: { name, slug, tagline, pros[], cons[], url }.", "example": [] },
+        { "key": "criteria", "type": "string[]", "required": true, "description": "Selection criteria labels for table columns.", "example": ["Price", "Integrations", "Learning curve"] }
+      ],
+      "dynamicSectionNotes": [
+        "tool_spotlight repeats for each tools[] entry; n is 1-based index.",
+        "Vary intros per tool to reduce template similarity across programmatic URLs."
+      ],
+      "internalLinkSlots": [
+        {
+          "id": "hub_z",
+          "purpose": "Pillar page for outcome {z}",
+          "minCount": 1,
+          "maxCount": 2,
+          "suggestedAnchorPatterns": ["complete guide to {z}", "{z} workflow overview"],
+          "targetUrlPatterns": ["/topics/{z_slug}", "/playbooks/{z_slug}"]
+        },
+        {
+          "id": "tool_pages",
+          "purpose": "Individual tool or integration pages",
+          "minCount": 1,
+          "maxCount": 8,
+          "suggestedAnchorPatterns": ["{tool.name} features", "how {tool.name} fits {z}"],
+          "targetUrlPatterns": ["/tools/{tool.slug}", "/integrations/{tool.slug}"]
+        },
+        {
+          "id": "related_lists",
+          "purpose": "Adjacent listicles (e.g. free tools, enterprise tools)",
+          "minCount": 0,
+          "maxCount": 2,
+          "suggestedAnchorPatterns": ["free tools for {z}", "enterprise {z} stack"],
+          "targetUrlPatterns": ["/lists/free-{z_slug}", "/lists/enterprise-{z_slug}"]
+        }
+      ],
+      "ctaPlacements": [
+        {
+          "id": "cta_mid_stack",
+          "afterSectionId": "comparison",
+          "intent": "primary",
+          "labelPattern": "Build your {z} stack"
+        },
+        {
+          "id": "cta_newsletter",
+          "afterSectionId": "conclusion",
+          "intent": "newsletter",
+          "labelPattern": "Get the monthly tool shortlist"
+        }
+      ]
+    },
+    {
+      "id": "how-to-use-tool",
+      "patternName": "How to use [Tool]",
+      "description": "Tutorial / documentation-style page for navigational + how-to intent.",
+      "slugPattern": "how-to-use-{tool_slug}",
+      "primaryKeywordPattern": "how to use {tool}",
+      "structure": {
+        "h1Pattern": "How to use {tool_name}: step-by-step",
+        "sections": [
+          {
+            "id": "overview",
+            "headingLevel": 2,
+            "titlePattern": "What you will set up in {tool_name}",
+            "dynamic": false,
+            "blocks": ["intro_paragraph", "bullet_list"]
+          },
+          {
+            "id": "prerequisites",
+            "headingLevel": 2,
+            "titlePattern": "Before you start",
+            "dynamic": false,
+            "blocks": ["bullet_list"]
+          },
+          {
+            "id": "steps",
+            "headingLevel": 2,
+            "titlePattern": "Step {step.n}: {step.title}",
+            "dynamic": true,
+            "repeatOver": "steps",
+            "blocks": ["intro_paragraph", "bullet_list"]
+          },
+          {
+            "id": "tips",
+            "headingLevel": 2,
+            "titlePattern": "Tips and best practices",
+            "dynamic": false,
+            "blocks": ["bullet_list"]
+          },
+          {
+            "id": "troubleshooting",
+            "headingLevel": 2,
+            "titlePattern": "Troubleshooting common issues",
+            "dynamic": false,
+            "blocks": ["faq_item", "bullet_list"]
+          },
+          {
+            "id": "faq",
+            "headingLevel": 2,
+            "titlePattern": "FAQ",
+            "dynamic": false,
+            "blocks": ["faq_item"]
+          },
+          {
+            "id": "next_steps",
+            "headingLevel": 2,
+            "titlePattern": "Next steps with {tool_name}",
+            "dynamic": false,
+            "blocks": ["intro_paragraph", "bullet_list"]
+          }
+        ]
+      },
+      "requiredInputs": [
+        { "key": "tool", "type": "string", "required": true, "description": "Tool name for keyword/slug.", "example": "RankFlowHQ" },
+        { "key": "tool_name", "type": "string", "required": true, "description": "Display name.", "example": "RankFlowHQ" },
+        { "key": "tool_slug", "type": "string", "required": true, "description": "URL slug.", "example": "rankflowhq" },
+        { "key": "steps", "type": "object[]", "required": true, "description": "Each: { n, title, body_markdown_hint, screenshot_optional }.", "example": [] },
+        { "key": "prerequisites", "type": "string[]", "required": false, "description": "Accounts, permissions, files needed.", "example": ["Admin access", "CSV of keywords"] }
+      ],
+      "dynamicSectionNotes": [
+        "steps section emits one H2 per step OR one H2 'Step-by-step' with H3 per step — pick one convention sitewide.",
+        "Include at least one screenshot placeholder per 2–3 steps for long guides."
+      ],
+      "internalLinkSlots": [
+        {
+          "id": "product_home",
+          "purpose": "Product or feature hub",
+          "minCount": 2,
+          "maxCount": 4,
+          "suggestedAnchorPatterns": ["{tool_name} features", "{tool_name} pricing", "get started with {tool_name}"],
+          "targetUrlPatterns": ["/product", "/pricing", "/docs"]
+        },
+        {
+          "id": "related_tutorials",
+          "purpose": "Adjacent tutorials",
+          "minCount": 0,
+          "maxCount": 3,
+          "suggestedAnchorPatterns": ["advanced {tool_name} workflow", "import data into {tool_name}"],
+          "targetUrlPatterns": ["/docs/{tool_slug}/*", "/tutorials/{tool_slug}-*"]
+        },
+        {
+          "id": "category_context",
+          "purpose": "Broader category page linking to this how-to",
+          "minCount": 1,
+          "maxCount": 2,
+          "suggestedAnchorPatterns": ["SEO automation basics", "content ops playbook"],
+          "targetUrlPatterns": ["/topics/seo-automation", "/blog"]
+        }
+      ],
+      "ctaPlacements": [
+        {
+          "id": "cta_after_prereq",
+          "afterSectionId": "prerequisites",
+          "intent": "soft",
+          "labelPattern": "Open {tool_name} and follow along"
+        },
+        {
+          "id": "cta_final",
+          "afterSectionId": "next_steps",
+          "intent": "primary",
+          "labelPattern": "Start using {tool_name} free"
+        }
+      ]
+    }
+  ]
+}

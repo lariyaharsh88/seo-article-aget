@@ -6,8 +6,7 @@ import {
 import { geminiStream } from "@/lib/gemini";
 import { groqStream } from "@/lib/groq";
 import { openRouterStream } from "@/lib/openrouter";
-import { buildContentVariationInstruction } from "@/lib/content-variation";
-import { buildInternalLinkingInstructionBlock } from "@/lib/internal-linking-prompt";
+import { buildArticlePromptFragments } from "@/lib/article-generation-prompt";
 import { capPromptText } from "@/lib/prompt-truncate";
 import type { Keyword, PipelineInput } from "@/lib/types";
 
@@ -139,10 +138,10 @@ export async function POST(request: Request) {
       : "";
 
   const searchItemCount = gscQueries.length + autoSuggest.length;
-  const variationBlock = buildContentVariationInstruction(
-    `${topic}|${primary}|${intent}|${outlineText.slice(0, 1000)}`,
-    "long-form",
-  );
+  const promptFragments = buildArticlePromptFragments({
+    seed: `${topic}|${primary}|${intent}|${outlineText.slice(0, 500)}`,
+    outlinePreview: outlineText,
+  });
   const wordTarget =
     searchItemCount > 20
       ? "2000–4000+"
@@ -186,20 +185,21 @@ ${gscQueries.length > 0 ? gscBlock : "(none — skip GSC coverage rules)"}
 GOOGLE AUTOCOMPLETE SUGGESTIONS — numbered; must ALL be addressed in article body OR as FAQ (see rules):
 ${autoSuggest.length > 0 ? suggestBlock : "(none — skip autocomplete coverage rules)"}
 ${coverageBlock}
-${buildInternalLinkingInstructionBlock({ mode: "long-form" })}
-${variationBlock}
+${promptFragments.internalLinksBlock}
+${promptFragments.variationBlock}
+${promptFragments.qualityExtensionsBlock}
 STRICT REQUIREMENTS:
 1. Open with # H1 heading — must contain primary keyword
 2. Follow every H2 (##) and H3 (###) from the outline above exactly
 3. Write substantial paragraphs per H2 section; if search lists are long, add the **## Search-related questions** section before the conclusion as needed
 4. Cite statistics inline as [Source: domain.com]
-5. Keyword density 1.5-2.5% for primary (natural, never stuffed)
+5. Keyword density 1.5-2.5% for primary (natural, never stuffed) — if density creeps up, use entities and pronouns instead of repeating the exact phrase
 6. **FAQ:** At least **5** questions from PAA when available; **plus** one FAQ pair (question + answer) for **each** Search Console query and autocomplete line not already clearly answered in the body sections above
 7. Conclusion: key takeaways + single clear CTA
-8. Use at least one markdown table and multiple bullet/numbered lists for scanability
+8. Use multiple bullet/numbered lists for scanability (tables are already required in STRUCTURED DATA section above)
 9. Add 1-2 data-visual placeholders in markdown image format with clear alt text and source note (for example charts/infographics based on cited stats)
 10. Keep introduction short and relevant (about 90-130 words)
-11. Active voice, short paragraphs (2-3 sentences max), simple sentence structure
+11. Active voice, **mixed sentence length** per HUMANIZATION LAYER (do not use only one sentence length everywhere)
 12. Keep each paragraph concise and meaningful; do not add fluff, but **do** add extra FAQ/subsections when needed to satisfy every numbered search line
 13. LANGUAGE FOR INDIAN READERS (English): Write so everyday Indian readers can follow easily — many read English as a second language.
     - Use **short sentences** (often 10–18 words). One main idea per sentence.
@@ -225,7 +225,9 @@ Write the complete article now:`;
 
   const fullPrompt = `You are a senior SEO content writer with 10+ years experience writing articles that rank on Google page 1. You write in an authoritative, engaging, and clear style. You always back claims with data and cite sources.
 
-Your default reader is a **typical Indian English reader**: comfortable with English for work or study, but not reading literary or legal English all day. Use **simple, clear English** (about Grade 8–10 readability): plain words, short sentences, minimal jargon, and no assumptions about Western pop-culture or US-centric framing unless the topic requires it.
+Your default reader is a **typical Indian English reader**: comfortable with English for work or study, but not reading literary or legal English all day. Use **simple, clear English** (about Grade 8–10 readability): plain words, minimal jargon, varied sentence rhythm (not all short sentences), and no assumptions about Western pop-culture or US-centric framing unless the topic requires it.
+
+Before you finish, mentally verify: **Sources** section exists, **FAQ JSON-LD** block exists, **two tables** exist, and editorial lines are tied to evidence — not generic praise.
 
 ${userPrompt}`;
 

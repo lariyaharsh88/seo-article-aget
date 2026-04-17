@@ -5,6 +5,9 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import type { Session } from "@supabase/supabase-js";
+import { ContentScoreStrip } from "@/components/workflow/ContentScoreStrip";
+import { SeoPublishChecklist } from "@/components/workflow/SeoPublishChecklist";
+import { WorkflowStepper } from "@/components/workflow/WorkflowStepper";
 import { ArticleCopyBar } from "@/components/ArticleCopyBar";
 import { ArticleRenderer } from "@/components/ArticleRenderer";
 import { PipelineProgress } from "@/components/PipelineProgress";
@@ -490,6 +493,23 @@ export function SeoAgentClient() {
   );
 
   const showSeoScore = article.trim().length >= 40 && !running;
+
+  const keywordBriefComplete = useMemo(
+    () =>
+      mode === "simple"
+        ? simpleKeyword.trim().length > 0
+        : Boolean(
+            input.topic.trim() ||
+              input.primaryKeyword.trim() ||
+              input.sourceUrl.trim(),
+          ),
+    [mode, simpleKeyword, input.topic, input.primaryKeyword, input.sourceUrl],
+  );
+
+  const articleWorkflowComplete = article.trim().length >= 80;
+  const publishWorkflowComplete = Boolean(
+    meta?.metaTitle?.trim() && meta?.metaDescription?.trim(),
+  );
 
   const handleFetchSearchConsole = useCallback(async () => {
     setLoadingGsc(true);
@@ -1112,6 +1132,11 @@ export function SeoAgentClient() {
             Advanced Setup
           </button>
         </div>
+        <WorkflowStepper
+          keywordComplete={keywordBriefComplete}
+          articleComplete={articleWorkflowComplete}
+          publishComplete={publishWorkflowComplete}
+        />
         {habitNudge ? (
           <div className="rounded-lg border border-accent/35 bg-accent/10 px-3 py-2">
             <p className="font-mono text-[11px] text-accent">{habitNudge}</p>
@@ -1532,7 +1557,7 @@ export function SeoAgentClient() {
         </div>
       ) : null}
 
-      <div className="grid min-w-0 gap-6 lg:grid-cols-[1fr_320px]">
+      <div className="grid min-w-0 gap-6 lg:grid-cols-[1fr_minmax(260px,300px)]">
         <div className="min-w-0 space-y-4">
           {quickTryMode && !userSession ? (
             <section className="rounded-xl border border-accent/40 bg-accent/10 p-3">
@@ -1874,6 +1899,14 @@ export function SeoAgentClient() {
               doneStages={doneStages}
             />
           </div>
+          <div className="lg:hidden">
+            <SeoPublishChecklist
+              articleMarkdown={article}
+              meta={meta}
+              hasKeywordBrief={keywordBriefComplete}
+              contentScore={showSeoScore ? seoScoreResult.overall : undefined}
+            />
+          </div>
 
           {error && (
             <div
@@ -1934,6 +1967,12 @@ export function SeoAgentClient() {
                 </button>
               ))}
             </div>
+            <ContentScoreStrip
+              overall={seoScoreResult.overall}
+              visible={Boolean(article.trim() && showSeoScore)}
+              onViewDetails={() => setTab("score")}
+              onOpenSeoPack={() => setTab("seo")}
+            />
             <div className="border-b border-border/70 bg-background/30 px-3 py-2">
               <p className="font-mono text-[11px] text-text-muted">{contextualFeatureHint}</p>
             </div>
@@ -2097,11 +2136,17 @@ export function SeoAgentClient() {
           </div>
         </div>
 
-        <aside className="hidden space-y-4 lg:sticky lg:top-6 lg:block lg:self-start">
+        <aside className="hidden space-y-4 lg:sticky lg:top-6 lg:block lg:w-[280px] lg:shrink-0 lg:self-start">
           <PipelineProgress
             stages={PIPELINE_STAGES}
             currentStage={stage}
             doneStages={doneStages}
+          />
+          <SeoPublishChecklist
+            articleMarkdown={article}
+            meta={meta}
+            hasKeywordBrief={keywordBriefComplete}
+            contentScore={showSeoScore ? seoScoreResult.overall : undefined}
           />
         </aside>
       </div>

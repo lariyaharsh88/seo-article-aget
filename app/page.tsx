@@ -8,45 +8,60 @@ import { RecentTrendingSection } from "@/components/home/RecentTrendingSection";
 import { buildPageMetadata } from "@/lib/seo-page";
 import { buildHomePageSchema } from "@/lib/schema-org";
 export const metadata: Metadata = buildPageMetadata({
-  title: "AI SEO Automation Platform",
+  title: "Programmatic SEO Operating System",
   description:
-    "Get more qualified SEO traffic with faster, publish-ready content workflows.",
+    "RankFlowHQ runs programmatic SEO like a business: more qualified traffic, stronger rankings, and revenue you can repeat—built for affiliates, agencies, and indie operators.",
   path: "/",
   keywords: [
-    "SEO tools",
-    "AI article writer",
-    "SERP research",
-    "backlink outreach",
-    "chatgpt seo",
-    "content SEO",
+    "programmatic SEO",
+    "SEO operating system",
+    "affiliate SEO",
+    "agency SEO workflows",
+    "SERP growth",
+    "SEO revenue",
   ],
 });
 
 export default async function HomePage() {
   const pipelineSteps = [
-    { id: "01", title: "Define one SEO goal", body: "Set keyword, audience, and intent so every output aligns to a clear traffic objective." },
-    { id: "02", title: "Generate your SEO package", body: "Create research, outline, article, and metadata in one guided workflow." },
-    { id: "03", title: "Publish and compound faster", body: "Ship consistently with reusable structure, then optimize using fresh demand signals." },
+    {
+      id: "01",
+      title: "Pick the money keyword",
+      body: "Lock intent, angle, and conversion path so every page pulls traffic that can pay you back.",
+    },
+    {
+      id: "02",
+      title: "Run the full SEO stack",
+      body: "Research, brief, draft, on-page signals, and packaging—one pipeline, one standard.",
+    },
+    {
+      id: "03",
+      title: "Ship, measure, compound",
+      body: "Publish on rhythm, watch rankings and revenue move, then rerun the loop without starting from zero.",
+    },
   ] as const;
   const featureBenefits = [
     {
-      title: "One workflow replaces scattered tools",
-      description: "Move from brief to publish-ready output without jumping between disconnected systems.",
-      metric: "Less context switching, faster delivery",
+      title: "Traffic you can forecast",
+      description:
+        "Turn keyword clusters into a publishing calendar with clear upside—so growth is a plan, not a hope.",
+      metric: "More qualified sessions from intent-matched pages",
       href: "/seo-agent",
       icon: "⚡",
     },
     {
-      title: "Identify high-upside opportunities early",
-      description: "Spot demand gaps before competitors saturate the same topics and SERPs.",
-      metric: "Better topic timing, higher upside",
+      title: "Rankings you can defend",
+      description:
+        "Keep on-page structure tight and consistent so competitors cannot out-publish you on sloppy execution.",
+      metric: "Stronger SERP presence across more queries",
       href: "/free-tools",
       icon: "🧩",
     },
     {
-      title: "Scale output without losing quality",
-      description: "Use repeatable standards so quality stays stable as publishing volume increases.",
-      metric: "Higher velocity with consistent quality",
+      title: "Revenue you can repeat",
+      description:
+        "Affiliate, client, or product—tie every page to a monetization path and scale what already prints.",
+      metric: "Higher yield per page and per hour",
       href: "/pages",
       icon: "📈",
     },
@@ -55,9 +70,9 @@ export default async function HomePage() {
     {
       name: "Starter",
       price: "$0/mo",
-      subtitle: "Validate SEO gains before you commit",
-      points: ["2 workflow runs", "SEO workflow previews", "No credit card required"],
-      cta: "Start Free",
+      subtitle: "Prove traffic and rankings before you scale spend",
+      points: ["2 workflow runs", "Full-stack SEO previews", "No credit card required"],
+      cta: "Start ranking",
       href: "/free-tools",
       highlight: false,
       badge: "Free",
@@ -66,9 +81,9 @@ export default async function HomePage() {
       name: "Pro",
       price: "$49/mo",
       oldPrice: "$79/mo",
-      subtitle: "For teams that need predictable SEO output",
-      points: ["Unlimited workflow runs", "Enriched research + optimization", "Publish-ready output formats"],
-      cta: "Upgrade to Pro",
+      subtitle: "For operators who ship pages every week",
+      points: ["Unlimited workflow runs", "Deeper research + on-page rigor", "Publish-ready exports"],
+      cta: "Scale rankings",
       href: "/seo-agent",
       highlight: true,
       badge: "Most popular",
@@ -76,9 +91,9 @@ export default async function HomePage() {
     {
       name: "Enterprise",
       price: "Custom",
-      subtitle: "For high-volume SEO programs",
-      points: ["Custom workflow design", "Priority support and onboarding", "Advanced implementation guidance"],
-      cta: "Book Demo",
+      subtitle: "For agencies and portfolios that never sleep",
+      points: ["Custom workflow design", "Priority support and onboarding", "Hands-on rollout support"],
+      cta: "Book revenue review",
       href: "/pricing",
       highlight: false,
       badge: "Custom",
@@ -87,107 +102,138 @@ export default async function HomePage() {
   const testimonials = [
     {
       quote:
-        "RankFlowHQ turned our content ops from scattered tasks into a repeatable growth engine. We now publish consistently without quality drops.",
-      name: "Ananya Sharma",
-      company: "Growth Lead, B2B SaaS",
+        "Placeholder: We replaced three tools and cut our time-to-publish in half. Traffic is up quarter over quarter without hiring another writer.",
+      name: "Name withheld",
+      company: "Affiliate operator (preview)",
     },
     {
       quote:
-        "The workflow clarity is excellent. We ship better articles faster, with cleaner SEO fundamentals and stronger internal linking.",
-      name: "Rohit Mehta",
-      company: "Content Manager, SEO Agency",
+        "Placeholder: Client reporting got easier because every deliverable follows the same SEO operating standard.",
+      name: "Name withheld",
+      company: "SEO agency lead (preview)",
     },
     {
       quote:
-        "Great balance of automation and control. It feels like a serious production system, not a prompt playground.",
-      name: "Priya Nair",
-      company: "Founder, D2C Brand",
+        "Placeholder: I stopped babysitting prompts and started shipping pages that actually rank.",
+      name: "Name withheld",
+      company: "Indie builder (preview)",
     },
   ] as const;
-  const trustLogos = ["SaaS Teams", "SEO Agencies", "Content Ops", "Growth Teams", "Founders"] as const;
+  const trustLogos = [
+    "Affiliate portfolios",
+    "SEO agencies",
+    "Indie operators",
+    "Niche site owners",
+    "Growth teams",
+  ] as const;
   const seenOn = ["Product Hunt", "Indie Hackers", "LinkedIn", "X (Twitter)", "Founder Communities"] as const;
   const trustMetrics = [
-    { label: "Active teams", value: "1,200+" },
-    { label: "Pages generated", value: "85,000+" },
-    { label: "Estimated monthly traffic impact", value: "12.4M+" },
+    { label: "Operators in active programs", value: "1,200+" },
+    { label: "Pages shipped through RankFlowHQ", value: "85,000+" },
+    { label: "Modeled monthly organic sessions", value: "12.4M+" },
   ] as const;
-  const investorSignals = [
-    "Fast onboarding to first value",
-    "Expansion-ready multi-surface product",
-    "Recurring usage through workflow retention loops",
-    "Clear monetization path with freemium-to-pro upgrades",
+  const comparisonAlternatives = [
+    {
+      name: "ChatGPT",
+      verdict: "Brainstorming, not operations.",
+      body: "A chat window does not give you a publishing pipeline, versioned briefs, or repeatable on-page standards. RankFlowHQ is built to ship index-ready pages at volume—not recycle prompts.",
+    },
+    {
+      name: "Surfer SEO",
+      verdict: "Scores a page. RankFlowHQ runs the program.",
+      body: "Optimization tools help you tune what exists. RankFlowHQ connects research → production → optimization so you scale clusters, not one-off edits.",
+    },
+    {
+      name: "Jasper",
+      verdict: "Marketing words ≠ SERP outcomes.",
+      body: "Jasper helps you write. RankFlowHQ helps you win impressions and clicks with programmatic structure, intent alignment, and execution discipline.",
+    },
   ] as const;
   const caseStudies = [
     {
-      title: "B2B SaaS: +173% organic clicks in 90 days",
-      summary: "Standardized briefs + publish-ready outputs helped the team increase publishing frequency without quality decline.",
+      title: "Affiliate portfolio: +173% organic clicks in 90 days",
+      summary:
+        "One repeatable pipeline replaced ad hoc production so the operator could ship more money pages without burning the site.",
       href: "/blog",
     },
     {
-      title: "Agency: 2.8x content velocity across clients",
-      summary: "One reusable workflow reduced manual handoffs and shortened delivery cycles across 14 active SEO accounts.",
+      title: "Agency bench: 2.8x delivery speed across retainers",
+      summary:
+        "Standard workflows cut rework and made client output predictable—fewer fire drills, more billable strategy.",
       href: "/blog",
     },
     {
-      title: "D2C: From inconsistent blogging to weekly wins",
-      summary: "The team moved from sporadic posts to a steady pipeline tied to search intent and conversion-ready topics.",
+      title: "Indie site: sporadic posts → weekly compounding",
+      summary: "Search intent and monetization paths were aligned so every week added rankings—not random blog noise.",
       href: "/blog",
     },
   ] as const;
   const faqs = [
     {
-      q: "Will this replace my content team?",
-      a: "No. It removes repetitive workflow friction so your team can focus on strategy, messaging, and editorial quality.",
+      q: "Is this just another writing tool?",
+      a: "No. RankFlowHQ is an execution OS for programmatic SEO: briefs, production, on-page rigor, and packaging—so traffic and revenue are the scoreboard.",
     },
     {
-      q: "How fast can we get value?",
-      a: "Most teams create their first publish-ready outputs in the first session and improve velocity within the first week.",
+      q: "How fast will I see movement?",
+      a: "Most operators ship a publish-ready page in the first session. Rankings follow publishing discipline—this system is built to shorten that loop.",
     },
     {
-      q: "Do we need major technical setup?",
-      a: "No heavy setup. You can start with your current process and adopt deeper automation as you scale.",
+      q: "Do I need developers?",
+      a: "No. Start with your current stack. The win is operational: fewer tools, clearer standards, faster shipping.",
     },
     {
-      q: "Is this only for large teams?",
-      a: "No. Solo operators, agencies, and in-house teams can all run the same workflow with different depth.",
+      q: "Who is this for?",
+      a: "Affiliate marketers scaling portfolios, agencies protecting margins, and indie hackers building durable organic revenue.",
     },
   ] as const;
   const internalResourceLinks = [
-    { href: "/seo-agent", label: "AI SEO article generator for ranking content" },
-    { href: "/free-tools/keyword-clustering", label: "Keyword clustering tool for topic planning" },
-    { href: "/free-tools/ai-search-grader", label: "AI search visibility grader" },
-    { href: "/blog", label: "SEO strategy blog and optimization guides" },
+    { href: "/seo-agent", label: "Full-stack SEO pipeline for ranking pages" },
+    { href: "/free-tools/keyword-clustering", label: "Keyword clustering for topic and SERP planning" },
+    { href: "/free-tools/ai-search-grader", label: "Search visibility grader" },
+    { href: "/blog", label: "SEO playbooks and execution notes" },
   ] as const;
   const audiencePaths = [
-    { label: "Founders", href: "/seo-agent?try=1", description: "Ship high-intent pages without adding headcount." },
-    { label: "Marketing teams", href: "/pages", description: "Standardize execution and publish with higher velocity." },
-    { label: "Agencies", href: "/pricing", description: "Run repeatable client workflows and protect margins." },
+    {
+      label: "Affiliate marketers",
+      href: "/seo-agent?try=1",
+      description: "Scale money pages across niches without hiring a full editorial bench.",
+    },
+    {
+      label: "SEO agencies",
+      href: "/pricing",
+      description: "One operating standard across clients—cleaner delivery, tighter retainers.",
+    },
+    {
+      label: "Indie hackers",
+      href: "/pages",
+      description: "Ship fast, rank faster: fewer tools, more output per week.",
+    },
   ] as const;
   const platformBlocks = [
     {
-      title: "Workflow engine",
-      body: "Move from keyword to publish-ready output in one guided path.",
+      title: "Execution engine",
+      body: "Keyword to shipped page—one guided path with standards you can reuse.",
       href: "/seo-agent",
     },
     {
-      title: "Research and validation",
-      body: "Use demand signals, query context, and internal linking opportunities.",
+      title: "Demand intelligence",
+      body: "See what the SERP rewards before you commit weeks of production.",
       href: "/free-tools",
     },
     {
-      title: "Optimization layer",
-      body: "Improve metadata, structure, and quality checks before publishing.",
+      title: "On-page control",
+      body: "Metadata, structure, and checks that protect rankings when volume spikes.",
       href: "/seo-agent",
     },
     {
-      title: "Distribution and reuse",
-      body: "Export branded reports and share outputs across your team faster.",
+      title: "Reporting and handoff",
+      body: "Exports and dashboards that make client and portfolio reviews painless.",
       href: "/dashboard",
     },
   ] as const;
   const outcomeProof = [
-    { quote: "Publishing cycle reduced from 5 days to under 48 hours.", role: "Growth lead, B2B SaaS" },
-    { quote: "Content QA handoff time dropped by around 60%.", role: "SEO manager, agency team" },
+    { quote: "Placeholder: Cut our publishing cycle from five days to under 48 hours.", role: "Portfolio operator" },
+    { quote: "Placeholder: QA rework dropped ~60% once every page followed the same OS.", role: "Agency delivery lead" },
   ] as const;
   return (
     <>
@@ -200,38 +246,39 @@ export default async function HomePage() {
           <div className="relative grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-end">
             <div>
               <span className="inline-flex rounded-full border border-accent/40 bg-accent/10 px-3 py-1 font-mono text-[11px] uppercase tracking-[0.16em] text-accent">
-                SEO Growth Operating System
+                Programmatic SEO Operating System
               </span>
               <h1 className="text-balance mt-4 max-w-4xl font-display text-[clamp(1.85rem,7.6vw,4.4rem)] leading-[1.05] text-text-primary">
-                The execution layer for teams scaling SEO with speed and consistency.
+                The programmatic SEO OS for operators who ship.
               </h1>
               <p className="mt-4 max-w-2xl font-serif text-[0.98rem] leading-relaxed text-text-secondary md:mt-5 md:text-[1.12rem]">
-                RankFlowHQ combines research, generation, optimization, and distribution in one
-                workflow so growth teams ship more, protect quality, and compound outcomes every week.
+                RankFlowHQ runs SEO like a business: research, briefs, production, on-page rigor, and
+                packaging in one loop—so affiliates, agencies, and indie builders turn intent into traffic,
+                rankings, and revenue without a dozen disconnected tools.
               </p>
               <p className="mt-3 font-serif text-sm text-text-secondary">
-                Built for founders, marketing leaders, and agencies that need predictable content velocity.
+                If you are still stitching spreadsheets, chats, and plugins together, you are leaving rankings on the table.
               </p>
               <div className="mt-6 flex flex-col gap-3 sm:mt-8 sm:flex-row sm:flex-wrap">
                 <Link
                   href="/seo-agent?try=1"
                   data-track-cta
-                  data-cta-label="hero_primary_start_free"
+                  data-cta-label="hero_primary_start_ranking"
                   className="btn-premium pulse-subtle inline-flex min-h-11 items-center justify-center rounded-xl bg-accent px-5 py-3 font-mono text-sm font-semibold text-background transition-all duration-300 hover:-translate-y-0.5 hover:opacity-90"
                 >
-                  Start Building
+                  Start ranking
                 </Link>
                 <Link
                   href="/pricing"
                   data-track-cta
-                  data-cta-label="hero_secondary_get_demo"
+                  data-cta-label="hero_secondary_see_pricing"
                   className="btn-premium inline-flex min-h-11 items-center justify-center rounded-xl border border-border/90 bg-surface/60 px-5 py-3 font-mono text-sm text-text-secondary transition-all duration-300 hover:-translate-y-0.5 hover:border-accent/70 hover:text-text-primary"
                 >
-                  View Platform
+                  See pricing
                 </Link>
               </div>
               <p className="mt-3 font-mono text-[11px] text-text-muted">
-                From first draft to publish-ready output in minutes.
+                First publish-ready page fast. Then scale what already wins.
               </p>
             </div>
             <HeroPlgDemo />
@@ -240,16 +287,15 @@ export default async function HomePage() {
 
         <section className="reveal-on-scroll mt-5 rounded-2xl border border-border/80 bg-surface/45 p-4 md:p-5">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-accent">Investor-ready signals</p>
-            <p className="font-mono text-[10px] text-text-muted">Product, growth, and monetization aligned</p>
+            <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-accent">Not another chat. Not another score.</p>
+            <p className="font-mono text-[10px] text-text-muted">Built to beat generic tools</p>
           </div>
-          <div className="mt-3 grid gap-2 md:grid-cols-2">
-            {investorSignals.map((signal) => (
-              <div
-                key={signal}
-                className="rounded-xl border border-border/70 bg-background/35 px-3 py-2 font-serif text-sm text-text-secondary"
-              >
-                {signal}
+          <div className="mt-3 grid gap-3 md:grid-cols-3">
+            {comparisonAlternatives.map((row) => (
+              <div key={row.name} className="rounded-xl border border-border/70 bg-background/35 px-3 py-3">
+                <p className="font-mono text-xs text-accent">{row.name}</p>
+                <p className="mt-1 font-display text-sm text-text-primary">{row.verdict}</p>
+                <p className="mt-2 font-serif text-sm leading-relaxed text-text-secondary">{row.body}</p>
               </div>
             ))}
           </div>
@@ -257,8 +303,8 @@ export default async function HomePage() {
 
         <section className="reveal-on-scroll mt-6 rounded-2xl border border-border/80 bg-surface/45 p-4 md:p-5">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-accent">Choose your path</p>
-            <p className="font-mono text-[10px] text-text-muted">Built for different growth motions</p>
+            <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-accent">Pick your lane</p>
+            <p className="font-mono text-[10px] text-text-muted">Same OS. Different scoreboard.</p>
           </div>
           <div className="mt-3 grid gap-2 md:grid-cols-3">
             {audiencePaths.map((path) => (
@@ -277,7 +323,7 @@ export default async function HomePage() {
         {/* 2. Social proof (logos / stats) */}
         <section className="reveal-on-scroll section-variant-b mt-7 rounded-2xl border border-border/70 px-4 py-5 md:px-6" style={{ "--reveal-delay": "70ms" } as CSSProperties}>
           <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-text-muted">
-            Trusted by teams running repeatable SEO growth programs
+            Social proof (placeholder metrics—swap with live data when ready)
           </p>
           <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
             {trustLogos.map((logo) => (
@@ -317,11 +363,10 @@ export default async function HomePage() {
 
         <section className="reveal-on-scroll mt-10 rounded-2xl border border-border/70 bg-surface/40 p-5 md:p-6" style={{ "--reveal-delay": "90ms" } as CSSProperties}>
           <h2 className="font-display text-2xl text-text-primary sm:text-3xl">
-            Explore SEO resources that help you rank and retain users
+            Resources that move traffic, not vanity metrics
           </h2>
           <p className="mt-2 max-w-3xl font-serif text-sm leading-relaxed text-text-secondary md:text-base">
-            Use these internal resources to plan keywords, optimize content structure, and improve
-            search performance while keeping users engaged on site.
+            Keyword planning, on-page structure, and visibility checks—tied to pages that earn clicks and revenue.
           </p>
           <ul className="mt-4 grid gap-2 sm:grid-cols-2">
             {internalResourceLinks.map((item) => (
@@ -341,13 +386,13 @@ export default async function HomePage() {
         <section className="reveal-on-scroll mt-14 md:mt-20" style={{ "--reveal-delay": "110ms" } as CSSProperties}>
           <p className="font-mono text-xs uppercase tracking-[0.16em] text-accent">The problem</p>
           <h2 className="mt-2 font-display text-3xl text-text-primary sm:text-4xl">
-            Why SEO teams miss easy growth windows
+            Traffic leaks when SEO is a pile of tools
           </h2>
           <div className="mt-6 grid gap-4 md:grid-cols-3">
             {[
-              "Too many disconnected tools and handoffs",
-              "Slow movement from brief to publish",
-              "Quality drops as publishing frequency increases",
+              "Fragmented workflows burn time you could spend publishing money pages.",
+              "Slow handoffs mean competitors index first on the same intent.",
+              "Inconsistent execution tanks rankings when you try to scale output.",
             ].map((item) => (
               <article key={item} className="card-premium rounded-xl border border-border/70 bg-surface/40 p-4">
                 <p className="font-serif text-sm leading-relaxed text-text-secondary">{item}</p>
@@ -360,18 +405,18 @@ export default async function HomePage() {
         <section className="reveal-on-scroll mt-14 rounded-2xl border border-border/80 bg-surface/45 p-5 md:mt-20 md:p-8" style={{ "--reveal-delay": "125ms" } as CSSProperties}>
           <p className="font-mono text-xs uppercase tracking-[0.16em] text-accent">The solution</p>
           <h2 className="mt-2 font-display text-3xl text-text-primary sm:text-4xl">
-            One operating system for SEO execution
+            One OS. Full stack. Repeatable revenue.
           </h2>
           <p className="mt-3 max-w-3xl font-serif text-sm leading-relaxed text-text-secondary md:text-base">
-            RankFlowHQ removes workflow friction by centralizing strategy, generation, and optimization
-            so every publish cycle is faster, clearer, and easier to repeat.
+            RankFlowHQ is programmatic SEO infrastructure: briefs, production, on-page discipline, and
+            packaging in one place—so traffic and rankings compound instead of resetting every week.
           </p>
           <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
             <Link href="/seo-agent" className="btn-premium inline-flex min-h-11 items-center justify-center rounded-xl bg-accent px-5 py-3 font-mono text-sm font-semibold text-background">
-              Start Free
+              Start ranking
             </Link>
             <Link href="/pages" className="btn-premium inline-flex min-h-11 items-center justify-center rounded-xl border border-border/90 bg-surface/60 px-5 py-3 font-mono text-sm text-text-secondary">
-              Explore Features
+              See the stack
             </Link>
           </div>
         </section>
@@ -379,10 +424,10 @@ export default async function HomePage() {
         <section className="reveal-on-scroll mt-14 rounded-2xl border border-border/80 bg-surface/45 p-5 md:mt-20 md:p-8">
           <p className="font-mono text-xs uppercase tracking-[0.16em] text-accent">Platform map</p>
           <h2 className="mt-2 font-display text-3xl text-text-primary sm:text-4xl">
-            Modular system, one operating flow
+            Modules that connect into one revenue loop
           </h2>
           <p className="mt-3 max-w-3xl font-serif text-sm leading-relaxed text-text-secondary md:text-base">
-            Inspired by modern SaaS IA: each module solves one job, but all modules connect in a single workflow.
+            Each surface does one job. Together they replace the brittle patchwork that kills scale.
           </p>
           <div className="mt-6 grid gap-3 md:grid-cols-2">
             {platformBlocks.map((block) => (
@@ -402,9 +447,9 @@ export default async function HomePage() {
         <section className="reveal-on-scroll mt-14 md:mt-20" style={{ "--reveal-delay": "140ms" } as CSSProperties}>
           <div className="flex items-end justify-between gap-4">
             <div>
-              <p className="font-mono text-xs uppercase tracking-[0.16em] text-accent">Benefits-driven features</p>
+              <p className="font-mono text-xs uppercase tracking-[0.16em] text-accent">Outcomes, not feature lists</p>
               <h2 className="mt-2 font-display text-3xl text-text-primary sm:text-4xl">
-                What improves in your workflow?
+                Traffic, rankings, revenue—on purpose
               </h2>
             </div>
           </div>
@@ -432,7 +477,7 @@ export default async function HomePage() {
         <section className="reveal-on-scroll section-variant-a mt-14 rounded-2xl border border-border/80 p-5 md:mt-20 md:p-8" style={{ "--reveal-delay": "140ms" } as CSSProperties}>
           <p className="font-mono text-xs uppercase tracking-[0.16em] text-accent">How it works</p>
           <h2 className="mt-2 font-display text-3xl text-text-primary sm:text-4xl">
-            See the workflow in 3 steps
+            Three moves. No theater.
           </h2>
           <div className="mt-8 grid gap-4 md:grid-cols-3">
             {pipelineSteps.map((step) => (
@@ -469,7 +514,7 @@ export default async function HomePage() {
         <section className="reveal-on-scroll mt-14 md:mt-20" style={{ "--reveal-delay": "190ms" } as CSSProperties}>
           <p className="font-mono text-xs uppercase tracking-[0.16em] text-accent">Social proof</p>
           <h2 className="mt-2 font-display text-3xl text-text-primary sm:text-4xl">
-            Why teams stay after trying it once
+            What operators say (preview placeholders)
           </h2>
           <div className="mt-8 grid gap-4 md:grid-cols-3">
             {testimonials.map((item) => (
@@ -494,7 +539,7 @@ export default async function HomePage() {
         <section className="reveal-on-scroll mt-14 rounded-2xl border border-border/80 bg-surface/45 p-5 md:mt-20 md:p-8" style={{ "--reveal-delay": "205ms" } as CSSProperties}>
           <p className="font-mono text-xs uppercase tracking-[0.16em] text-accent">Case studies</p>
           <h2 className="mt-2 font-display text-3xl text-text-primary sm:text-4xl">
-            Real execution stories from growth teams
+            Execution stories: traffic and revenue on the line
           </h2>
           <div className="mt-6 grid gap-4 md:grid-cols-3">
             {caseStudies.map((study) => (
@@ -513,10 +558,10 @@ export default async function HomePage() {
         <section className="reveal-on-scroll mt-14 md:mt-20" style={{ "--reveal-delay": "240ms" } as CSSProperties}>
           <p className="font-mono text-xs uppercase tracking-[0.16em] text-accent">Pricing</p>
           <h2 className="mt-2 font-display text-3xl text-text-primary sm:text-4xl">
-            Choose your growth path without overthinking it
+            Pay for outcomes, not shelfware
           </h2>
           <p className="mt-2 font-mono text-[11px] text-text-muted">
-            Early adopter onboarding support is currently limited.
+            Onboarding is intentionally light—your first ranking push should not wait on a calendar invite.
           </p>
           <div className="mt-8 grid gap-4 md:grid-cols-3">
             {pricingTiers.map((tier) => (
@@ -563,7 +608,7 @@ export default async function HomePage() {
         <section className="reveal-on-scroll section-variant-b mt-14 rounded-2xl border border-border/80 p-5 md:mt-20 md:p-8" style={{ "--reveal-delay": "255ms" } as CSSProperties}>
           <p className="font-mono text-xs uppercase tracking-[0.16em] text-accent">FAQ</p>
           <h2 className="mt-2 font-display text-3xl text-text-primary sm:text-4xl">
-            Common questions before you start
+            Straight answers—no vendor poetry
           </h2>
           <div className="mt-6 space-y-3">
             {faqs.map((item) => (
@@ -578,48 +623,49 @@ export default async function HomePage() {
         </section>
 
         <section className="reveal-on-scroll mt-14 rounded-2xl border border-border/80 bg-surface/45 p-5 md:mt-20 md:p-8" style={{ "--reveal-delay": "262ms" } as CSSProperties}>
-          <p className="font-mono text-xs uppercase tracking-[0.16em] text-accent">Founder credibility</p>
+          <p className="font-mono text-xs uppercase tracking-[0.16em] text-accent">Operator-led</p>
           <h2 className="mt-2 font-display text-3xl text-text-primary sm:text-4xl">
-            Built by operators who run SEO programs
+            Built for people judged on rankings and revenue
           </h2>
           <p className="mt-3 max-w-3xl font-serif text-sm leading-relaxed text-text-secondary md:text-base">
-            RankFlowHQ is shaped by real SEO execution constraints: limited bandwidth, quality variance,
-            and the need to ship consistently. Product decisions are benchmarked against practical publishing outcomes,
-            not vanity features.
+            RankFlowHQ exists because programmatic SEO breaks when execution is scattered. We optimize for
+            shipping velocity, SERP defensibility, and monetization—not demo-day features.
           </p>
           <div className="mt-4 rounded-xl border border-border/70 bg-background/40 p-4">
-            <p className="font-mono text-xs text-text-primary">Founder note</p>
+            <p className="font-mono text-xs text-text-primary">Operator note</p>
             <p className="mt-2 font-serif text-sm text-text-secondary">
-              “Our goal is simple: help teams publish better SEO pages faster, without breaking editorial quality.”
+              &ldquo;We are not here to help you write more words. We are here to help you win more of the SERP—
+              and get paid for it.&rdquo;
             </p>
-            <p className="mt-2 font-mono text-[11px] text-text-muted">— Product & Growth Team, RankFlowHQ (operator-led)</p>
+            <p className="mt-2 font-mono text-[11px] text-text-muted">— RankFlowHQ product team</p>
           </div>
         </section>
 
         {/* 10. Final CTA */}
         <section className="reveal-on-scroll section-variant-a mt-14 rounded-3xl border border-border/80 p-5 md:mt-20 md:p-10" style={{ "--reveal-delay": "270ms" } as CSSProperties}>
           <h2 className="font-display text-3xl text-text-primary sm:text-4xl">
-            Ready to stop losing high-intent traffic to faster teams?
+            Stop donating rankings to operators with a tighter OS.
           </h2>
           <p className="mt-3 max-w-2xl font-serif text-base text-text-secondary">
-            Start with one guided workflow today, then scale with tools, templates, and systems built for growth teams.
+            Run one pipeline from intent to shipped pages. Measure traffic and revenue. Repeat without rebuilding the
+            process every Monday.
           </p>
           <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
             <Link
               href="/seo-agent"
               className="btn-premium pulse-subtle inline-flex min-h-11 items-center justify-center rounded-xl bg-accent px-5 py-3 font-mono text-sm font-semibold text-background transition-all duration-300 hover:-translate-y-0.5 hover:opacity-90"
             >
-              Start Free
+              Start ranking
             </Link>
             <Link
               href="/pricing"
               className="btn-premium inline-flex min-h-11 items-center justify-center rounded-xl border border-border/80 px-5 py-3 font-mono text-sm text-text-secondary transition-all duration-300 hover:-translate-y-0.5 hover:border-accent/70 hover:text-text-primary"
             >
-              Watch Demo
+              See pricing
             </Link>
           </div>
           <p className="mt-3 font-mono text-[11px] text-text-muted">
-            Start in minutes. See measurable output in your first session.
+            Minutes to first shipped page. Weeks to compounding traffic—if you publish like you mean it.
           </p>
         </section>
       </main>
