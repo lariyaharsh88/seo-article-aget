@@ -1,6 +1,6 @@
 import { SiteDomain } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { listStaticBlogPosts } from "@/lib/static-blog-posts";
+import { ALLOWED_BLOG_SLUGS, listStaticBlogPosts } from "@/lib/static-blog-posts";
 import { getSiteUrl } from "@/lib/site-url";
 
 function escapeXml(s: string): string {
@@ -25,15 +25,42 @@ export async function getPublishedBlogSitemapRows(
 
   if (siteDomain === SiteDomain.main) {
     const staticList = await listStaticBlogPosts();
-    const latest = STATIC_BLOG_LASTMOD;
+    let dbPosts: { slug: string; updatedAt: Date }[] = [];
+    try {
+      dbPosts = await prisma.blogPost.findMany({
+        where: {
+          published: true,
+          siteDomain: SiteDomain.main,
+          slug: { notIn: [...ALLOWED_BLOG_SLUGS] },
+        },
+        select: { slug: true, updatedAt: true },
+      });
+    } catch {
+      dbPosts = [];
+    }
+    const staticSlugSet = new Set(staticList.map((s) => s.slug));
+    const times = [
+      STATIC_BLOG_LASTMOD.getTime(),
+      ...dbPosts.map((p) => p.updatedAt.getTime()),
+    ];
+    const indexLastmod = new Date(Math.max(...times, Date.now()));
+
     const entries: BlogSitemapRow[] = [
-      { loc: `${b}/blog`, lastmod: latest, priority: 0.82 },
+      { loc: `${b}/blog`, lastmod: indexLastmod, priority: 0.82 },
     ];
     for (const s of staticList) {
       entries.push({
         loc: `${b}/blog/${encodeURIComponent(s.slug)}`,
-        lastmod: latest,
+        lastmod: STATIC_BLOG_LASTMOD,
         priority: 0.72,
+      });
+    }
+    for (const p of dbPosts) {
+      if (staticSlugSet.has(p.slug)) continue;
+      entries.push({
+        loc: `${b}/blog/${encodeURIComponent(p.slug)}`,
+        lastmod: p.updatedAt,
+        priority: 0.68,
       });
     }
     return entries;

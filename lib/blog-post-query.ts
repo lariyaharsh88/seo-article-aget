@@ -59,14 +59,47 @@ const publishedBlogSelect = {
 
 /**
  * List published posts for `/blog` / `/blogs`.
- * Main site (`rankflowhq.com`): curated static AI + SEO articles only (see `ALLOWED_BLOG_SLUGS`).
+ * Main site (`rankflowhq.com`): curated static articles (`content/blog-seo-articles`) **plus**
+ * published PostgreSQL posts created from `/blog-create` / API (`siteDomain: main`).
  * Other domains: PostgreSQL `BlogPost` rows only.
  */
 export async function listPublishedBlogPosts(
   siteDomain: SiteDomain,
 ): Promise<PublishedBlogListItem[]> {
   if (siteDomain === SiteDomain.main) {
-    return await listStaticBlogPosts();
+    const staticItems = await listStaticBlogPosts();
+    let dbItems: PublishedBlogListItem[] = [];
+    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+      try {
+        const rows = await prisma.blogPost.findMany({
+          where: {
+            published: true,
+            siteDomain: SiteDomain.main,
+            slug: { notIn: [...ALLOWED_BLOG_SLUGS] },
+          },
+          orderBy: { createdAt: "desc" },
+          select: publishedBlogSelect,
+        });
+        dbItems = rows;
+        break;
+      } catch (err) {
+        if (attempt < MAX_ATTEMPTS && isRetryablePrismaError(err)) {
+          await sleep(Math.min(120 * 2 ** (attempt - 1), 2000));
+          continue;
+        }
+        dbItems = [];
+        break;
+      }
+    }
+    const seen = new Set(staticItems.map((p) => p.slug));
+    const merged: PublishedBlogListItem[] = [...staticItems];
+    for (const row of dbItems) {
+      if (seen.has(row.slug)) continue;
+      merged.push(row);
+      seen.add(row.slug);
+    }
+    merged.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    return merged;
   }
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     try {
