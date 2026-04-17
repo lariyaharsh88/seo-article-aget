@@ -137,6 +137,32 @@ export async function findPublishedBlogPostBySlug(
   return null;
 }
 
+/** Published education blog post on `education.rankflowhq.com` only (`/blogs` surface). */
+export async function findPublishedEducationBlogPostBySlug(
+  rawSlug: string,
+): Promise<BlogPost | null> {
+  const slug = normalizeBlogSlugParam(rawSlug);
+  if (!slug) return null;
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    try {
+      return await prisma.blogPost.findFirst({
+        where: {
+          published: true,
+          siteDomain: SiteDomain.education,
+          slug,
+        },
+      });
+    } catch (err) {
+      if (attempt < MAX_ATTEMPTS && isRetryablePrismaError(err)) {
+        await sleep(Math.min(120 * 2 ** (attempt - 1), 2000));
+        continue;
+      }
+      return null;
+    }
+  }
+  return null;
+}
+
 /** Other published posts for bottom-of-article internal links (newest first). */
 export async function listPublishedBlogPostsExceptSlug(
   rawExcludeSlug: string,

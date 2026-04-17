@@ -82,11 +82,13 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url, 308);
   }
 
+  /**
+   * Education-only blog index and posts live under `/blogs` (PostgreSQL `siteDomain: education`).
+   * `/blog` stays on the main domain for canonical SEO.
+   */
   if (
     isEducationHost &&
-    (path === "/blogs" ||
-      path.startsWith("/blogs/") ||
-      path === "/blog" ||
+    (path === "/blog" ||
       path.startsWith("/blog/") ||
       path === "/article" ||
       path.startsWith("/article/") ||

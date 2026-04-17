@@ -122,9 +122,11 @@ export function BlogCreateFromTopics() {
             Created drafts ({createdRows.length})
           </h2>
           <p className="mt-2 font-serif text-sm text-text-secondary">
-            View and edit on the main site blog admin, or open by slug (education{" "}
-            <code className="rounded bg-background/60 px-1 font-mono text-xs">siteDomain</code>
-            ).
+            After you publish, posts appear under{" "}
+            <Link href="/blogs" className="text-accent hover:underline">
+              /blogs
+            </Link>{" "}
+            on this subdomain only.
           </p>
           <ul className="mt-4 space-y-3">
             {createdRows.map((row) => (
@@ -139,13 +141,12 @@ export function BlogCreateFromTopics() {
                 <p className="mt-1 font-mono text-[11px] text-text-muted">
                   Slug:{" "}
                   <Link
-                    href={`https://rankflowhq.com/blog/${encodeURIComponent(row.slug)}`}
+                    href={`/blogs/${encodeURIComponent(row.slug)}`}
                     className="text-accent underline-offset-2 hover:underline"
-                    target="_blank"
-                    rel="noopener noreferrer"
                   >
                     {row.slug}
-                  </Link>
+                  </Link>{" "}
+                  (live after publish)
                 </p>
               </li>
             ))}

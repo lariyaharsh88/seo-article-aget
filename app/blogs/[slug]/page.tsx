@@ -1,7 +1,7 @@
 import { SiteDomain, type BlogPost } from "@prisma/client";
 import Link from "next/link";
 import { unstable_noStore as noStore } from "next/cache";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { addHeadingIdsToHtml, extractTocFromMarkdown } from "@/lib/blog-toc";
 import { markdownToArticleBodyHtml } from "@/lib/markdown-to-html";
 import {
@@ -13,6 +13,7 @@ import { JsonLd } from "@/components/JsonLd";
 import { DEFAULT_ARTICLE_AUTHOR_NAME } from "@/lib/article-author";
 import {
   findPublishedBlogPostBySlug,
+  findPublishedEducationBlogPostBySlug,
   listPublishedBlogPostsExceptSlug,
 } from "@/lib/blog-post-query";
 import { buildPageMetadata } from "@/lib/seo-page";
@@ -20,6 +21,7 @@ import { buildBlogPostingSchema } from "@/lib/schema-org";
 import { getRequestSiteOrigin } from "@/lib/request-site-origin";
 import { SITE_NAME } from "@/lib/seo-site";
 import { permanentRedirectIfWrongSiteDomain } from "@/lib/site-domain-redirect";
+import { getRequestSiteDomain } from "@/lib/site-domain";
 
 type Props = { params: { slug: string } };
 
@@ -32,10 +34,14 @@ export async function generateMetadata({ params }: Props) {
     | { publishedTime: string; modifiedTime: string }
     | undefined;
   try {
-    const post = await findPublishedBlogPostBySlug(params.slug);
+    const requestDomain = await getRequestSiteDomain();
+    const post =
+      requestDomain === SiteDomain.education
+        ? await findPublishedEducationBlogPostBySlug(params.slug)
+        : await findPublishedBlogPostBySlug(params.slug);
     if (post) {
       await permanentRedirectIfWrongSiteDomain(
-        SiteDomain.main,
+        post.siteDomain,
         `/blogs/${params.slug}`,
       );
       title = post.title;
@@ -60,10 +66,15 @@ export async function generateMetadata({ params }: Props) {
 
 export default async function BlogPostPage({ params }: Props) {
   noStore();
+  const requestDomain = await getRequestSiteDomain();
+  if (requestDomain === SiteDomain.main) {
+    redirect(`/blog/${encodeURIComponent(params.slug)}`);
+  }
+
   const siteOrigin = await getRequestSiteOrigin();
   let post: BlogPost | null = null;
   try {
-    post = await findPublishedBlogPostBySlug(params.slug);
+    post = await findPublishedEducationBlogPostBySlug(params.slug);
   } catch (err) {
     console.error("[blogs/[slug]] database error:", err);
     /** Real HTTP error via segment error.tsx — avoids Soft 404 (200 + error copy) in Search Console. */
@@ -75,7 +86,7 @@ export default async function BlogPostPage({ params }: Props) {
   }
 
   await permanentRedirectIfWrongSiteDomain(
-    SiteDomain.main,
+    SiteDomain.education,
     `/blogs/${params.slug}`,
   );
 
@@ -84,15 +95,15 @@ export default async function BlogPostPage({ params }: Props) {
     peerPosts = await listPublishedBlogPostsExceptSlug(
       post.slug,
       6,
-      SiteDomain.main,
+      SiteDomain.education,
     );
   } catch (e) {
     console.error("[blogs/[slug]] peer posts:", e);
   }
   const relatedBlogLinks = peerPosts.slice(0, 2);
   const fallbackBlogLinks = [
-    { href: "/blog", label: "Explore all blog posts" },
-    { href: "/blogs", label: "Browse legacy blog archive" },
+    { href: "/news", label: "Education news" },
+    { href: "/blogs", label: "All education blog posts" },
   ] as const;
 
   const toc = extractTocFromMarkdown(post.content);
