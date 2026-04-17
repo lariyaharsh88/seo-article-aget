@@ -55,6 +55,7 @@ export async function middleware(request: NextRequest) {
       "/pricing",
       "/about",
       "/pages",
+      "/create-blog",
       "/privacy",
       "/terms",
     ]);
@@ -149,14 +150,17 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url, 308);
   }
 
-  if (request.nextUrl.pathname.startsWith("/blog-create")) {
+  if (
+    request.nextUrl.pathname.startsWith("/blog-create") ||
+    request.nextUrl.pathname.startsWith("/create-blog")
+  ) {
     const token = await getToken({
       req: request,
       secret: process.env.NEXTAUTH_SECRET,
     });
     if (!token) {
       const url = new URL("/auth/signin", request.url);
-      url.searchParams.set("callbackUrl", "/blog-create");
+      url.searchParams.set("callbackUrl", request.nextUrl.pathname);
       return NextResponse.redirect(url);
     }
   }

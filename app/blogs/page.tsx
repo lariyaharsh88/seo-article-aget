@@ -4,7 +4,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { JsonLd } from "@/components/JsonLd";
 import { ListPagination } from "@/components/ListPagination";
-import { getCachedPublishedBlogPostsPage } from "@/lib/cached-blog-posts";
+import { prisma } from "@/lib/prisma";
 import { LIST_PAGE_SIZE, parseListPageParam } from "@/lib/list-pagination";
 import { buildPageMetadata } from "@/lib/seo-page";
 import { ToolExplainerSection } from "@/components/ToolExplainerSection";
@@ -55,19 +55,39 @@ export default async function BlogsIndexPage({ searchParams }: Props) {
   const siteOrigin = await getRequestSiteOrigin();
   const markdown = await getToolExplainerMarkdown("blogs");
   const requestedPage = parseListPageParam(searchParams?.page);
-  let posts: Awaited<
-    ReturnType<typeof getCachedPublishedBlogPostsPage>
-  >["items"] = [];
+  let posts: {
+    id: string;
+    slug: string;
+    title: string;
+    excerpt: string | null;
+    createdAt: Date;
+    published: boolean;
+  }[] = [];
   let total = 0;
   let listError = false;
   try {
-    const result = await getCachedPublishedBlogPostsPage(
-      requestedPage,
-      LIST_PAGE_SIZE,
-      SiteDomain.education,
-    );
-    posts = result.items;
-    total = result.total;
+    const skip = (requestedPage - 1) * LIST_PAGE_SIZE;
+    const [count, rows] = await Promise.all([
+      prisma.blogPost.count({
+        where: { siteDomain: SiteDomain.education },
+      }),
+      prisma.blogPost.findMany({
+        where: { siteDomain: SiteDomain.education },
+        select: {
+          id: true,
+          slug: true,
+          title: true,
+          excerpt: true,
+          createdAt: true,
+          published: true,
+        },
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: LIST_PAGE_SIZE,
+      }),
+    ]);
+    posts = rows;
+    total = count;
   } catch (err) {
     console.error("[blogs] education list:", err);
     listError = true;
@@ -107,7 +127,7 @@ export default async function BlogsIndexPage({ searchParams }: Props) {
             Articles
           </h1>
           <p className="mt-3 max-w-xl font-serif text-text-secondary">
-            Published posts for the education subdomain only (same database rows as{" "}
+            All posts created for the education subdomain (same database rows as{" "}
             <code className="rounded bg-background/50 px-1 font-mono text-xs">
               siteDomain: education
             </code>
@@ -118,7 +138,7 @@ export default async function BlogsIndexPage({ searchParams }: Props) {
         <ul className="mt-4 space-y-6">
           {!listError && posts.length === 0 ? (
             <li className="space-y-2 font-serif text-text-muted">
-              <p>No published education blog posts yet.</p>
+              <p>No education blog posts yet.</p>
             </li>
           ) : listError ? null : (
             posts.map((post) => (
@@ -135,22 +155,35 @@ export default async function BlogsIndexPage({ searchParams }: Props) {
                     })}
                   </time>
                   <h3 className="mt-2 font-display text-2xl text-text-primary group-hover:text-accent">
-                    <Link href={`/blogs/${post.slug}`} prefetch={false}>
-                      {post.title}
-                    </Link>
+                    {post.published ? (
+                      <Link href={`/blogs/${post.slug}`} prefetch={false}>
+                        {post.title}
+                      </Link>
+                    ) : (
+                      post.title
+                    )}
                   </h3>
+                  <p className="mt-2 font-mono text-[11px] uppercase tracking-[0.14em] text-text-muted">
+                    {post.published ? "Published" : "Draft"}
+                  </p>
                   {post.excerpt && (
                     <p className="mt-2 font-serif text-sm text-text-secondary line-clamp-3">
                       {post.excerpt}
                     </p>
                   )}
-                  <Link
-                    href={`/blogs/${post.slug}`}
-                    prefetch={false}
-                    className="mt-3 inline-block font-mono text-xs text-accent"
-                  >
-                    Read more →
-                  </Link>
+                  {post.published ? (
+                    <Link
+                      href={`/blogs/${post.slug}`}
+                      prefetch={false}
+                      className="mt-3 inline-block font-mono text-xs text-accent"
+                    >
+                      Read more →
+                    </Link>
+                  ) : (
+                    <p className="mt-3 font-mono text-xs text-text-muted">
+                      Draft not public yet.
+                    </p>
+                  )}
                 </article>
               </li>
             ))
