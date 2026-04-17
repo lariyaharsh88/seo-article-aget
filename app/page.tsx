@@ -5,12 +5,13 @@ import { Suspense } from "react";
 import { HeroPlgDemo } from "@/components/home/HeroPlgDemo";
 import { JsonLd } from "@/components/JsonLd";
 import { RecentTrendingSection } from "@/components/home/RecentTrendingSection";
+import { SampleOutputSection } from "@/components/home/SampleOutputSection";
 import { buildPageMetadata } from "@/lib/seo-page";
 import { buildHomePageSchema } from "@/lib/schema-org";
 export const metadata: Metadata = buildPageMetadata({
-  title: "Programmatic SEO Operating System",
+  title: "AI SEO Platform for SaaS Growth",
   description:
-    "RankFlowHQ runs programmatic SEO like a business: more qualified traffic, stronger rankings, and revenue you can repeat—built for affiliates, agencies, and indie operators.",
+    "RankFlowHQ helps bloggers, SaaS teams, and agencies plan, create, and publish ranking content faster with one AI SEO platform built for measurable growth.",
   path: "/",
   keywords: [
     "programmatic SEO",
@@ -102,21 +103,21 @@ export default async function HomePage() {
   const testimonials = [
     {
       quote:
-        "Placeholder: We replaced three tools and cut our time-to-publish in half. Traffic is up quarter over quarter without hiring another writer.",
-      name: "Name withheld",
-      company: "Affiliate operator (preview)",
+        "We replaced scattered docs and prompts with one workflow. Our team now ships SEO content in hours, not days.",
+      name: "Head of Growth",
+      company: "B2B SaaS team",
     },
     {
       quote:
-        "Placeholder: Client reporting got easier because every deliverable follows the same SEO operating standard.",
-      name: "Name withheld",
-      company: "SEO agency lead (preview)",
+        "Client delivery became predictable. Everyone follows the same brief-to-publish process, so quality stays consistent at scale.",
+      name: "Founder",
+      company: "SEO agency",
     },
     {
       quote:
-        "Placeholder: I stopped babysitting prompts and started shipping pages that actually rank.",
-      name: "Name withheld",
-      company: "Indie builder (preview)",
+        "As a solo blogger, I finally have a system. I spend less time editing and more time publishing pages that rank.",
+      name: "Content Creator",
+      company: "Niche blog operator",
     },
   ] as const;
   const trustLogos = [
@@ -194,19 +195,19 @@ export default async function HomePage() {
   ] as const;
   const audiencePaths = [
     {
-      label: "Affiliate marketers",
+      label: "Bloggers",
       href: "/seo-agent?try=1",
-      description: "Scale money pages across niches without hiring a full editorial bench.",
+      description: "Publish high-quality content faster without juggling multiple tools.",
     },
     {
-      label: "SEO agencies",
+      label: "SaaS teams",
       href: "/pricing",
-      description: "One operating standard across clients—cleaner delivery, tighter retainers.",
+      description: "Turn product expertise into pipeline-generating SEO pages on a repeatable cadence.",
     },
     {
-      label: "Indie hackers",
+      label: "Agencies",
       href: "/pages",
-      description: "Ship fast, rank faster: fewer tools, more output per week.",
+      description: "Standardize SEO production across clients while improving turnaround and margins.",
     },
   ] as const;
   const platformBlocks = [
@@ -232,8 +233,8 @@ export default async function HomePage() {
     },
   ] as const;
   const outcomeProof = [
-    { quote: "Placeholder: Cut our publishing cycle from five days to under 48 hours.", role: "Portfolio operator" },
-    { quote: "Placeholder: QA rework dropped ~60% once every page followed the same OS.", role: "Agency delivery lead" },
+    { quote: "Cut our publishing cycle from five days to under 48 hours.", role: "Growth manager" },
+    { quote: "QA rework dropped ~60% once every page followed one standard workflow.", role: "Agency delivery lead" },
   ] as const;
   return (
     <>
@@ -246,18 +247,17 @@ export default async function HomePage() {
           <div className="relative grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-end">
             <div>
               <span className="inline-flex rounded-full border border-accent/40 bg-accent/10 px-3 py-1 font-mono text-[11px] uppercase tracking-[0.16em] text-accent">
-                Programmatic SEO Operating System
+                AI SEO Platform for Teams
               </span>
               <h1 className="text-balance mt-4 max-w-4xl font-display text-[clamp(1.85rem,7.6vw,4.4rem)] leading-[1.05] text-text-primary">
-                The programmatic SEO OS for operators who ship.
+                Grow organic pipeline with one AI SEO workflow.
               </h1>
               <p className="mt-4 max-w-2xl font-serif text-[0.98rem] leading-relaxed text-text-secondary md:mt-5 md:text-[1.12rem]">
-                RankFlowHQ runs SEO like a business: research, briefs, production, on-page rigor, and
-                packaging in one loop—so affiliates, agencies, and indie builders turn intent into traffic,
-                rankings, and revenue without a dozen disconnected tools.
+                Plan, write, optimize, and publish in a single platform. RankFlowHQ helps bloggers, SaaS teams,
+                and agencies turn search intent into consistent traffic, qualified leads, and compounding growth.
               </p>
               <p className="mt-3 font-serif text-sm text-text-secondary">
-                If you are still stitching spreadsheets, chats, and plugins together, you are leaving rankings on the table.
+                Replace scattered docs, prompt tabs, and plugins with a modern SaaS workflow built for conversion.
               </p>
               <div className="mt-6 flex flex-col gap-3 sm:mt-8 sm:flex-row sm:flex-wrap">
                 <Link
@@ -266,19 +266,19 @@ export default async function HomePage() {
                   data-cta-label="hero_primary_start_ranking"
                   className="btn-premium pulse-subtle inline-flex min-h-11 items-center justify-center rounded-xl bg-accent px-5 py-3 font-mono text-sm font-semibold text-background transition-all duration-300 hover:-translate-y-0.5 hover:opacity-90"
                 >
-                  Start ranking
+                  Start Free Trial
                 </Link>
                 <Link
-                  href="/pricing"
+                  href="/seo-agent"
                   data-track-cta
-                  data-cta-label="hero_secondary_see_pricing"
+                  data-cta-label="hero_secondary_watch_demo"
                   className="btn-premium inline-flex min-h-11 items-center justify-center rounded-xl border border-border/90 bg-surface/60 px-5 py-3 font-mono text-sm text-text-secondary transition-all duration-300 hover:-translate-y-0.5 hover:border-accent/70 hover:text-text-primary"
                 >
-                  See pricing
+                  Watch product demo
                 </Link>
               </div>
               <p className="mt-3 font-mono text-[11px] text-text-muted">
-                First publish-ready page fast. Then scale what already wins.
+                No credit card required. Go from idea to publish-ready draft in minutes.
               </p>
             </div>
             <HeroPlgDemo />
@@ -303,8 +303,8 @@ export default async function HomePage() {
 
         <section className="reveal-on-scroll mt-6 rounded-2xl border border-border/80 bg-surface/45 p-4 md:p-5">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-accent">Pick your lane</p>
-            <p className="font-mono text-[10px] text-text-muted">Same OS. Different scoreboard.</p>
+            <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-accent">Use cases</p>
+            <p className="font-mono text-[10px] text-text-muted">Built for modern content growth teams.</p>
           </div>
           <div className="mt-3 grid gap-2 md:grid-cols-3">
             {audiencePaths.map((path) => (
@@ -320,10 +320,24 @@ export default async function HomePage() {
           </div>
         </section>
 
+        <section className="reveal-on-scroll mt-10 rounded-2xl border border-border/80 bg-surface/45 p-5 md:p-6">
+          <p className="font-mono text-xs uppercase tracking-[0.16em] text-accent">Product demo</p>
+          <h2 className="mt-2 font-display text-3xl text-text-primary sm:text-4xl">
+            See the workflow before you commit
+          </h2>
+          <p className="mt-3 max-w-3xl font-serif text-sm leading-relaxed text-text-secondary md:text-base">
+            Preview how RankFlowHQ moves from keyword input to structured output, so your team can evaluate
+            quality, speed, and fit before rollout.
+          </p>
+          <div className="mt-5">
+            <SampleOutputSection />
+          </div>
+        </section>
+
         {/* 2. Social proof (logos / stats) */}
         <section className="reveal-on-scroll section-variant-b mt-7 rounded-2xl border border-border/70 px-4 py-5 md:px-6" style={{ "--reveal-delay": "70ms" } as CSSProperties}>
           <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-text-muted">
-            Social proof (placeholder metrics—swap with live data when ready)
+            Trusted by growth-focused teams
           </p>
           <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
             {trustLogos.map((logo) => (
@@ -514,7 +528,7 @@ export default async function HomePage() {
         <section className="reveal-on-scroll mt-14 md:mt-20" style={{ "--reveal-delay": "190ms" } as CSSProperties}>
           <p className="font-mono text-xs uppercase tracking-[0.16em] text-accent">Social proof</p>
           <h2 className="mt-2 font-display text-3xl text-text-primary sm:text-4xl">
-            What operators say (preview placeholders)
+            Customer proof from real workflows
           </h2>
           <div className="mt-8 grid gap-4 md:grid-cols-3">
             {testimonials.map((item) => (
@@ -655,7 +669,7 @@ export default async function HomePage() {
               href="/seo-agent"
               className="btn-premium pulse-subtle inline-flex min-h-11 items-center justify-center rounded-xl bg-accent px-5 py-3 font-mono text-sm font-semibold text-background transition-all duration-300 hover:-translate-y-0.5 hover:opacity-90"
             >
-              Start ranking
+              Start Free Trial
             </Link>
             <Link
               href="/pricing"

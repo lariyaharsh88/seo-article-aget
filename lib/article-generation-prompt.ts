@@ -39,10 +39,10 @@ EEAT ON-PAGE SIGNALS (required sections — use markdown):
 export function buildStructuredDataAndDataSectionsBlock(): string {
   return `
 STRUCTURED DATA, TABLES, AND DATA-BACKED COPY:
-1. **FAQ schema (JSON-LD):** After the full article body (after Conclusion), output **one** fenced code block with language tag \`json\` containing **only** valid JSON-LD for \`@type: FAQPage\` with a \`mainEntity\` array matching the on-page FAQ questions you wrote (same wording). Example shape:
-   \`\`\`json
+1. **FAQ schema (JSON-LD):** After the full article body (after Conclusion), output **one** fenced code block with language tag json containing only valid JSON-LD for @type: FAQPage with a mainEntity array matching the on-page FAQ questions you wrote (same wording). Example shape:
+   ~~~json
    {"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"...","acceptedAnswer":{"@type":"Answer","text":"..."}}]}
-   \`\`\`
+   ~~~
 2. **Tables:** Include **at least 2** markdown tables: one comparing options/criteria relevant to the topic, one for dates/checklists/steps or metrics — with a short caption line above each table (plain text, not a heading).
 3. **Data-backed sections:** Include **one** H2 or H3 section titled to imply data (e.g. "What the numbers say" or "Key facts at a glance") with **specific** numbers, ranges, or dates taken from RESEARCH FACTS — each numeric claim tied to an inline citation like [Source: domain] or linked source.
 `;
