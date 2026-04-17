@@ -9,7 +9,10 @@ import { ArticleRenderer } from "@/components/ArticleRenderer";
 import { ArticleSeoScorecard } from "@/components/ArticleSeoScorecard";
 import { LiveLog } from "@/components/LiveLog";
 import { PipelineProgress } from "@/components/PipelineProgress";
-import { runArticlePipeline } from "@/lib/article-pipeline";
+import {
+  DEFAULT_ARTICLE_PIPELINE_AUDIENCE,
+  runArticlePipeline,
+} from "@/lib/article-pipeline";
 import { computeArticleSeoScore } from "@/lib/article-seo-score";
 import { DEFAULT_ARTICLE_AUTHOR_NAME } from "@/lib/article-author";
 import { slugify } from "@/lib/blog-slug";
@@ -21,9 +24,6 @@ type Props = {
   /** Set when server-side DB load failed (avoids a 500 on /blog-create). */
   loadError?: string | null;
 };
-
-const DEFAULT_AUDIENCE =
-  "Typical Indian English readers interested in clear, practical English.";
 
 /** Comma-separated topics; ignores empty segments. */
 function parseTopics(raw: string): string[] {
@@ -74,7 +74,7 @@ export function BlogCreateClient({ initialPosts, loadError }: Props) {
   }, [initialPosts]);
 
   const [topic, setTopic] = useState("");
-  const [audience, setAudience] = useState(DEFAULT_AUDIENCE);
+  const [audience, setAudience] = useState(DEFAULT_ARTICLE_PIPELINE_AUDIENCE);
   const [running, setRunning] = useState(false);
   const [stage, setStage] = useState<string | null>(null);
   const [doneStages, setDoneStages] = useState<string[]>([]);

@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import { MAX_FULL_ARTICLE_TOPICS_PER_REQUEST } from "@/lib/article-bulk-limits";
 
 type CreatedRow = {
   id: string;
@@ -10,11 +11,14 @@ type CreatedRow = {
   slug: string;
 };
 
+type FailedRow = { topic: string; error: string };
+
 export function BlogCreateFromTopics() {
   const [topicsText, setTopicsText] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [createdRows, setCreatedRows] = useState<CreatedRow[]>([]);
+  const [failedRows, setFailedRows] = useState<FailedRow[]>([]);
 
   const topicPreview = useMemo(() => {
     const seen = new Set<string>();
@@ -28,13 +32,14 @@ export function BlogCreateFromTopics() {
         seen.add(key);
         return true;
       })
-      .slice(0, 50);
+      .slice(0, MAX_FULL_ARTICLE_TOPICS_PER_REQUEST);
   }, [topicsText]);
 
   async function handleCreate() {
     setSubmitting(true);
     setError(null);
     setCreatedRows([]);
+    setFailedRows([]);
     try {
       const res = await fetch("/api/education-blog/create", {
         method: "POST",
@@ -45,12 +50,14 @@ export function BlogCreateFromTopics() {
       const data = (await res.json()) as {
         error?: string;
         created?: CreatedRow[];
+        errors?: FailedRow[];
       };
       if (!res.ok) {
-        setError(data.error || "Failed to create blog drafts.");
+        setError(data.error || "Failed to generate blog posts.");
         return;
       }
       setCreatedRows(data.created || []);
+      setFailedRows(data.errors || []);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Request failed.");
     } finally {
@@ -65,12 +72,12 @@ export function BlogCreateFromTopics() {
           Education subdomain
         </p>
         <h1 className="mt-2 font-display text-3xl text-text-primary sm:text-4xl">
-          Create blog drafts from topics
+          Create blog posts from topics
         </h1>
         <p className="mt-3 max-w-2xl font-serif text-sm text-text-secondary md:text-base">
-          Enter comma-separated topics. Each topic becomes an unpublished education{" "}
-          <code className="rounded bg-background/60 px-1 font-mono text-xs">BlogPost</code>{" "}
-          draft you can edit and publish later.
+          Enter comma-separated topics (max {MAX_FULL_ARTICLE_TOPICS_PER_REQUEST} per run).
+          Each topic runs the full SEO article pipeline and saves a published education{" "}
+          <code className="rounded bg-background/60 px-1 font-mono text-xs">BlogPost</code>.
         </p>
 
         <label className="mt-5 block">
@@ -97,7 +104,7 @@ export function BlogCreateFromTopics() {
         </div>
 
         <p className="mt-3 font-mono text-[11px] text-text-muted">
-          Drafts to create: {topicPreview.length}
+          Topics in this run: {topicPreview.length}
         </p>
 
         <button
@@ -106,7 +113,7 @@ export function BlogCreateFromTopics() {
           disabled={submitting || topicPreview.length === 0}
           className="btn-premium mt-5 inline-flex min-h-11 items-center justify-center rounded-xl bg-accent px-5 py-3 font-mono text-sm font-semibold text-background disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {submitting ? "Creating..." : "Create blog drafts"}
+          {submitting ? "Generating (can take several minutes)…" : "Generate & publish"}
         </button>
 
         {error ? (
@@ -116,17 +123,32 @@ export function BlogCreateFromTopics() {
         ) : null}
       </section>
 
+      {failedRows.length > 0 ? (
+        <section className="mt-6 rounded-2xl border border-amber-400/40 bg-amber-500/10 p-5 md:p-8">
+          <h2 className="font-display text-xl text-text-primary">
+            Failed ({failedRows.length})
+          </h2>
+          <ul className="mt-3 space-y-2 font-mono text-xs text-text-secondary">
+            {failedRows.map((f) => (
+              <li key={f.topic}>
+                <span className="text-text-primary">{f.topic}</span> — {f.error}
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
       {createdRows.length > 0 ? (
         <section className="mt-6 rounded-2xl border border-border/80 bg-surface/45 p-5 md:p-8">
           <h2 className="font-display text-2xl text-text-primary">
-            Created drafts ({createdRows.length})
+            Published posts ({createdRows.length})
           </h2>
           <p className="mt-2 font-serif text-sm text-text-secondary">
-            After you publish, posts appear under{" "}
+            Listed under{" "}
             <Link href="/blogs" className="text-accent hover:underline">
               /blogs
             </Link>{" "}
-            on this subdomain only.
+            on this subdomain.
           </p>
           <ul className="mt-4 space-y-3">
             {createdRows.map((row) => (
@@ -145,8 +167,7 @@ export function BlogCreateFromTopics() {
                     className="text-accent underline-offset-2 hover:underline"
                   >
                     {row.slug}
-                  </Link>{" "}
-                  (live after publish)
+                  </Link>
                 </p>
               </li>
             ))}

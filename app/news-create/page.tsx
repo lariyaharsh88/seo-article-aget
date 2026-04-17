@@ -1,6 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
+import { MAX_FULL_ARTICLE_TOPICS_PER_REQUEST } from "@/lib/article-bulk-limits";
 
 type CreatedRow = {
   id: string;
@@ -9,11 +11,14 @@ type CreatedRow = {
   url: string;
 };
 
+type FailedRow = { topic: string; error: string };
+
 export default function NewsCreatePage() {
   const [topicsText, setTopicsText] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [createdRows, setCreatedRows] = useState<CreatedRow[]>([]);
+  const [failedRows, setFailedRows] = useState<FailedRow[]>([]);
 
   const topicPreview = useMemo(() => {
     const seen = new Set<string>();
@@ -27,28 +32,32 @@ export default function NewsCreatePage() {
         seen.add(key);
         return true;
       })
-      .slice(0, 50);
+      .slice(0, MAX_FULL_ARTICLE_TOPICS_PER_REQUEST);
   }, [topicsText]);
 
   async function handleCreate() {
     setSubmitting(true);
     setError(null);
     setCreatedRows([]);
+    setFailedRows([]);
     try {
       const res = await fetch("/api/education-news/create", {
         method: "POST",
+        credentials: "same-origin",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ topics: topicsText }),
       });
       const data = (await res.json()) as {
         error?: string;
         created?: CreatedRow[];
+        errors?: FailedRow[];
       };
       if (!res.ok) {
-        setError(data.error || "Failed to create topics.");
+        setError(data.error || "Failed to generate news articles.");
         return;
       }
       setCreatedRows(data.created || []);
+      setFailedRows(data.errors || []);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Request failed.");
     } finally {
@@ -63,10 +72,13 @@ export default function NewsCreatePage() {
           Education subdomain
         </p>
         <h1 className="mt-2 font-display text-3xl text-text-primary sm:text-4xl">
-          Create News From Topics
+          Create news from topics
         </h1>
         <p className="mt-3 max-w-2xl font-serif text-sm text-text-secondary md:text-base">
-          Enter comma-separated topics. We will create education news article entries in bulk.
+          Enter comma-separated topics (max {MAX_FULL_ARTICLE_TOPICS_PER_REQUEST} per run). Each
+          topic runs the full SEO article pipeline (same as blog generation), then saves a ready
+          repurposed article at <span className="font-mono text-accent">/news/[slug]</span>. You
+          must be signed in as the blog admin account.
         </p>
 
         <label className="mt-5 block">
@@ -93,7 +105,7 @@ export default function NewsCreatePage() {
         </div>
 
         <p className="mt-3 font-mono text-[11px] text-text-muted">
-          Topics to create: {topicPreview.length}
+          Topics in this run: {topicPreview.length}
         </p>
 
         <button
@@ -102,7 +114,7 @@ export default function NewsCreatePage() {
           disabled={submitting || topicPreview.length === 0}
           className="btn-premium mt-5 inline-flex min-h-11 items-center justify-center rounded-xl bg-accent px-5 py-3 font-mono text-sm font-semibold text-background disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {submitting ? "Creating..." : "Create articles"}
+          {submitting ? "Generating (can take several minutes)…" : "Generate & publish to /news"}
         </button>
 
         {error ? (
@@ -112,10 +124,25 @@ export default function NewsCreatePage() {
         ) : null}
       </section>
 
+      {failedRows.length > 0 ? (
+        <section className="mt-6 rounded-2xl border border-amber-400/40 bg-amber-500/10 p-5 md:p-8">
+          <h2 className="font-display text-xl text-text-primary">
+            Failed ({failedRows.length})
+          </h2>
+          <ul className="mt-3 space-y-2 font-mono text-xs text-text-secondary">
+            {failedRows.map((f) => (
+              <li key={f.topic}>
+                <span className="text-text-primary">{f.topic}</span> — {f.error}
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
       {createdRows.length > 0 ? (
         <section className="mt-6 rounded-2xl border border-border/80 bg-surface/45 p-5 md:p-8">
           <h2 className="font-display text-2xl text-text-primary">
-            Created Articles ({createdRows.length})
+            Published on /news ({createdRows.length})
           </h2>
           <ul className="mt-4 space-y-3">
             {createdRows.map((row) => (
@@ -127,8 +154,10 @@ export default function NewsCreatePage() {
                 <p className="mt-1 font-mono text-[11px] text-text-muted">
                   Topic: {row.topic}
                 </p>
-                <p className="mt-1 break-all font-mono text-[11px] text-text-muted">
-                  Source URL: {row.url}
+                <p className="mt-1 break-all font-mono text-[11px] text-accent">
+                  <Link href={row.url} className="underline-offset-2 hover:underline">
+                    {row.url}
+                  </Link>
                 </p>
               </li>
             ))}

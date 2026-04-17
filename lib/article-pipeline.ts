@@ -27,6 +27,16 @@ function isFeaturedSnippet(v: unknown): v is FeaturedSnippet {
   return typeof o.text === "string" && o.text.trim().length > 0;
 }
 
+/** Same default as /blog-create — Indian English readers. */
+export const DEFAULT_ARTICLE_PIPELINE_AUDIENCE =
+  "Typical Indian English readers interested in clear, practical English.";
+
+function resolveApiUrl(path: string, fetchBaseUrl?: string): string {
+  const p = path.startsWith("/") ? path : `/${path}`;
+  const b = fetchBaseUrl?.trim().replace(/\/$/, "") ?? "";
+  return b ? `${b}${p}` : p;
+}
+
 export type ArticlePipelineConfig = {
   topic: string;
   audience: string;
@@ -35,6 +45,11 @@ export type ArticlePipelineConfig = {
   primaryKeyword: string;
   searchConsoleQueries: string[];
   googleSuggestions: string[];
+  /**
+   * Server-side runs: set to `getSiteUrl()` so `fetch` targets this app’s API routes.
+   * Browser runs: omit for same-origin `/api/...`.
+   */
+  fetchBaseUrl?: string;
 };
 
 export type ArticlePipelineCallbacks = {
@@ -69,6 +84,8 @@ export async function runArticlePipeline(
   cbs: ArticlePipelineCallbacks,
 ): Promise<ArticlePipelineResult> {
   const headers = buildHeaders();
+  const origin = input.fetchBaseUrl?.trim();
+  const apiUrl = (path: string) => resolveApiUrl(path, origin);
   let keywordList: Keyword[] = [];
   let researchContext = "";
   let sourcesList: Source[] = [];
@@ -93,7 +110,9 @@ export async function runArticlePipeline(
     pushLog("Brief: resolving title from URL…");
     try {
       const metaRes = await fetch(
-        `/api/page-meta?url=${encodeURIComponent(input.sourceUrl.trim())}`,
+        apiUrl(
+          `/api/page-meta?url=${encodeURIComponent(input.sourceUrl.trim())}`,
+        ),
       );
       const metaJson: unknown = await metaRes.json();
       if (
@@ -117,7 +136,7 @@ export async function runArticlePipeline(
   cbs.onStage("keywords");
   pushLog("Keywords: requesting Serper + Gemini…");
   try {
-    const res = await fetch("/api/keywords", {
+    const res = await fetch(apiUrl("/api/keywords"), {
       method: "POST",
       headers,
       body: JSON.stringify({
@@ -151,7 +170,7 @@ export async function runArticlePipeline(
   cbs.onStage("research");
   pushLog("Research: Tavily deep + stats pass…");
   try {
-    const res = await fetch("/api/research", {
+    const res = await fetch(apiUrl("/api/research"), {
       method: "POST",
       headers,
       body: JSON.stringify({
@@ -190,7 +209,7 @@ export async function runArticlePipeline(
   cbs.onStage("serp");
   pushLog("SERP: organic, PAA, related…");
   try {
-    const res = await fetch("/api/serp", {
+    const res = await fetch(apiUrl("/api/serp"), {
       method: "POST",
       headers,
       body: JSON.stringify({ topic: workingTopic }),
@@ -229,7 +248,7 @@ export async function runArticlePipeline(
   cbs.onStage("queries");
   pushLog("Queries: clustering searcher phrasing…");
   try {
-    const res = await fetch("/api/queries", {
+    const res = await fetch(apiUrl("/api/queries"), {
       method: "POST",
       headers,
       body: JSON.stringify({
@@ -260,7 +279,7 @@ export async function runArticlePipeline(
   cbs.onStage("outline");
   pushLog("Outline: Gemini structural pass…");
   try {
-    const res = await fetch("/api/outline", {
+    const res = await fetch(apiUrl("/api/outline"), {
       method: "POST",
       headers,
       body: JSON.stringify({
@@ -295,7 +314,7 @@ export async function runArticlePipeline(
   cbs.onStage("article");
   pushLog("Article: streaming from Gemini…");
   try {
-    const res = await fetch("/api/article", {
+    const res = await fetch(apiUrl("/api/article"), {
       method: "POST",
       headers,
       body: JSON.stringify({
@@ -354,7 +373,7 @@ export async function runArticlePipeline(
   try {
     const focus =
       keywordList.find((k) => k.type === "primary")?.keyword ?? workingTopic;
-    const res = await fetch("/api/audit", {
+    const res = await fetch(apiUrl("/api/audit"), {
       method: "POST",
       headers,
       body: JSON.stringify({
@@ -391,7 +410,7 @@ export async function runArticlePipeline(
     cbs.onStage("enrich");
     pushLog("Visual enrich: sections → images, charts, tables…");
     try {
-      const res = await fetch("/api/seo-enrich", {
+      const res = await fetch(apiUrl("/api/seo-enrich"), {
         method: "POST",
         headers: buildHeaders(),
         body: JSON.stringify({
