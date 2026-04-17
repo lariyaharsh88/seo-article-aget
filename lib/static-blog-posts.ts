@@ -10,6 +10,7 @@ export const ALLOWED_BLOG_SLUGS = [
   "automate-blog-writing-ai",
   "generative-engine-optimization-guide",
   "ai-keyword-clustering-guide",
+  "how-to-write-seo-article-using-ai",
 ] as const;
 
 const STATIC_SPECS = [
@@ -42,6 +43,12 @@ const STATIC_SPECS = [
     title: "AI Keyword Clustering Guide",
     excerpt:
       "How to cluster keywords by intent, avoid cannibalization, and convert clusters into rankable content architecture.",
+  },
+  {
+    slug: "how-to-write-seo-article-using-ai",
+    title: "How to Write an SEO Article Using AI",
+    excerpt:
+      "A practical workflow for drafting SEO articles with AI: intent, outline, on-page structure, quality checks, and publishing—without thin or generic output.",
   },
 ] as const;
 
