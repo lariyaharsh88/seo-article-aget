@@ -103,8 +103,16 @@ export async function middleware(request: NextRequest) {
   }
 
   if (!isEducationHost) {
-    /** Canonical blog URLs: `/blog` is primary; `/blogs` mirrors the same content. */
-    if ((path === "/blogs" || path.startsWith("/blogs/")) && path !== "/blogs/sitemap.xml") {
+    /**
+     * `/blogs` shows the same blog index as `/blog` (URL stays `/blogs`).
+     * `/blogs/[slug]` still redirects to canonical `/blog/[slug]`.
+     */
+    if (path === "/blogs") {
+      const url = request.nextUrl.clone();
+      url.pathname = "/blog";
+      return NextResponse.rewrite(url);
+    }
+    if (path.startsWith("/blogs/") && path !== "/blogs/sitemap.xml") {
       const url = request.nextUrl.clone();
       url.pathname = path.replace(/^\/blogs/, "/blog");
       return NextResponse.redirect(url, 308);
