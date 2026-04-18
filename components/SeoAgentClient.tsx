@@ -321,11 +321,11 @@ export function SeoAgentClient() {
   const [streakDays, setStreakDays] = useState(1);
   const [weeklyRuns, setWeeklyRuns] = useState(0);
   const [localHistory, setLocalHistory] = useState<LocalHistoryEntry[]>([]);
-  const [habitNudge, setHabitNudge] = useState<string | null>(null);
   const [rewardNotice, setRewardNotice] = useState<string | null>(null);
   const [pinnedKeyword, setPinnedKeyword] = useState("");
   const [showDidYouKnow, setShowDidYouKnow] = useState(true);
   const [didYouKnowIndex, setDidYouKnowIndex] = useState(0);
+  const [onboardingDone, setOnboardingDone] = useState(false);
   const [onboardingOpen, setOnboardingOpen] = useState(false);
   const [onboardingStep, setOnboardingStep] = useState(1);
   const [onboarding, setOnboarding] = useState<OnboardingState>({
@@ -374,14 +374,12 @@ export function SeoAgentClient() {
     const lastActive = localStorage.getItem(`rfh:last-active:${bucket}`);
     if (!lastActive) {
       localStorage.setItem(`rfh:last-active:${bucket}`, today);
-      setHabitNudge("Welcome back. You're doing great - one quick run keeps your streak alive.");
       return;
     }
     const prev = new Date(`${lastActive}T00:00:00Z`);
     const curr = new Date(`${today}T00:00:00Z`);
     const diffDays = Math.round((curr.getTime() - prev.getTime()) / 86400000);
     if (diffDays >= 1) {
-      setHabitNudge("New day, new opportunity. You're doing great - one run keeps momentum alive.");
       if (diffDays === 1) {
         const nextStreak = (streakRaw ? Number.parseInt(streakRaw, 10) || 1 : 1) + 1;
         setStreakDays(nextStreak);
@@ -391,18 +389,14 @@ export function SeoAgentClient() {
         localStorage.setItem(`rfh:streak:days:${bucket}`, "1");
       }
       localStorage.setItem(`rfh:last-active:${bucket}`, today);
-    } else {
-      setHabitNudge("You are in flow. One more run and you'll feel the compounding effect.");
     }
   }, [userSession?.user?.id]);
 
   useEffect(() => {
     const bucket = userSession?.user?.id?.trim() || "guest";
-    const done = localStorage.getItem(`rfh:onboarding:done:${bucket}`) === "1";
-    if (!done) {
-      setOnboardingOpen(true);
-      setOnboardingStep(1);
-    }
+    setOnboardingDone(
+      localStorage.getItem(`rfh:onboarding:done:${bucket}`) === "1",
+    );
   }, [userSession?.user?.id]);
 
   const usageLimit = userSession ? FREE_LOGGED_RUN_LIMIT : FREE_GUEST_RUN_LIMIT;
@@ -416,27 +410,27 @@ export function SeoAgentClient() {
     (onboardingStep / ONBOARDING_TOTAL_STEPS) * 100,
   );
   const onboardingChecklistItems = [
-    { id: "setup", label: "Finish quick setup", done: !onboardingOpen },
-    { id: "output", label: "Generate your first output", done: hasFirstOutput },
+    { id: "setup", label: "Finish quick setup (optional)", done: onboardingDone },
+    { id: "output", label: "Generate your first article", done: hasFirstOutput },
     {
       id: "optimize",
-      label: "Open SEO package or score tab",
+      label: "Open Meta & share or Score",
       done: hasVisitedOptimizationStep,
     },
   ] as const;
   const onboardingChecklistDone = onboardingChecklistItems.filter((item) => item.done).length;
-  const triggerPrompt = useMemo(() => {
-    if (rewardNotice) return rewardNotice;
-    if (pinnedKeyword) {
-      return `Trigger: your pinned keyword "${pinnedKeyword}" is ready for a fresh run.`;
-    }
-    if (habitNudge) return habitNudge;
-    return "Trigger: run one quick workflow to keep your momentum alive.";
-  }, [habitNudge, pinnedKeyword, rewardNotice]);
+
+  const skipOnboardingTour = useCallback(() => {
+    const bucket = userSession?.user?.id?.trim() || "guest";
+    localStorage.setItem(`rfh:onboarding:done:${bucket}`, "1");
+    setOnboardingDone(true);
+    setOnboardingOpen(false);
+  }, [userSession?.user?.id]);
 
   const completeOnboarding = useCallback(() => {
     const bucket = userSession?.user?.id?.trim() || "guest";
     localStorage.setItem(`rfh:onboarding:done:${bucket}`, "1");
+    setOnboardingDone(true);
     setOnboardingOpen(false);
 
     const audienceMap: Record<NonNullable<OnboardingState["role"]>, string> = {
@@ -466,8 +460,9 @@ export function SeoAgentClient() {
           : prev.topic,
     }));
 
-    setHabitNudge("Setup complete. You're doing great - let's generate your first result.");
-    setHistoryNotice("Quick setup done. Tap \"Let's generate your first result\" to unlock your first output.");
+    setHistoryNotice(
+      'Setup saved. Press "Generate article" below when you are ready.',
+    );
     trackEvent("onboarding_complete", {
       role: onboarding.role || "unknown",
       objective: onboarding.objective || "unknown",
@@ -985,27 +980,39 @@ export function SeoAgentClient() {
 
   const tabs: { id: TabId; label: string }[] = [
     { id: "article", label: "Article" },
-    { id: "visual", label: "Visual HTML" },
-    { id: "score", label: "SEO score" },
-    { id: "geo", label: "GEO panel" },
-    { id: "seo", label: "SEO package" },
+    { id: "visual", label: "Rich HTML" },
+    { id: "score", label: "Score" },
+    { id: "geo", label: "AI answers" },
+    { id: "seo", label: "Meta & share" },
     { id: "keywords", label: "Keywords" },
     { id: "sources", label: "Sources" },
   ];
   const didYouKnowItems = [
-    "Did you know? The Visual HTML tab gives publish-ready blocks (images/tables) for faster CMS publishing.",
-    "Did you know? SEO package lets you copy metadata instantly for title, description, and social snippets.",
-    "Did you know? Export and share actions add Powered by RankFlowHQ branding for organic reach.",
-    "Did you know? You can pin a keyword and return to a one-click run next session.",
+    "The Rich HTML tab has ready-to-paste blocks (images and tables) for your site.",
+    "Meta & share has your page title and description—copy them into your CMS.",
+    "Sharing exports can include a small “Powered by” line to help others find the tool.",
+    "Save a keyword (in Shortcuts & extras) to reuse it on your next visit.",
   ] as const;
   const contextualFeatureHint = useMemo(() => {
-    if (running) return "Tip: while generation runs, open Keywords or Sources next for deeper insights.";
-    if (!article.trim()) return "Try Simple Mode for fastest first output, then open SEO package.";
-    if (tab === "article") return "Next best step: open SEO package to copy metadata and share confidently.";
-    if (tab === "seo") return "Next best step: copy full package or download share report for your team.";
-    if (tab === "visual") return "Next best step: copy HTML and publish enriched blocks directly.";
-    if (tab === "keywords") return "Next best step: use these terms for your next cluster or internal links.";
-    return "Explore one adjacent tab to discover extra capabilities in this workflow.";
+    if (running) {
+      return "Generation is running—keep this tab open. You can open Keywords or Sources in other tabs when text appears.";
+    }
+    if (!article.trim()) {
+      return "After the run finishes, use Meta & share for title and description, or Rich HTML for your site.";
+    }
+    if (tab === "article") {
+      return "Next: open Meta & share to copy the title and description for your CMS.";
+    }
+    if (tab === "seo") {
+      return "Copy the blocks below into your site or social posts.";
+    }
+    if (tab === "visual") {
+      return "Copy this HTML into your CMS if you use a custom HTML block.";
+    }
+    if (tab === "keywords") {
+      return "Use these phrases for headings, FAQs, or internal links.";
+    }
+    return "Switch tabs to see scores, sources, and keyword ideas.";
   }, [article, running, tab]);
   const errorGuidance = useMemo(() => {
     if (!error) return null;
@@ -1068,51 +1075,66 @@ export function SeoAgentClient() {
           ← All tools
         </Link>
       </p>
-      <header className="space-y-3 border-b border-border pb-6 sm:pb-8">
-        <p className="font-mono text-xs uppercase tracking-[0.2em] text-accent">
-          RankFlowHQ SEO Suite
-        </p>
-        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between sm:gap-4">
-          <div className="min-w-0">
-            <h1 className="font-display text-3xl text-text-primary sm:text-4xl md:text-5xl">
-              RankFlowHQ · Article pipeline
-            </h1>
-            <p className="mt-2 max-w-2xl font-serif text-base text-text-secondary sm:text-lg">
-              From search demand signals to a streaming long-form draft, with research
-              citations and an exportable SEO pack.
-            </p>
-            <p className="mt-2 font-serif text-sm text-text-secondary">
-              Instant value first. Clear progress second. Satisfaction after every step.
-            </p>
-            <p className="mt-2 font-mono text-xs text-text-muted">
-              {authReady
-                ? userSession?.user?.email
-                  ? `Logged in as ${userSession.user.email}`
-                  : quickTryMode
-                    ? "Try mode enabled: run an instant demo without signup."
-                    : "Let's generate your first result."
-                : "Checking login status..."}
-            </p>
-            <p className="mt-2 font-mono text-xs text-text-muted">
-              Have only a URL?{" "}
-              <Link
-                href="/repurpose-url"
-                className="text-accent underline-offset-2 hover:underline"
-              >
-                Repurpose from URL
-              </Link>{" "}
-              runs the same pipeline from a single link.
-            </p>
-          </div>
-          <span className="w-fit shrink-0 rounded-full border border-accent/40 bg-accent/10 px-3 py-1 font-mono text-xs text-accent">
-            Guided workflow
-          </span>
+      <header className="space-y-4 border-b border-border pb-6 sm:pb-8">
+        <div className="space-y-2">
+          <h1 className="font-display text-2xl text-text-primary sm:text-3xl md:text-4xl">
+            SEO article generator
+          </h1>
+          <p className="max-w-2xl text-base text-text-secondary">
+            Type a keyword or topic, press generate, then copy your article and meta tags. Use{" "}
+            <span className="font-medium text-text-primary">Quick Start</span> for the fastest path.
+          </p>
+          <p className="text-sm text-text-muted">
+            {authReady
+              ? userSession?.user?.email
+                ? `Signed in as ${userSession.user.email}.`
+                : quickTryMode
+                  ? "You can try without an account."
+                  : "You can try without signing in; sign in later to save work."
+              : "Checking sign-in…"}
+            {" "}
+            <Link
+              href="/repurpose-url"
+              className="text-accent underline-offset-2 hover:underline"
+            >
+              Have a URL only? Turn it into an article here
+            </Link>
+            .
+          </p>
         </div>
-        <div className="mt-4 inline-flex rounded-lg border border-border bg-surface/70 p-1">
+
+        {!onboardingDone && !onboardingOpen ? (
+          <div className="flex flex-col gap-3 rounded-xl border border-border/80 bg-surface/60 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-text-secondary">
+              Optional: 30-second preferences to tailor your first draft.
+            </p>
+            <div className="flex flex-shrink-0 flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setOnboardingOpen(true);
+                  setOnboardingStep(1);
+                }}
+                className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-background hover:opacity-90"
+              >
+                Short tour
+              </button>
+              <button
+                type="button"
+                onClick={() => skipOnboardingTour()}
+                className="rounded-lg border border-border px-4 py-2 text-sm text-text-secondary hover:border-accent hover:text-accent"
+              >
+                Skip — I’ll enter a keyword
+              </button>
+            </div>
+          </div>
+        ) : null}
+
+        <div className="inline-flex rounded-lg border border-border bg-surface/70 p-1">
           <button
             type="button"
             onClick={() => setMode("simple")}
-            className={`rounded-md px-3 py-1.5 font-mono text-xs transition-colors ${
+            className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
               mode === "simple"
                 ? "bg-accent text-background"
                 : "text-text-secondary hover:text-text-primary"
@@ -1123,13 +1145,13 @@ export function SeoAgentClient() {
           <button
             type="button"
             onClick={() => setMode("advanced")}
-            className={`rounded-md px-3 py-1.5 font-mono text-xs transition-colors ${
+            className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
               mode === "advanced"
                 ? "bg-accent text-background"
                 : "text-text-secondary hover:text-text-primary"
             }`}
           >
-            Advanced Setup
+            Advanced
           </button>
         </div>
         <WorkflowStepper
@@ -1137,174 +1159,32 @@ export function SeoAgentClient() {
           articleComplete={articleWorkflowComplete}
           publishComplete={publishWorkflowComplete}
         />
-        {habitNudge ? (
-          <div className="rounded-lg border border-accent/35 bg-accent/10 px-3 py-2">
-            <p className="font-mono text-[11px] text-accent">{habitNudge}</p>
-          </div>
-        ) : null}
-        <div className="rounded-lg border border-border/70 bg-background/40 px-3 py-2">
-          <p className="font-mono text-[11px] text-text-secondary">{triggerPrompt}</p>
-        </div>
-        <div className="rounded-xl border border-border/80 bg-surface/60 p-3">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="font-mono text-xs uppercase tracking-[0.14em] text-accent">
-              Quick actions
-            </p>
-            <span className="font-mono text-[10px] text-text-muted">
-              Action in one click
+        <div className="flex flex-col gap-2 rounded-lg border border-border/70 bg-background/40 px-3 py-2 sm:flex-row sm:items-center sm:gap-4">
+          <p className="text-sm text-text-secondary">
+            Free runs left:{" "}
+            <span className="font-semibold text-text-primary">
+              {usageRemaining} / {usageLimit}
             </span>
-          </div>
-          <div className="mt-2 flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => applyQuickKeyword("ai seo tools for startups")}
-              className="rounded-md border border-border px-2.5 py-1.5 font-mono text-[11px] text-text-secondary hover:border-accent hover:text-accent"
-            >
-              Use startup keyword
-            </button>
-            <button
-              type="button"
-              onClick={() => applyQuickKeyword("how to improve seo traffic")}
-              className="rounded-md border border-border px-2.5 py-1.5 font-mono text-[11px] text-text-secondary hover:border-accent hover:text-accent"
-            >
-              Use traffic keyword
-            </button>
-            <button
-              type="button"
-              onClick={() => setTab("seo")}
-              className="rounded-md border border-border px-2.5 py-1.5 font-mono text-[11px] text-text-secondary hover:border-accent hover:text-accent"
-            >
-              Open SEO package
-            </button>
-            <button
-              type="button"
-              onClick={() => savePinnedKeyword()}
-              className="rounded-md border border-accent/40 bg-accent/10 px-2.5 py-1.5 font-mono text-[11px] text-accent hover:bg-accent/20"
-            >
-              Pin current keyword
-            </button>
-          </div>
-          {pinnedKeyword ? (
-            <p className="mt-2 font-mono text-[10px] text-text-muted">
-              Investment active: &ldquo;{pinnedKeyword}&rdquo; is pinned for your next return.
-            </p>
-          ) : null}
-        </div>
-        <div className="rounded-xl border border-border/80 bg-surface/60 p-3">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="font-mono text-xs uppercase tracking-[0.14em] text-accent">
-              Feature highlights
-            </p>
-            <span className="font-mono text-[10px] text-text-muted">Explore without guessing</span>
-          </div>
-          <div className="mt-2 grid gap-2 sm:grid-cols-3">
-            <button
-              type="button"
-              onClick={() => setTab("visual")}
-              className="rounded-lg border border-border/70 bg-background/40 px-3 py-2 text-left hover:border-accent/60"
-              title="Open Visual HTML to publish enriched content blocks"
-            >
-              <p className="font-mono text-[11px] text-accent">Visual HTML</p>
-              <p className="mt-1 font-serif text-xs text-text-secondary">Publish-ready enriched output</p>
-            </button>
-            <button
-              type="button"
-              onClick={() => setTab("seo")}
-              className="rounded-lg border border-border/70 bg-background/40 px-3 py-2 text-left hover:border-accent/60"
-              title="Open SEO package for metadata and sharing"
-            >
-              <p className="font-mono text-[11px] text-accent">SEO Package</p>
-              <p className="mt-1 font-serif text-xs text-text-secondary">Meta tags and share-ready copy</p>
-            </button>
-            <button
-              type="button"
-              onClick={() => setTab("keywords")}
-              className="rounded-lg border border-border/70 bg-background/40 px-3 py-2 text-left hover:border-accent/60"
-              title="Open Keywords for next content ideas"
-            >
-              <p className="font-mono text-[11px] text-accent">Keywords + PAA</p>
-              <p className="mt-1 font-serif text-xs text-text-secondary">Find expansion opportunities</p>
-            </button>
-          </div>
-        </div>
-        {showDidYouKnow ? (
-          <div className="rounded-xl border border-accent/35 bg-accent/10 p-3">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <p className="font-mono text-xs uppercase tracking-[0.14em] text-accent">Did you know?</p>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setDidYouKnowIndex((i) => (i + 1) % didYouKnowItems.length)}
-                  className="rounded-md border border-accent/40 px-2 py-1 font-mono text-[10px] text-accent hover:bg-accent/20"
-                >
-                  Next tip
-                </button>
-                <button
-                  type="button"
-                  onClick={() => dismissDidYouKnow()}
-                  className="rounded-md border border-border px-2 py-1 font-mono text-[10px] text-text-secondary hover:border-accent hover:text-accent"
-                >
-                  Hide
-                </button>
-              </div>
-            </div>
-            <p className="mt-2 font-serif text-sm text-text-secondary">{didYouKnowItems[didYouKnowIndex]}</p>
-          </div>
-        ) : null}
-        <div className="rounded-xl border border-border/80 bg-surface/60 p-3">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="font-mono text-xs uppercase tracking-[0.14em] text-accent">
-              Freemium usage
-            </p>
-            <p className="font-mono text-[11px] text-text-muted">
-              {usageRemaining}/{usageLimit} free runs left
-            </p>
-          </div>
-          <div className="mt-2 h-2 rounded-full bg-background/80">
+            {usageLimitReached ? (
+              <span className="text-red-300"> — limit reached</span>
+            ) : null}
+          </p>
+          <div className="h-2 min-w-0 flex-1 rounded-full bg-background/80 sm:max-w-xs">
             <div
               className={`h-full rounded-full transition-all duration-300 ${
                 usageLimitReached ? "bg-red-400" : "bg-accent"
               }`}
-              style={{ width: `${Math.min(100, (usageRuns / usageLimit) * 100)}%` }}
+              style={{
+                width: `${Math.min(100, (usageRuns / usageLimit) * 100)}%`,
+              }}
             />
           </div>
-          <div className="mt-2 flex flex-wrap items-center gap-2">
-            <Link
-              href="/pricing"
-              className="inline-flex min-h-9 items-center rounded-lg border border-accent/40 bg-accent/10 px-3 py-1.5 font-mono text-[11px] text-accent hover:bg-accent/20"
-            >
-              Upgrade to Pro
-            </Link>
-            <span className="font-mono text-[11px] text-text-muted">
-              Pro unlocks unlimited runs, advanced enrich, and premium exports.
-            </span>
-          </div>
-        </div>
-        <div className="grid gap-3 md:grid-cols-3">
-          <div className="rounded-xl border border-border/80 bg-surface/60 p-3">
-            <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-accent">
-              Trigger
-            </p>
-            <p className="mt-1 font-serif text-sm text-text-secondary">
-              Daily nudge + visible streak prompts a quick return session.
-            </p>
-          </div>
-          <div className="rounded-xl border border-border/80 bg-surface/60 p-3">
-            <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-accent">
-              Reward
-            </p>
-            <p className="mt-1 font-serif text-sm text-text-secondary">
-              Publish-ready outputs, progress gains, and preserved momentum.
-            </p>
-          </div>
-          <div className="rounded-xl border border-border/80 bg-surface/60 p-3">
-            <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-accent">
-              Investment
-            </p>
-            <p className="mt-1 font-serif text-sm text-text-secondary">
-              Saved history and personalization make each next run faster.
-            </p>
-          </div>
+          <Link
+            href="/pricing"
+            className="text-sm font-medium text-accent hover:underline"
+          >
+            See plans
+          </Link>
         </div>
       </header>
 
@@ -1316,7 +1196,7 @@ export function SeoAgentClient() {
             </p>
             <button
               type="button"
-              onClick={() => setOnboardingOpen(false)}
+              onClick={() => skipOnboardingTour()}
               className="rounded-md border border-border px-2 py-1 font-mono text-[11px] text-text-secondary hover:border-accent hover:text-accent"
             >
               Skip
@@ -1497,11 +1377,11 @@ export function SeoAgentClient() {
         </section>
       ) : null}
 
-      {!onboardingOpen ? (
+      {!onboardingOpen && onboardingChecklistDone < 3 ? (
         <section className="rounded-2xl border border-border/80 bg-surface/60 p-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="font-mono text-xs uppercase tracking-[0.14em] text-accent">
-              Quick win progress
+              Getting started
             </p>
             <span className="rounded-full border border-accent/35 bg-accent/10 px-2 py-0.5 font-mono text-[10px] text-accent">
               {onboardingChecklistDone}/3 complete
@@ -1533,12 +1413,12 @@ export function SeoAgentClient() {
             ))}
           </ul>
           {onboardingChecklistDone < 3 ? (
-            <p className="mt-3 font-mono text-[11px] text-text-muted">
-              You&apos;re doing great. Complete these 3 steps to hit your first real &ldquo;aha&rdquo; moment.
+            <p className="mt-3 text-sm text-text-muted">
+              Optional checklist—skip anything you don&apos;t need. You can always use the tour in the header.
             </p>
           ) : (
-            <p className="mt-3 font-mono text-[11px] text-accent">
-              Aha unlocked: setup + output + optimization complete. Momentum is now on your side.
+            <p className="mt-3 text-sm text-accent">
+              You&apos;ve covered setup, a draft, and SEO tools. Nice work.
             </p>
           )}
         </section>
@@ -1561,162 +1441,14 @@ export function SeoAgentClient() {
         <div className="min-w-0 space-y-4">
           {quickTryMode && !userSession ? (
             <section className="rounded-xl border border-accent/40 bg-accent/10 p-3">
-              <p className="font-mono text-xs uppercase tracking-[0.14em] text-accent">
-                Try instantly (no signup)
+              <p className="text-sm font-medium text-text-primary">
+                Demo mode — no account needed
               </p>
-              <p className="mt-1 font-serif text-sm text-text-secondary">
-                Experience first value instantly. This mode shows a live preview in seconds so you can feel progress right away.
+              <p className="mt-1 text-sm text-text-secondary">
+                Add a keyword below and press generate. Keep this tab open while the article is created.
               </p>
-              <ol className="mt-2 flex flex-wrap gap-2 font-mono text-[11px] text-text-muted">
-                <li className="rounded-md border border-border/70 px-2 py-1">1. Add keyword</li>
-                <li className="rounded-md border border-border/70 px-2 py-1">2. See your first result</li>
-                <li className="rounded-md border border-border/70 px-2 py-1">3. Keep the momentum</li>
-              </ol>
             </section>
           ) : null}
-          <section className="rounded-xl border border-border bg-surface/70 p-4">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <p className="font-mono text-xs uppercase tracking-[0.14em] text-accent">
-                  Invite & unlock features
-                </p>
-                <p className="mt-1 font-serif text-sm text-text-secondary">
-                  Refer peers and unlock distribution templates, collaboration boosts, and priority onboarding hints.
-                </p>
-              </div>
-              <div className="rounded-full border border-accent/35 bg-accent/10 px-3 py-1 font-mono text-[11px] text-accent">
-                Referrals: {inviteCount}/3
-              </div>
-            </div>
-            <div className="mt-3 h-2 rounded-full bg-background/80">
-              <div
-                className="h-full rounded-full bg-accent transition-all duration-300"
-                style={{ width: `${Math.min(100, (inviteCount / 3) * 100)}%` }}
-              />
-            </div>
-            <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
-              <input
-                type="text"
-                value={inviteCode}
-                onChange={(e) => setInviteCode(e.target.value)}
-                placeholder="Set your invite code (optional)"
-                className="w-full rounded-lg border border-border bg-background px-3 py-2 font-mono text-xs text-text-primary focus:border-accent focus:outline-none"
-              />
-              <button
-                type="button"
-                onClick={() => void copyInviteLink()}
-                data-track-cta
-                data-cta-label="copy_invite_link"
-                className="rounded-lg border border-accent/40 bg-accent/10 px-3 py-2 font-mono text-xs text-accent transition-colors hover:bg-accent/20"
-              >
-                Copy invite link
-              </button>
-              <button
-                type="button"
-                onClick={() => claimInviteUnlock()}
-                data-track-cta
-                data-cta-label="track_invite_unlock"
-                className="rounded-lg border border-border px-3 py-2 font-mono text-xs text-text-secondary transition-colors hover:border-accent hover:text-accent"
-              >
-                Mark invite sent
-              </button>
-            </div>
-            {inviteStatus ? (
-              <p className="mt-2 font-mono text-[11px] text-text-muted">{inviteStatus}</p>
-            ) : (
-              <p className="mt-2 font-mono text-[11px] text-text-muted">
-                Unlock tier 1 at 1 invite, tier 2 at 2 invites, full unlock at 3 invites.
-              </p>
-            )}
-          </section>
-          <section className="rounded-xl border border-border/80 bg-surface/60 p-4">
-            <div className="flex items-center justify-between gap-2">
-              <p className="font-mono text-xs uppercase tracking-[0.14em] text-accent">
-                Pro features preview
-              </p>
-              <span className="rounded-full border border-accent/40 bg-accent/10 px-2 py-0.5 font-mono text-[10px] text-accent">
-                Locked
-              </span>
-            </div>
-            <div className="mt-3 grid gap-2 md:grid-cols-3">
-              {[
-                "Bulk article generation queue",
-                "Team collaboration workspaces",
-                "Premium conversion templates",
-              ].map((item) => (
-                <div key={item} className="rounded-lg border border-border/70 bg-background/40 px-3 py-2">
-                  <p className="font-serif text-sm text-text-secondary blur-[0.8px]">{item}</p>
-                </div>
-              ))}
-            </div>
-            <div className="mt-3 flex flex-wrap gap-2">
-              <Link
-                href="/pricing"
-                className="inline-flex min-h-10 items-center rounded-lg bg-accent px-4 py-2 font-mono text-xs font-semibold text-background hover:opacity-90"
-              >
-                Unlock Pro features
-              </Link>
-              <Link
-                href="/pricing"
-                className="inline-flex min-h-10 items-center rounded-lg border border-border px-4 py-2 font-mono text-xs text-text-secondary hover:border-accent hover:text-accent"
-              >
-                Compare plans
-              </Link>
-            </div>
-          </section>
-          <section className="rounded-xl border border-border/80 bg-surface/60 p-4">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <p className="font-mono text-xs uppercase tracking-[0.14em] text-accent">
-                Daily progress
-              </p>
-              <div className="flex items-center gap-2">
-                <span className="rounded-full border border-accent/35 bg-accent/10 px-2 py-0.5 font-mono text-[10px] text-accent">
-                  {streakDays} day streak
-                </span>
-                <span className="rounded-full border border-border/70 bg-background/50 px-2 py-0.5 font-mono text-[10px] text-text-secondary">
-                  {weeklyRuns}/{WEEKLY_GOAL} weekly goal
-                </span>
-              </div>
-            </div>
-            <div className="mt-3 h-2 rounded-full bg-background/80">
-              <div
-                className="h-full rounded-full bg-accent transition-all duration-300"
-                style={{ width: `${Math.min(100, (weeklyRuns / WEEKLY_GOAL) * 100)}%` }}
-              />
-            </div>
-            <p className="mt-2 font-mono text-[11px] text-text-muted">
-              Complete {Math.max(0, WEEKLY_GOAL - weeklyRuns)} more runs this week to hit your publishing target.
-            </p>
-          </section>
-          <section className="rounded-xl border border-border/80 bg-surface/60 p-4">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <p className="font-mono text-xs uppercase tracking-[0.14em] text-accent">
-                Saved history
-              </p>
-              <Link
-                href="/dashboard"
-                className="font-mono text-[11px] text-accent underline-offset-2 hover:underline"
-              >
-                Open full history
-              </Link>
-            </div>
-            {localHistory.length ? (
-              <ul className="mt-3 space-y-2">
-                {localHistory.map((entry) => (
-                  <li key={entry.id} className="rounded-lg border border-border/70 bg-background/40 px-3 py-2">
-                    <p className="font-serif text-sm text-text-secondary">{entry.title}</p>
-                    <p className="mt-1 font-mono text-[10px] text-text-muted">
-                      {new Date(entry.createdAt).toLocaleString()}
-                    </p>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="mt-3 font-serif text-sm text-text-muted">
-                Your generated outputs appear here so you can quickly continue where you left off. You are one run away from your next win.
-              </p>
-            )}
-          </section>
           {mode === "simple" ? (
             <section
               className={`rounded-xl border bg-surface/80 p-4 ${
@@ -1725,14 +1457,14 @@ export function SeoAgentClient() {
                   : "border-border"
               }`}
             >
-              <h2 className="font-mono text-sm uppercase text-accent">
-                Simple brief
+              <h2 className="text-lg font-semibold text-text-primary">
+                What should the article be about?
               </h2>
-              <p className="mt-2 font-serif text-sm text-text-secondary">
-                Add one keyword and get your first meaningful output in one click.
+              <p className="mt-1 text-sm text-text-secondary">
+                One keyword or short phrase is enough. Example: &ldquo;best CRM for small business&rdquo;.
               </p>
               <label className="mt-3 block text-sm text-text-secondary">
-                <span className="font-medium text-text-primary">Keyword</span>
+                <span className="font-medium text-text-primary">Keyword or topic</span>
                 <input
                   type="text"
                   value={simpleKeyword}
@@ -1744,7 +1476,7 @@ export function SeoAgentClient() {
               </label>
               {onboardingOpen && onboardingStep === ONBOARDING_TOTAL_STEPS ? (
                 <p className="mt-2 rounded-md border border-accent/40 bg-accent/10 px-2 py-1 font-mono text-[11px] text-accent">
-                  Tooltip: this keyword is ready. Next, click &ldquo;Let&apos;s generate your first result&rdquo;.
+                  Ready—click &ldquo;Generate article&rdquo; below.
                 </p>
               ) : null}
             </section>
@@ -1769,7 +1501,7 @@ export function SeoAgentClient() {
           <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
             {onboardingOpen && onboardingStep === ONBOARDING_TOTAL_STEPS ? (
               <p className="w-full rounded-md border border-accent/40 bg-accent/10 px-3 py-2 font-mono text-[11px] text-accent">
-                Highlighted action: tap the main button to reach your first output now.
+                Click the green &ldquo;Generate article&rdquo; button below.
               </p>
             ) : null}
             <button
@@ -1785,14 +1517,14 @@ export function SeoAgentClient() {
               }`}
             >
               {running
-                ? "Working on it - this feels fast for a reason..."
+                ? "Generating…"
                 : !userSession && quickTryMode
-                  ? "Let's generate your first result"
+                  ? "Generate article"
                 : mode === "simple"
-                  ? "Generate my first result"
-                  : "Generate full article"}
+                  ? "Generate article"
+                  : "Generate article"}
             </button>
-            <label className="flex cursor-pointer items-center gap-2 font-mono text-[11px] text-text-secondary sm:text-xs">
+            <label className="flex cursor-pointer items-center gap-2 text-xs text-text-secondary sm:text-sm">
               <input
                 type="checkbox"
                 checked={autoEnrich}
@@ -1800,10 +1532,10 @@ export function SeoAgentClient() {
                 disabled={running}
                 className="h-4 w-4 rounded border-border accent-accent"
               />
-              Auto-enrich (H2 images, charts, tables — last step)
+              Add images, charts, and tables (recommended)
             </label>
-            <span className="font-mono text-[11px] text-text-muted sm:text-xs">
-              Service connections are handled securely.
+            <span className="text-xs text-text-muted sm:text-sm">
+              Your topic is sent securely to generate the draft.
             </span>
             <Link
               href="/login?next=/seo-agent"
@@ -2134,6 +1866,229 @@ export function SeoAgentClient() {
               {tab === "sources" && <SourcesList sources={sources} />}
             </div>
           </div>
+
+          <details className="rounded-xl border border-border/80 bg-surface/50">
+            <summary className="cursor-pointer select-none px-4 py-3 text-sm font-medium text-text-primary">
+              Shortcuts &amp; extras (invites, streak, keyword ideas)
+            </summary>
+            <div className="space-y-4 border-t border-border/60 px-4 pb-4 pt-2">
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => applyQuickKeyword("ai seo tools for startups")}
+                  className="rounded-md border border-border px-2.5 py-1.5 text-xs text-text-secondary hover:border-accent hover:text-accent"
+                >
+                  Try example keyword
+                </button>
+                <button
+                  type="button"
+                  onClick={() => applyQuickKeyword("how to improve seo traffic")}
+                  className="rounded-md border border-border px-2.5 py-1.5 text-xs text-text-secondary hover:border-accent hover:text-accent"
+                >
+                  Another example
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTab("seo")}
+                  className="rounded-md border border-border px-2.5 py-1.5 text-xs text-text-secondary hover:border-accent hover:text-accent"
+                >
+                  Open Meta &amp; share
+                </button>
+                <button
+                  type="button"
+                  onClick={() => savePinnedKeyword()}
+                  className="rounded-md border border-accent/40 bg-accent/10 px-2.5 py-1.5 text-xs text-accent hover:bg-accent/20"
+                >
+                  Save keyword for next time
+                </button>
+              </div>
+              {pinnedKeyword ? (
+                <p className="text-xs text-text-muted">
+                  Saved keyword: &ldquo;{pinnedKeyword}&rdquo;
+                </p>
+              ) : null}
+              {showDidYouKnow ? (
+                <div className="rounded-lg border border-border/70 bg-background/40 p-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <p className="text-xs font-medium text-text-primary">Tip</p>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setDidYouKnowIndex((i) => (i + 1) % didYouKnowItems.length)
+                        }
+                        className="text-xs text-accent hover:underline"
+                      >
+                        Next
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => dismissDidYouKnow()}
+                        className="text-xs text-text-muted hover:text-text-secondary"
+                      >
+                        Hide tips
+                      </button>
+                    </div>
+                  </div>
+                  <p className="mt-2 text-sm text-text-secondary">
+                    {didYouKnowItems[didYouKnowIndex]}
+                  </p>
+                </div>
+              ) : null}
+              <section className="rounded-xl border border-border bg-surface/70 p-4">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-medium uppercase tracking-wide text-accent">
+                      Invite friends
+                    </p>
+                    <p className="mt-1 text-sm text-text-secondary">
+                      Share a link to unlock bonus templates when friends try the tool.
+                    </p>
+                  </div>
+                  <div className="rounded-full border border-accent/35 bg-accent/10 px-3 py-1 text-xs text-accent">
+                    Referrals: {inviteCount}/3
+                  </div>
+                </div>
+                <div className="mt-3 h-2 rounded-full bg-background/80">
+                  <div
+                    className="h-full rounded-full bg-accent transition-all duration-300"
+                    style={{ width: `${Math.min(100, (inviteCount / 3) * 100)}%` }}
+                  />
+                </div>
+                <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
+                  <input
+                    type="text"
+                    value={inviteCode}
+                    onChange={(e) => setInviteCode(e.target.value)}
+                    placeholder="Invite code (optional)"
+                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-xs text-text-primary focus:border-accent focus:outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => void copyInviteLink()}
+                    data-track-cta
+                    data-cta-label="copy_invite_link"
+                    className="rounded-lg border border-accent/40 bg-accent/10 px-3 py-2 text-xs text-accent transition-colors hover:bg-accent/20"
+                  >
+                    Copy invite link
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => claimInviteUnlock()}
+                    data-track-cta
+                    data-cta-label="track_invite_unlock"
+                    className="rounded-lg border border-border px-3 py-2 text-xs text-text-secondary transition-colors hover:border-accent hover:text-accent"
+                  >
+                    I sent an invite
+                  </button>
+                </div>
+                {inviteStatus ? (
+                  <p className="mt-2 text-xs text-text-muted">{inviteStatus}</p>
+                ) : (
+                  <p className="mt-2 text-xs text-text-muted">
+                    Progress: 1 invite = tier 1, 3 invites = full unlock.
+                  </p>
+                )}
+              </section>
+              <section className="rounded-xl border border-border/80 bg-surface/60 p-4">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-xs font-medium uppercase tracking-wide text-accent">
+                    Pro (preview)
+                  </p>
+                  <span className="rounded-full border border-accent/40 bg-accent/10 px-2 py-0.5 text-[10px] text-accent">
+                    Locked
+                  </span>
+                </div>
+                <div className="mt-3 grid gap-2 md:grid-cols-3">
+                  {[
+                    "Bulk article generation queue",
+                    "Team collaboration workspaces",
+                    "Premium conversion templates",
+                  ].map((item) => (
+                    <div
+                      key={item}
+                      className="rounded-lg border border-border/70 bg-background/40 px-3 py-2"
+                    >
+                      <p className="text-sm text-text-secondary blur-[0.8px]">{item}</p>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <Link
+                    href="/pricing"
+                    className="inline-flex min-h-10 items-center rounded-lg bg-accent px-4 py-2 text-xs font-semibold text-background hover:opacity-90"
+                  >
+                    View Pro
+                  </Link>
+                  <Link
+                    href="/pricing"
+                    className="inline-flex min-h-10 items-center rounded-lg border border-border px-4 py-2 text-xs text-text-secondary hover:border-accent hover:text-accent"
+                  >
+                    Compare plans
+                  </Link>
+                </div>
+              </section>
+              <section className="rounded-xl border border-border/80 bg-surface/60 p-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <p className="text-xs font-medium uppercase tracking-wide text-accent">
+                    This week
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <span className="rounded-full border border-accent/35 bg-accent/10 px-2 py-0.5 text-[10px] text-accent">
+                      {streakDays} day streak
+                    </span>
+                    <span className="rounded-full border border-border/70 bg-background/50 px-2 py-0.5 text-[10px] text-text-secondary">
+                      {weeklyRuns}/{WEEKLY_GOAL} runs
+                    </span>
+                  </div>
+                </div>
+                <div className="mt-3 h-2 rounded-full bg-background/80">
+                  <div
+                    className="h-full rounded-full bg-accent transition-all duration-300"
+                    style={{
+                      width: `${Math.min(100, (weeklyRuns / WEEKLY_GOAL) * 100)}%`,
+                    }}
+                  />
+                </div>
+                <p className="mt-2 text-xs text-text-muted">
+                  {Math.max(0, WEEKLY_GOAL - weeklyRuns)} more run
+                  {WEEKLY_GOAL - weeklyRuns === 1 ? "" : "s"} to hit your weekly goal.
+                </p>
+              </section>
+              <section className="rounded-xl border border-border/80 bg-surface/60 p-4">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-xs font-medium uppercase tracking-wide text-accent">
+                    Recent on this device
+                  </p>
+                  <Link
+                    href="/dashboard"
+                    className="text-xs text-accent underline-offset-2 hover:underline"
+                  >
+                    Full dashboard
+                  </Link>
+                </div>
+                {localHistory.length ? (
+                  <ul className="mt-3 space-y-2">
+                    {localHistory.map((entry) => (
+                      <li
+                        key={entry.id}
+                        className="rounded-lg border border-border/70 bg-background/40 px-3 py-2"
+                      >
+                        <p className="text-sm text-text-secondary">{entry.title}</p>
+                        <p className="mt-1 text-[10px] text-text-muted">
+                          {new Date(entry.createdAt).toLocaleString()}
+                        </p>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="mt-3 text-sm text-text-muted">
+                    Titles of articles you generate will show up here for quick reference.
+                  </p>
+                )}
+              </section>
+            </div>
+          </details>
         </div>
 
         <aside className="hidden space-y-4 lg:sticky lg:top-6 lg:block lg:w-[280px] lg:shrink-0 lg:self-start">

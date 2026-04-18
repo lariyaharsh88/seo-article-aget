@@ -1,5 +1,14 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  async redirects() {
+    return [
+      {
+        source: "/article-agent",
+        destination: "/seo-agent",
+        permanent: true,
+      },
+    ];
+  },
   experimental: {
     serverComponentsExternalPackages: ["google-trends-api"],
   },
