@@ -8,6 +8,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArticleRenderer } from "@/components/ArticleRenderer";
 import { ArticleSeoScorecard } from "@/components/ArticleSeoScorecard";
 import { LiveLog } from "@/components/LiveLog";
+import { BulkTopicRunProgress } from "@/components/blog/BulkTopicRunProgress";
 import { PipelineProgress } from "@/components/PipelineProgress";
 import {
   DEFAULT_ARTICLE_PIPELINE_AUDIENCE,
@@ -486,6 +487,11 @@ export function BlogCreateClient({ initialPosts, loadError }: Props) {
             Batch {batchIndex}/{batchTotal} — generating and saving each post…
           </p>
         ) : null}
+        <BulkTopicRunProgress
+          current={batchIndex}
+          total={batchTotal}
+          active={running && batchTotal > 1}
+        />
         <button
           type="button"
           onClick={() => void runGenerator()}

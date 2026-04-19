@@ -1,6 +1,9 @@
 /**
- * Google does not support IndexNow. This helper pings Google's sitemap endpoint
- * to nudge faster recrawl after new publishes.
+ * Best-effort HTTP GET to Google's legacy sitemap ping URL (`/ping?sitemap=`).
+ * Google may ignore or rate-limit this; it does **not** guarantee crawl frequency or
+ * update the “Last read” date in Search Console on a fixed schedule. Prefer accurate
+ * `<lastmod>` in sitemaps, Search Console URL Inspection for critical URLs, and
+ * (for Bing et al.) IndexNow. Safe to call from publish hooks and optional cron.
  */
 export async function notifyGoogleSitemaps(opts: {
   siteOrigin: string;

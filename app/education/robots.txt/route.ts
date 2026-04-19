@@ -11,6 +11,7 @@ Disallow: /api/
 
 Sitemap: ${base}/sitemap.xml
 Sitemap: ${base}/news/sitemap.xml
+Sitemap: ${base}/blogs/sitemap.xml
 `;
   return new NextResponse(body, {
     status: 200,

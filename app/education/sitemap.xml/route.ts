@@ -1,5 +1,6 @@
 import { SiteDomain } from "@prisma/client";
 import { NextResponse } from "next/server";
+import { getPublishedBlogSitemapRows } from "@/lib/blog-sitemap";
 import { prisma } from "@/lib/prisma";
 
 type NewsRow = {
@@ -59,6 +60,23 @@ export async function GET(request: Request) {
     )
     .join("\n");
 
+  let blogXml = "";
+  try {
+    const blogRows = await getPublishedBlogSitemapRows(base, SiteDomain.education);
+    blogXml = blogRows
+      .map(
+        (e) => `  <url>
+    <loc>${escapeXml(e.loc)}</loc>
+    <lastmod>${e.lastmod.toISOString()}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>${e.priority}</priority>
+  </url>`,
+      )
+      .join("\n");
+  } catch {
+    blogXml = "";
+  }
+
   const newsXml = rows
     .filter((r): r is NewsRow & { repurposedSlug: string } => Boolean(r.repurposedSlug?.trim()))
     .map(
@@ -74,6 +92,7 @@ export async function GET(request: Request) {
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${staticXml}
+${blogXml}
 ${newsXml}
 </urlset>`;
 

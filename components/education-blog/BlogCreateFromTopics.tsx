@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import { BulkTopicRunProgress } from "@/components/blog/BulkTopicRunProgress";
 import { MAX_FULL_ARTICLE_TOPICS_PER_REQUEST } from "@/lib/article-bulk-limits";
 
 type CreatedRow = {
@@ -19,6 +20,8 @@ export function BlogCreateFromTopics() {
   const [error, setError] = useState<string | null>(null);
   const [createdRows, setCreatedRows] = useState<CreatedRow[]>([]);
   const [failedRows, setFailedRows] = useState<FailedRow[]>([]);
+  const [runCurrent, setRunCurrent] = useState(0);
+  const [runTotal, setRunTotal] = useState(0);
 
   const topicPreview = useMemo(() => {
     const seen = new Set<string>();
@@ -36,32 +39,59 @@ export function BlogCreateFromTopics() {
   }, [topicsText]);
 
   async function handleCreate() {
+    const topics = topicPreview;
+    if (topics.length === 0) return;
+
     setSubmitting(true);
     setError(null);
     setCreatedRows([]);
     setFailedRows([]);
+    setRunTotal(topics.length > 1 ? topics.length : 0);
+    setRunCurrent(0);
+
+    const created: CreatedRow[] = [];
+    const failed: FailedRow[] = [];
+
     try {
-      const res = await fetch("/api/education-blog/create", {
-        method: "POST",
-        credentials: "same-origin",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ topics: topicsText }),
-      });
-      const data = (await res.json()) as {
-        error?: string;
-        created?: CreatedRow[];
-        errors?: FailedRow[];
-      };
-      if (!res.ok) {
-        setError(data.error || "Failed to generate blog posts.");
-        return;
+      for (let i = 0; i < topics.length; i++) {
+        setRunCurrent(i + 1);
+        const res = await fetch("/api/education-blog/create", {
+          method: "POST",
+          credentials: "same-origin",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ topics: topics[i] }),
+        });
+        const data = (await res.json()) as {
+          error?: string;
+          created?: CreatedRow[];
+          errors?: FailedRow[];
+        };
+        if (!res.ok) {
+          failed.push({
+            topic: topics[i],
+            error: data.error || `HTTP ${res.status}`,
+          });
+          continue;
+        }
+        if (data.created?.length) {
+          for (const row of data.created) {
+            if (!created.some((c) => c.id === row.id)) created.push(row);
+          }
+        }
+        if (data.errors?.length) {
+          for (const err of data.errors) {
+            failed.push(err);
+          }
+        }
       }
-      setCreatedRows(data.created || []);
-      setFailedRows(data.errors || []);
+      setCreatedRows(created);
+      setFailedRows(failed);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Request failed.");
     } finally {
       setSubmitting(false);
+      setRunCurrent(0);
+      setRunTotal(0);
     }
   }
 
@@ -113,8 +143,18 @@ export function BlogCreateFromTopics() {
           disabled={submitting || topicPreview.length === 0}
           className="btn-premium mt-5 inline-flex min-h-11 items-center justify-center rounded-xl bg-accent px-5 py-3 font-mono text-sm font-semibold text-background disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {submitting ? "Generating (can take several minutes)…" : "Generate & publish"}
+          {submitting
+            ? runTotal > 1
+              ? `Generating article ${runCurrent}/${runTotal}…`
+              : "Generating (can take several minutes)…"
+            : "Generate & publish"}
         </button>
+
+        <BulkTopicRunProgress
+          current={runCurrent}
+          total={runTotal}
+          active={submitting}
+        />
 
         {error ? (
           <p className="mt-3 rounded-lg border border-rose-400/50 bg-rose-500/10 px-3 py-2 font-serif text-sm text-rose-200">

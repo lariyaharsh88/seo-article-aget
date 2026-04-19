@@ -7,7 +7,6 @@ import {
   ArticleLeadCtaStrip,
 } from "@/components/ArticleLeadCapture";
 import { ContentInterlinks } from "@/components/ContentInterlinks";
-import { JsonLd } from "@/components/JsonLd";
 import { DEFAULT_ARTICLE_AUTHOR_NAME } from "@/lib/article-author";
 import {
   findPublishedBlogPostBySlug,
@@ -17,7 +16,6 @@ import { addHeadingIdsToHtml, extractTocFromMarkdown } from "@/lib/blog-toc";
 import { markdownToArticleBodyHtml } from "@/lib/markdown-to-html";
 import { getRequestSiteOrigin } from "@/lib/request-site-origin";
 import { buildPageMetadata } from "@/lib/seo-page";
-import { buildBlogPostingSchema } from "@/lib/schema-org";
 import { SITE_NAME } from "@/lib/seo-site";
 import { permanentRedirectIfWrongSiteDomain } from "@/lib/site-domain-redirect";
 
@@ -75,7 +73,6 @@ export default async function BlogPostPage({ params }: Props) {
     `/blogs/${params.slug}`,
   );
 
-  const siteOrigin = await getRequestSiteOrigin();
   let peerPosts: Awaited<ReturnType<typeof listPublishedBlogPostsExceptSlug>> = [];
   try {
     peerPosts = await listPublishedBlogPostsExceptSlug(
@@ -104,7 +101,6 @@ export default async function BlogPostPage({ params }: Props) {
 
   return (
     <>
-      <JsonLd data={buildBlogPostingSchema(post, { base: siteOrigin })} />
       <main className="mx-auto min-w-0 max-w-5xl px-4 py-8 sm:py-10 md:px-6">
         <p className="font-mono text-xs">
           <Link

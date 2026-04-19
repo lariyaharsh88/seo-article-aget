@@ -14,6 +14,7 @@ const mainNav = [
   { href: "/ai-seo-tools", label: "Solutions" },
   { href: "/free-tools", label: "Resources" },
   { href: "/dashboard", label: "Dashboard" },
+  { href: "/bulk-article-creating-agent", label: "Bulk articles" },
   { href: "/pricing", label: "Pricing" },
   { href: "/login?next=/seo-agent", label: "Sign in" },
 ] as const;
@@ -22,6 +23,8 @@ const mainNav = [
 const educationNav = [
   { href: "/education", label: "Home" },
   { href: "/news", label: "News" },
+  { href: "/blogs", label: "Blog" },
+  { href: "/blog-create", label: "Create blog" },
   { href: "/education-news", label: "Aggregator" },
   { href: "/education-trends", label: "Trends" },
 ] as const;

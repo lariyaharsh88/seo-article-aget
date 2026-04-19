@@ -5,6 +5,7 @@ import { SITE_NAME } from "@/lib/seo-site";
 
 const footerLinks = [
   { href: "/about", label: "About" },
+  { href: "/bulk-article-creating-agent", label: "Bulk articles" },
   { href: "/privacy", label: "Privacy" },
   { href: "/terms", label: "Terms" },
 ] as const;

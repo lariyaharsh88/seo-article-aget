@@ -7,6 +7,10 @@
     {
       "path": "/api/cron/article-live-refresh",
       "schedule": "0 10 * * *"
+    },
+    {
+      "path": "/api/cron/ping-sitemaps",
+      "schedule": "0 6,18 * * *"
     }
   ]
 }
