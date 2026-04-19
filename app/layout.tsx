@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Space_Mono } from "next/font/google";
 import Script from "next/script";
+import { Analytics } from "@vercel/analytics/next";
 import { AnalyticsTracker } from "@/components/AnalyticsTracker";
 import { EducationTrafficCtaBar } from "@/components/EducationTrafficCtaBar";
 import { LazyUiWidgets } from "@/components/LazyUiWidgets";
@@ -172,6 +173,7 @@ export default function RootLayout({
             <LazyUiWidgets />
           </div>
         </Providers>
+        <Analytics />
       </body>
     </html>
   );
