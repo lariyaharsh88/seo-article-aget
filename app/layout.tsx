@@ -118,7 +118,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" data-theme="dark" suppressHydrationWarning>
       <body
         className={`${inter.variable} ${spaceMono.variable} page-grid`}
       >
@@ -132,7 +132,7 @@ export default function RootLayout({
                 var stored = localStorage.getItem("rfh:theme");
                 var theme = stored === "light" || stored === "dark"
                   ? stored
-                  : (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+                  : "dark";
                 document.documentElement.setAttribute("data-theme", theme);
               } catch (e) {
                 document.documentElement.setAttribute("data-theme", "dark");
