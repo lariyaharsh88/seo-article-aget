@@ -1,0 +1,23 @@
+# Verifies install + production build on every push to main (green check on GitHub).
+# Vercel also posts its own status — open failed Vercel checks in the repo → Deployments for logs.
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+      - run: npm ci
+      - name: Production build
+        env:
+          # Prisma is imported during static generation; a placeholder URL is enough for `next build`.
+          DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/ci?schema=public
+        run: npm run build
