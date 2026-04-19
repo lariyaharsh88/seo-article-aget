@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { buildEducationFunnelUrl } from "@/lib/education-funnel-url";
-import { EDUCATION_HOSTS } from "@/lib/education-hosts";
+import { EDUCATION_HOSTS, EDUCATION_SITE_URL } from "@/lib/education-hosts";
 import { SITE_LOGO_PATH, SITE_NAME } from "@/lib/seo-site";
 
 const mainNav = [
@@ -13,6 +13,7 @@ const mainNav = [
   { href: "/seo-agent", label: "Platform" },
   { href: "/ai-seo-tools", label: "Solutions" },
   { href: "/free-tools", label: "Resources" },
+  { href: `${EDUCATION_SITE_URL}/education`, label: "Education" },
   { href: "/dashboard", label: "Dashboard" },
   { href: "/bulk-article-creating-agent", label: "Bulk articles" },
   { href: "/pricing", label: "Pricing" },
@@ -137,15 +138,26 @@ export function SiteHeader() {
           </button>
           <nav className="hidden flex-wrap items-center justify-end gap-2 md:flex" aria-label="Primary">
             <ThemeToggle />
-            {nav.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="btn-premium rounded-lg border border-border/80 bg-surface/40 px-3 py-1.5 font-mono text-xs text-text-secondary transition-all duration-200 hover:-translate-y-0.5 hover:border-accent/70 hover:text-text-primary focus:outline-none focus:ring-2 focus:ring-accent"
-              >
-                {item.label}
-              </Link>
-            ))}
+            {nav.map((item) => {
+              const navBtn =
+                "btn-premium rounded-lg border border-border/80 bg-surface/40 px-3 py-1.5 font-mono text-xs text-text-secondary transition-all duration-200 hover:-translate-y-0.5 hover:border-accent/70 hover:text-text-primary focus:outline-none focus:ring-2 focus:ring-accent";
+              const isExternal = item.href.startsWith("http");
+              return isExternal ? (
+                <a
+                  key={item.href}
+                  href={item.href}
+                  className={navBtn}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {item.label}
+                </a>
+              ) : (
+                <Link key={item.href} href={item.href} className={navBtn}>
+                  {item.label}
+                </Link>
+              );
+            })}
             {!educationSurface ? (
               <Link
                 href="/seo-agent"
@@ -175,13 +187,25 @@ export function SiteHeader() {
             </li>
             {nav.map((item) => (
               <li key={item.href}>
-                <Link
-                  href={item.href}
-                  className="flex min-h-11 items-center rounded-lg border border-transparent px-3 py-2.5 font-mono text-xs text-text-secondary transition-colors hover:border-border hover:text-accent focus:outline-none focus:ring-2 focus:ring-accent"
-                  onClick={() => setOpen(false)}
-                >
-                  {item.label}
-                </Link>
+                {item.href.startsWith("http") ? (
+                  <a
+                    href={item.href}
+                    className="flex min-h-11 items-center rounded-lg border border-transparent px-3 py-2.5 font-mono text-xs text-text-secondary transition-colors hover:border-border hover:text-accent focus:outline-none focus:ring-2 focus:ring-accent"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => setOpen(false)}
+                  >
+                    {item.label}
+                  </a>
+                ) : (
+                  <Link
+                    href={item.href}
+                    className="flex min-h-11 items-center rounded-lg border border-transparent px-3 py-2.5 font-mono text-xs text-text-secondary transition-colors hover:border-border hover:text-accent focus:outline-none focus:ring-2 focus:ring-accent"
+                    onClick={() => setOpen(false)}
+                  >
+                    {item.label}
+                  </Link>
+                )}
               </li>
             ))}
             {educationSurface ? (

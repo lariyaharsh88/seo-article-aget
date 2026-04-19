@@ -57,6 +57,7 @@ export async function middleware(request: NextRequest) {
       "/pages",
       "/create-blog",
       "/bulk-article-creating-agent",
+      "/bulk-article-generate-agent",
       "/privacy",
       "/terms",
     ]);

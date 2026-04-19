@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { JsonLd } from "@/components/JsonLd";
+import { buildEducationFunnelUrl } from "@/lib/education-funnel-url";
 import { getRequestSiteOrigin } from "@/lib/request-site-origin";
 import { buildPageMetadata } from "@/lib/seo-page";
 
@@ -47,6 +48,37 @@ export default function EducationHubPage() {
       description:
         "Browse all repurposed education news pages under /news with crawlable, indexable URLs.",
     },
+    {
+      href: "/blogs",
+      title: "Education blog",
+      tag: "Blog",
+      description:
+        "Read published education articles on this subdomain (/blogs). Distinct from the main site marketing blog.",
+    },
+    {
+      href: "/blog-create",
+      title: "Create blog drafts",
+      tag: "Editors",
+      description:
+        "Bulk-create or manage education blog drafts (signed-in editors). Posts publish under /blogs.",
+    },
+  ] as const;
+
+  const mainOnlyTools = [
+    {
+      href: buildEducationFunnelUrl("/bulk-article-creating-agent", "inline_article"),
+      title: "Bulk article creating agent",
+      tag: "Main domain",
+      description:
+        "Run the SEO pipeline on many topics and save to your automated article history (Supabase). Opens on rankflowhq.com.",
+    },
+    {
+      href: buildEducationFunnelUrl("/seo-agent", "inline_article"),
+      title: "SEO article agent",
+      tag: "Main domain",
+      description:
+        "Full interactive SEO article workflow on the main RankFlowHQ product domain.",
+    },
   ] as const;
 
   const schema = {
@@ -82,6 +114,20 @@ export default function EducationHubPage() {
             >
               Browse News Pages
             </Link>
+            <Link
+              href="/blogs"
+              className="rounded-lg border border-border px-5 py-2.5 font-mono text-sm text-text-secondary transition-colors hover:border-accent hover:text-accent"
+            >
+              Education blog
+            </Link>
+            <a
+              href={buildEducationFunnelUrl("/bulk-article-creating-agent", "inline_article")}
+              className="rounded-lg border border-border px-5 py-2.5 font-mono text-sm text-text-secondary transition-colors hover:border-accent hover:text-accent"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Bulk article agent →
+            </a>
           </div>
           <div className="mt-8 rounded-xl border border-border/80 bg-background/60 p-4 md:p-5">
             <p className="font-mono text-xs uppercase tracking-[0.2em] text-accent">
@@ -102,7 +148,7 @@ export default function EducationHubPage() {
           </div>
         </section>
 
-        <section className="mt-6 grid gap-4 md:grid-cols-3">
+        <section className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {tools.map((tool) => (
             <Link
               key={tool.href}
@@ -116,6 +162,32 @@ export default function EducationHubPage() {
               <p className="mt-2 font-serif text-sm text-text-secondary">{tool.description}</p>
             </Link>
           ))}
+        </section>
+
+        <section className="mt-10">
+          <h2 className="font-display text-2xl text-text-primary">
+            Tools on rankflowhq.com
+          </h2>
+          <p className="mt-2 max-w-3xl font-serif text-sm text-text-secondary">
+            These routes live on the main product domain (not this subdomain). Links open in a new tab.
+          </p>
+          <div className="mt-4 grid gap-4 md:grid-cols-2">
+            {mainOnlyTools.map((tool) => (
+              <a
+                key={tool.href}
+                href={tool.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="rounded-xl border border-border bg-surface/40 p-5 transition-colors hover:border-accent/50"
+              >
+                <span className="font-mono text-[10px] uppercase tracking-wide text-accent">
+                  {tool.tag}
+                </span>
+                <h3 className="mt-2 font-display text-xl text-text-primary">{tool.title}</h3>
+                <p className="mt-2 font-serif text-sm text-text-secondary">{tool.description}</p>
+              </a>
+            ))}
+          </div>
         </section>
       </main>
     </>

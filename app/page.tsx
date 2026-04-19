@@ -6,6 +6,7 @@ import { HeroPlgDemo } from "@/components/home/HeroPlgDemo";
 import { JsonLd } from "@/components/JsonLd";
 import { RecentTrendingSection } from "@/components/home/RecentTrendingSection";
 import { SampleOutputSection } from "@/components/home/SampleOutputSection";
+import { EDUCATION_SITE_URL } from "@/lib/education-hosts";
 import { buildPageMetadata } from "@/lib/seo-page";
 import { buildHomePageSchema } from "@/lib/schema-org";
 export const metadata: Metadata = buildPageMetadata({
@@ -189,9 +190,11 @@ export default async function HomePage() {
   ] as const;
   const internalResourceLinks = [
     { href: "/seo-agent", label: "Full-stack SEO pipeline for ranking pages" },
+    { href: "/bulk-article-creating-agent", label: "Bulk article agent — save drafts to your account" },
     { href: "/free-tools/keyword-clustering", label: "Keyword clustering for topic and SERP planning" },
     { href: "/free-tools/ai-search-grader", label: "Search visibility grader" },
-    { href: "/blog", label: "SEO playbooks and execution notes" },
+    { href: "/blog", label: "SEO playbooks and execution notes (main blog)" },
+    { href: `${EDUCATION_SITE_URL}/education`, label: "Education hub — news, trends, education blog" },
   ] as const;
   const audiencePaths = [
     {
@@ -385,12 +388,23 @@ export default async function HomePage() {
           <ul className="mt-4 grid gap-2 sm:grid-cols-2">
             {internalResourceLinks.map((item) => (
               <li key={item.href}>
-                <Link
-                  href={item.href}
-                  className="inline-flex min-h-11 w-full items-center rounded-lg border border-border/70 bg-background/35 px-3 py-2 font-serif text-sm text-text-secondary hover:border-accent/60 hover:text-text-primary"
-                >
-                  {item.label}
-                </Link>
+                {item.href.startsWith("http") ? (
+                  <a
+                    href={item.href}
+                    className="inline-flex min-h-11 w-full items-center rounded-lg border border-border/70 bg-background/35 px-3 py-2 font-serif text-sm text-text-secondary hover:border-accent/60 hover:text-text-primary"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {item.label}
+                  </a>
+                ) : (
+                  <Link
+                    href={item.href}
+                    className="inline-flex min-h-11 w-full items-center rounded-lg border border-border/70 bg-background/35 px-3 py-2 font-serif text-sm text-text-secondary hover:border-accent/60 hover:text-text-primary"
+                  >
+                    {item.label}
+                  </Link>
+                )}
               </li>
             ))}
           </ul>

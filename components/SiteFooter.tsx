@@ -1,13 +1,22 @@
 import Link from "next/link";
 import { AdSenseSlot } from "@/components/AdSenseSlot";
 import { ADSENSE_SLOTS } from "@/lib/adsense-config";
+import { EDUCATION_SITE_URL } from "@/lib/education-hosts";
 import { SITE_NAME } from "@/lib/seo-site";
 
 const footerLinks = [
   { href: "/about", label: "About" },
+  { href: "/blog", label: "Blog" },
   { href: "/bulk-article-creating-agent", label: "Bulk articles" },
   { href: "/privacy", label: "Privacy" },
   { href: "/terms", label: "Terms" },
+] as const;
+
+/** Main site footer → education subdomain (distinct from /blog on apex). */
+const educationFooterLinks = [
+  { href: `${EDUCATION_SITE_URL}/education`, label: "Education hub" },
+  { href: `${EDUCATION_SITE_URL}/blogs`, label: "Education blog" },
+  { href: `${EDUCATION_SITE_URL}/news`, label: "Education news" },
 ] as const;
 
 export function SiteFooter() {
@@ -45,6 +54,9 @@ export function SiteFooter() {
           </p>
         </div>
         <nav aria-label="Footer" className="md:justify-self-center">
+          <p className="mb-2 font-mono text-[10px] uppercase tracking-wider text-text-muted">
+            RankFlowHQ
+          </p>
           <ul className="flex flex-wrap gap-x-6 gap-y-2">
             {footerLinks.map((item) => (
               <li key={item.href}>
@@ -54,6 +66,23 @@ export function SiteFooter() {
                 >
                   {item.label}
                 </Link>
+              </li>
+            ))}
+          </ul>
+          <p className="mb-2 mt-5 font-mono text-[10px] uppercase tracking-wider text-text-muted">
+            Education site
+          </p>
+          <ul className="flex flex-wrap gap-x-6 gap-y-2">
+            {educationFooterLinks.map((item) => (
+              <li key={item.href}>
+                <a
+                  href={item.href}
+                  className="font-mono text-xs text-text-secondary transition-colors hover:text-text-primary"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {item.label}
+                </a>
               </li>
             ))}
           </ul>

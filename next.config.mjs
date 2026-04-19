@@ -7,6 +7,11 @@ const nextConfig = {
         destination: "/seo-agent",
         permanent: true,
       },
+      {
+        source: "/bulk-article-generate-agent",
+        destination: "/bulk-article-creating-agent",
+        permanent: true,
+      },
     ];
   },
   experimental: {
