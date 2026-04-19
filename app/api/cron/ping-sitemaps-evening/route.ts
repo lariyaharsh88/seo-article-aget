@@ -13,9 +13,9 @@ export async function GET(request: Request) {
 
   try {
     const { pinged } = await runPingSitemapsCron();
-    return NextResponse.json({ ok: true, slot: "morning", pinged, at: new Date().toISOString() });
+    return NextResponse.json({ ok: true, slot: "evening", pinged, at: new Date().toISOString() });
   } catch (e) {
-    console.error("[cron/ping-sitemaps]", e);
+    console.error("[cron/ping-sitemaps-evening]", e);
     return NextResponse.json(
       { ok: false, error: e instanceof Error ? e.message : "ping failed" },
       { status: 500 },
