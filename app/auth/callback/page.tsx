@@ -152,25 +152,15 @@ export default function AuthCallbackPage() {
       {phase === "error" ? (
         <div className="mt-6 space-y-3 font-serif text-sm text-text-secondary">
           <p>
-            <strong className="text-text-primary">Local dev:</strong> start the app with{" "}
-            <code className="rounded bg-surface px-1 font-mono text-xs">npm run dev</code>{" "}
-            before clicking the email link, or the browser will show “connection refused”
-            for <code className="font-mono text-xs">localhost</code>.
-          </p>
-          <p>
-            <strong className="text-text-primary">Production:</strong> in Supabase →
-            Authentication → URL configuration, set <strong>Site URL</strong> to your live
-            domain and add{" "}
-            <code className="rounded bg-surface px-1 font-mono text-[11px]">
-              https://your-domain.com/auth/callback
-            </code>{" "}
-            under Redirect URLs.
+            Sign-in links work once and expire after about an hour. A newer email also replaces older links, and
+            some email apps open links automatically to scan them. Go back and send a new link — or type the 6-digit
+            code from the email instead.
           </p>
           <Link
             href={`/login?next=${encodeURIComponent(nextForLink)}`}
             className="inline-block rounded-lg bg-accent px-4 py-2 font-mono text-sm text-background"
           >
-            Back to login
+            Send a new link
           </Link>
         </div>
       ) : null}

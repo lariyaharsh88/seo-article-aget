@@ -10,6 +10,7 @@ function LoginContent() {
   const searchParams = useSearchParams();
   const nextPath = searchParams.get("next") || "/seo-agent";
   const [email, setEmail] = useState("");
+  const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -41,6 +42,32 @@ function LoginContent() {
         /rate limit/i.test(msg)
           ? "We've sent too many sign-in emails in the last hour. Please wait a few minutes and try again — or use the link from an earlier email if you still have it."
           : msg || "We couldn't send the sign-in link. Please try again.",
+      );
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  /** 6-digit code from the email: works even if the link was pre-opened by a mail scanner or expired. */
+  async function verifyCode() {
+    setLoading(true);
+    setError(null);
+    try {
+      const supabase = getSupabaseBrowserClient();
+      const { error: otpError } = await supabase.auth.verifyOtp({
+        email: (message || email).trim().toLowerCase(),
+        token: code.trim(),
+        type: "email",
+      });
+      if (otpError) throw otpError;
+      router.push(nextPath.startsWith("/") ? nextPath : "/seo-agent");
+      router.refresh();
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "";
+      setError(
+        /expired|invalid/i.test(msg)
+          ? "That code is wrong or has expired. Check you used the newest email, or send a new one."
+          : msg || "We couldn't verify that code. Please try again.",
       );
     } finally {
       setLoading(false);
@@ -79,11 +106,38 @@ function LoginContent() {
             We sent a sign-in link to <span className="font-semibold text-text-primary">{message}</span>. Open it on
             this device and you&apos;ll come straight back here, signed in. It can take a minute — check spam too.
           </p>
+          <form
+            className="mt-4 flex flex-col gap-2 sm:flex-row"
+            onSubmit={(e) => {
+              e.preventDefault();
+              void verifyCode();
+            }}
+          >
+            <label className="sr-only" htmlFor="otp-code">
+              Code from the email
+            </label>
+            <input
+              id="otp-code"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              value={code}
+              onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 10))}
+              placeholder="Or enter the code from the email"
+              className="w-full rounded-lg border border-border bg-background px-3 py-2.5 font-mono text-sm tracking-widest text-text-primary focus:outline-none focus:ring-2 focus:ring-accent"
+            />
+            <button
+              type="submit"
+              disabled={loading || code.trim().length < 6}
+              className="rounded-lg bg-accent px-4 py-2.5 font-mono text-sm font-semibold text-background hover:opacity-90 disabled:opacity-40"
+            >
+              {loading ? "Checking…" : "Sign in"}
+            </button>
+          </form>
           <div className="mt-4 flex flex-wrap gap-3">
             <button
               type="button"
               onClick={() => void checkSessionNow()}
-              className="rounded-lg bg-accent px-4 py-2 font-mono text-xs font-semibold text-background hover:opacity-90"
+              className="rounded-lg border border-border px-4 py-2 font-mono text-xs text-text-secondary hover:border-accent hover:text-accent"
             >
               I&apos;ve opened the link
             </button>
