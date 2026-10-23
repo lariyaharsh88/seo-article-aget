@@ -1,5 +1,6 @@
 "use client";
 
+import { replaceLegacyImages } from "@/lib/replace-legacy-images";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -1025,7 +1026,7 @@ export function SeoAgentClient() {
                       <div
                         className="seo-enriched-preview rounded-lg border border-border bg-background/40 p-4 prose prose-invert max-w-none prose-headings:font-display prose-img:rounded-md"
                         // eslint-disable-next-line react/no-danger -- server-built publish HTML from our /api/seo-enrich
-                        dangerouslySetInnerHTML={{ __html: enrichedHtml }}
+                        dangerouslySetInnerHTML={{ __html: replaceLegacyImages(enrichedHtml) }}
                       />
                     </div>
                   ) : (

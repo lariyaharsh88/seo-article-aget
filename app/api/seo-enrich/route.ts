@@ -2,16 +2,14 @@ import { guardPaidRoute } from "@/lib/paid-route-guard";
 import { NextResponse } from "next/server";
 import { marked } from "marked";
 import { addExternalLinkRelToHtml } from "@/lib/html-external-links";
-import { resolveGeminiKey } from "@/lib/api-keys";
+import { resolveGeminiKey, resolveUnsplashKey } from "@/lib/api-keys";
 import { classifySection } from "@/lib/seo-enrichment/classify-section";
 import { extractH1AndSections } from "@/lib/seo-enrichment/extract-sections";
 import { extractNumericSeries } from "@/lib/seo-enrichment/extract-numeric-series";
 import {
   geminiComparisonTableHtml,
-  geminiImagePrompt,
 } from "@/lib/seo-enrichment/llm-helpers";
-import { mockSectionImageUrl } from "@/lib/seo-enrichment/mock-image-url";
-import { buildPollinationsImageUrl } from "@/lib/seo-enrichment/pollinations-url";
+import { pickSectionImage } from "@/lib/seo-enrichment/section-image";
 import { buildBarChartUrl } from "@/lib/seo-enrichment/quickchart-url";
 import type { EnrichedSectionLog, VisualKind } from "@/lib/seo-enrichment/types";
 
@@ -59,6 +57,9 @@ export async function POST(request: Request) {
     );
     parts.push(`<div class="seo-enriched-intro">${introHtml}</div>`);
   }
+
+  const unsplashKey = resolveUnsplashKey(request);
+  const usedPhotos = new Set<string>();
 
   for (let i = 0; i < slice.length; i++) {
     const sec = slice[i];
@@ -110,43 +111,19 @@ export async function POST(request: Request) {
       });
     }
 
-    /** Hero image under every H2 — Gemini prompt + Pollinations (free URL, no OpenAI). */
-    let heroUrl: string;
-    if (geminiKey) {
-      try {
-        const prompt = await geminiImagePrompt(
-          sec.title,
-          sec.body,
-          keyword,
-          geminiKey,
-        );
-        heroUrl = buildPollinationsImageUrl(prompt);
-        logs.push({
-          title: sec.title,
-          kind: "illustration",
-          detail: "Pollinations image (Gemini prompt)",
-        });
-      } catch (e) {
-        heroUrl = mockSectionImageUrl(sec.title, i);
-        logs.push({
-          title: sec.title,
-          kind: "illustration",
-          detail: `Placeholder: ${e instanceof Error ? e.message : "error"}`,
-        });
-      }
-    } else {
-      heroUrl = mockSectionImageUrl(sec.title, i);
-      if (!logs.some((l) => l.title === sec.title && l.kind === "illustration")) {
-        logs.push({
-          title: sec.title,
-          kind: "illustration",
-          detail: "Placeholder image (set GEMINI_API_KEY for AI prompts)",
-        });
-      }
-    }
-
+    /** Image under every H2 — free sources only: Unsplash photo, else our branded card. */
+    const image = await pickSectionImage({
+      sectionTitle: sec.title,
+      keyword,
+      index: i,
+      unsplashKey,
+      used: usedPhotos,
+    });
+    logs.push({ title: sec.title, kind: "illustration", detail: image.note });
     parts.push(
-      `<figure class="my-4"><img class="h-auto w-full max-w-3xl rounded-lg border border-border" src="${escapeAttr(heroUrl)}" alt="${escapeAttr(sec.title)}" width="1024" height="576" loading="lazy" decoding="async" /></figure>`,
+      `<figure class="my-4"><img class="h-auto w-full max-w-3xl rounded-lg border border-border" src="${escapeAttr(image.url)}" alt="${escapeAttr(image.alt)}" width="1200" height="675" loading="lazy" decoding="async" />${
+        image.creditHtml ? `<figcaption class="mt-1 text-xs text-text-muted">${image.creditHtml}</figcaption>` : ""
+      }</figure>`,
     );
 
     if (tableHtml) {
@@ -179,7 +156,7 @@ export async function POST(request: Request) {
     logs,
     hasGemini: Boolean(geminiKey),
     /** Section heroes use Pollinations when Gemini is configured (no paid image API). */
-    heroImageSource: geminiKey ? "pollinations" : "placeholder",
+    heroImageSource: unsplashKey ? "unsplash" : "card",
   });
 }
 

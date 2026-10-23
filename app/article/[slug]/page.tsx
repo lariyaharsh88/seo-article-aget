@@ -1,3 +1,4 @@
+import { replaceLegacyImages } from "@/lib/replace-legacy-images";
 import { demoteHtmlH1, isPlaceholderArticleSlug } from "@/lib/placeholder-article";
 import type { Metadata } from "next";
 import { SiteDomain } from "@prisma/client";
@@ -226,7 +227,7 @@ export default async function PublicArticlePage({ params }: Props) {
           <PublicArticleShareBar title={row.title} url={canonicalUrl} />
           <div
             className="blog-prose mt-8 overflow-x-auto font-serif text-text-primary"
-            dangerouslySetInnerHTML={{ __html: demoteHtmlH1(row.html) }}
+            dangerouslySetInnerHTML={{ __html: replaceLegacyImages(demoteHtmlH1(row.html)) }}
           />
           <p className="mt-8 border-t border-border pt-4 font-mono text-xs text-text-muted">
             {row.provenance === "shared-article"

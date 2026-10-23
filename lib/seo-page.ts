@@ -30,13 +30,17 @@ export function buildPageMetadata(opts: {
   const url = `${base}${path}`;
   const isArticle = Boolean(opts.article);
   const customHero = opts.ogImage?.trim();
-  const defaultHero = `${base}${SITE_LOGO_PATH}`;
+  /** Articles without their own image get a branded title card (/og/card) instead of the square logo. */
+  const articleCard = isArticle
+    ? `${base}/og/card?${new URLSearchParams({ title: opts.title, w: "1200", h: "630" }).toString()}`
+    : null;
+  const defaultHero = articleCard || `${base}${SITE_LOGO_PATH}`;
   const heroUrl = customHero || defaultHero;
   const ogImages = [
     {
       url: heroUrl,
-      width: customHero ? 1200 : SITE_LOGO_DIMENSIONS.width,
-      height: customHero ? 630 : SITE_LOGO_DIMENSIONS.height,
+      width: customHero || articleCard ? 1200 : SITE_LOGO_DIMENSIONS.width,
+      height: customHero || articleCard ? 630 : SITE_LOGO_DIMENSIONS.height,
       alt: opts.title,
     },
   ];

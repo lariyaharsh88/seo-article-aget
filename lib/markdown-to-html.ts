@@ -1,5 +1,6 @@
 import { marked } from "marked";
 import { addExternalLinkRelToHtml } from "@/lib/html-external-links";
+import { replaceLegacyImages } from "@/lib/replace-legacy-images";
 
 marked.setOptions({
   gfm: true,
@@ -8,7 +9,7 @@ marked.setOptions({
 function parseMarkdownToHtmlFragment(markdown: string): string {
   const raw = markdown.trim();
   if (!raw) return "";
-  const parsed = marked.parse(raw, { async: false }) as string;
+  const parsed = replaceLegacyImages(marked.parse(raw, { async: false }) as string);
   try {
     return addExternalLinkRelToHtml(parsed);
   } catch {
