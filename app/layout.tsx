@@ -132,6 +132,30 @@ export default function RootLayout({
       <body
         className={`${inter.variable} ${jakarta.variable} ${spaceMono.variable}`}
       >
+        <Script id="chunk-reload" strategy="beforeInteractive">
+          {`
+            // A JS chunk can fail to load after a new deploy or a brief network/DNS blip, which leaves
+            // React's "Application error" screen. Reload once (per tab, per minute) to recover.
+            (function () {
+              function retry(msg) {
+                if (!/ChunkLoadError|Loading chunk [^ ]+ failed|Loading CSS chunk/.test(msg || "")) return;
+                try {
+                  var last = Number(sessionStorage.getItem("rfh:chunk-reload") || 0);
+                  if (Date.now() - last < 60000) return;
+                  sessionStorage.setItem("rfh:chunk-reload", String(Date.now()));
+                } catch (e) {}
+                location.reload();
+              }
+              window.addEventListener("error", function (e) {
+                retry((e && e.message) || (e && e.error && (e.error.name + " " + e.error.message)));
+              });
+              window.addEventListener("unhandledrejection", function (e) {
+                var r = e && e.reason;
+                retry(r && (r.name + " " + r.message));
+              });
+            })();
+          `}
+        </Script>
         <Script
           id="theme-init"
           strategy="beforeInteractive"
