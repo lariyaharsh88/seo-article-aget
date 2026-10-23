@@ -15,7 +15,7 @@ import { AdSenseSlot } from "@/components/AdSenseSlot";
 import { ADSENSE_SLOTS } from "@/lib/adsense-config";
 import { runArticlePipeline } from "@/lib/article-pipeline";
 import { computeArticleSeoScore } from "@/lib/article-seo-score";
-import { trackEvent, trackHeatmapTrigger } from "@/lib/analytics";
+import { trackEvent } from "@/lib/analytics";
 import { PIPELINE_STAGES } from "@/lib/pipeline-stages";
 import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
 import type { GscQueryRow } from "@/lib/gsc-queries";
@@ -123,19 +123,12 @@ function PanelSkeleton({ lines = 4 }: { lines?: number }) {
 }
 
 type TabId =
-  | "article"
-  | "score"
-  | "geo"
-  | "seo"
-  | "keywords"
-  | "sources"
-  | "visual";
+  "article" | "score" | "geo" | "seo" | "keywords" | "sources" | "visual";
 
 type PipelineMode = "simple" | "advanced";
 type ArticleViewMode = "edit" | "preview";
 const FREE_GUEST_RUN_LIMIT = 2;
 const FREE_LOGGED_RUN_LIMIT = 5;
-const WEEKLY_GOAL = 5;
 
 type LocalHistoryEntry = {
   id: string;
@@ -180,8 +173,7 @@ export function SeoAgentClient() {
   const [gscError, setGscError] = useState<string | null>(null);
   const [gscNote, setGscNote] = useState<string | null>(null);
   const [suggestError, setSuggestError] = useState<string | null>(null);
-  const [searchConsoleConfigured, setSearchConsoleConfigured] =
-    useState(false);
+  const [searchConsoleConfigured, setSearchConsoleConfigured] = useState(false);
 
   useEffect(() => {
     void fetch("/api/config")
@@ -224,9 +216,8 @@ export function SeoAgentClient() {
   const [keywords, setKeywords] = useState<Keyword[]>([]);
   const [sources, setSources] = useState<Source[]>([]);
   const [paas, setPaas] = useState<string[]>([]);
-  const [featuredSnippet, setFeaturedSnippet] = useState<FeaturedSnippet | null>(
-    null,
-  );
+  const [featuredSnippet, setFeaturedSnippet] =
+    useState<FeaturedSnippet | null>(null);
   const [meta, setMeta] = useState<SeoMeta | null>(null);
   const [error, setError] = useState<string | null>(null);
   /** Bumps when article generation finishes so the rich editor remounts with full Markdown. */
@@ -237,32 +228,19 @@ export function SeoAgentClient() {
   /** Final-step HTML from POST /api/seo-enrich (H2 images, QuickChart, comparison tables). */
   const [enrichedHtml, setEnrichedHtml] = useState("");
   const [autoEnrich, setAutoEnrich] = useState(true);
-  const [articleViewMode, setArticleViewMode] = useState<ArticleViewMode>("edit");
-  const [inviteCode, setInviteCode] = useState("");
-  const [inviteStatus, setInviteStatus] = useState<string | null>(null);
-  const [inviteCount, setInviteCount] = useState(0);
+  const [articleViewMode, setArticleViewMode] =
+    useState<ArticleViewMode>("edit");
   const [usageRuns, setUsageRuns] = useState(0);
-  const [streakDays, setStreakDays] = useState(1);
+  const [, setStreakDays] = useState(1);
   const [weeklyRuns, setWeeklyRuns] = useState(0);
   const [localHistory, setLocalHistory] = useState<LocalHistoryEntry[]>([]);
   const [rewardNotice, setRewardNotice] = useState<string | null>(null);
-  const [pinnedKeyword, setPinnedKeyword] = useState("");
-  const [showDidYouKnow, setShowDidYouKnow] = useState(true);
-  const [didYouKnowIndex, setDidYouKnowIndex] = useState(0);
   useEffect(() => {
     if (keywordParam) {
       setSimpleKeyword(keywordParam);
       setMode("simple");
     }
   }, [keywordParam]);
-
-  useEffect(() => {
-    const bucket = userSession?.user?.id?.trim() || "guest";
-    const storedPinned = localStorage.getItem(`rfh:pinned-keyword:${bucket}`) || "";
-    setPinnedKeyword(storedPinned);
-    const dismissed = localStorage.getItem(`rfh:dismissed:did-you-know:${bucket}`) === "1";
-    setShowDidYouKnow(!dismissed);
-  }, [userSession?.user?.id]);
 
   useEffect(() => {
     const bucket = userSession?.user?.id?.trim() || "guest";
@@ -295,7 +273,8 @@ export function SeoAgentClient() {
     const diffDays = Math.round((curr.getTime() - prev.getTime()) / 86400000);
     if (diffDays >= 1) {
       if (diffDays === 1) {
-        const nextStreak = (streakRaw ? Number.parseInt(streakRaw, 10) || 1 : 1) + 1;
+        const nextStreak =
+          (streakRaw ? Number.parseInt(streakRaw, 10) || 1 : 1) + 1;
         setStreakDays(nextStreak);
         localStorage.setItem(`rfh:streak:days:${bucket}`, String(nextStreak));
       } else {
@@ -315,8 +294,7 @@ export function SeoAgentClient() {
       ? simpleKeyword.trim().length > 0 && !running
       : Boolean(input.topic.trim() || input.sourceUrl.trim()) && !running;
 
-  const topicFirstLine =
-    input.topic.trim().split("\n")[0]?.trim() ?? "";
+  const topicFirstLine = input.topic.trim().split("\n")[0]?.trim() ?? "";
 
   const seoScoreResult = useMemo(
     () =>
@@ -335,12 +313,11 @@ export function SeoAgentClient() {
         ? simpleKeyword.trim().length > 0
         : Boolean(
             input.topic.trim() ||
-              input.primaryKeyword.trim() ||
-              input.sourceUrl.trim(),
+            input.primaryKeyword.trim() ||
+            input.sourceUrl.trim(),
           ),
     [mode, simpleKeyword, input.topic, input.primaryKeyword, input.sourceUrl],
   );
-
 
   const handleFetchSearchConsole = useCallback(async () => {
     setLoadingGsc(true);
@@ -363,9 +340,8 @@ export function SeoAgentClient() {
           isRecord(data) && typeof data.hint === "string" ? data.hint : "";
         throw new Error(hint ? `${msg}\n\n${hint}` : msg);
       }
-      const details = isRecord(data) && Array.isArray(data.details)
-        ? data.details
-        : [];
+      const details =
+        isRecord(data) && Array.isArray(data.details) ? data.details : [];
       const rows: GscQueryRow[] = details
         .filter(
           (r): r is Record<string, unknown> =>
@@ -374,8 +350,7 @@ export function SeoAgentClient() {
         .map((r) => ({
           query: typeof r.query === "string" ? r.query : "",
           clicks: typeof r.clicks === "number" ? r.clicks : 0,
-          impressions:
-            typeof r.impressions === "number" ? r.impressions : 0,
+          impressions: typeof r.impressions === "number" ? r.impressions : 0,
         }))
         .filter((r) => r.query.length > 0);
       setGscRows(rows);
@@ -403,9 +378,7 @@ export function SeoAgentClient() {
     setLoadingSuggest(true);
     setSuggestError(null);
     try {
-      const res = await fetch(
-        `/api/google-suggest?q=${encodeURIComponent(q)}`,
-      );
+      const res = await fetch(`/api/google-suggest?q=${encodeURIComponent(q)}`);
       const data: unknown = await res.json();
       if (!res.ok) {
         const msg =
@@ -444,7 +417,8 @@ export function SeoAgentClient() {
           }
         : input;
 
-    if (!effectiveInput.topic.trim() && !effectiveInput.sourceUrl.trim()) return;
+    if (!effectiveInput.topic.trim() && !effectiveInput.sourceUrl.trim())
+      return;
     trackEvent("feature_usage", {
       feature_name: "seo_agent_pipeline",
       action: "start",
@@ -484,9 +458,7 @@ export function SeoAgentClient() {
       typeof gscNote === "string" &&
       gscNote.toLowerCase().includes("showing site-wide top queries instead");
     const searchConsoleQueriesForArticle =
-      hasSourceUrl && !gscFallbackToSiteWide
-        ? gscRows.map((r) => r.query)
-        : [];
+      hasSourceUrl && !gscFallbackToSiteWide ? gscRows.map((r) => r.query) : [];
 
     try {
       const result = await runArticlePipeline(
@@ -543,7 +515,10 @@ export function SeoAgentClient() {
               topic: effectiveInput.topic,
               primaryKeyword: effectiveInput.primaryKeyword,
               sourceUrl: effectiveInput.sourceUrl,
-              title: topicFirstLine || effectiveInput.primaryKeyword || "Generated article",
+              title:
+                topicFirstLine ||
+                effectiveInput.primaryKeyword ||
+                "Generated article",
             }),
           });
           const saveData = (await saveRes.json()) as {
@@ -554,10 +529,14 @@ export function SeoAgentClient() {
             setHistoryLink(saveData.dashboardLink);
             setHistoryNotice("Saved to your dashboard history.");
           } else if (saveData.error) {
-          setHistoryNotice(`We couldn't save this to history: ${saveData.error}`);
+            setHistoryNotice(
+              `We couldn't save this to history: ${saveData.error}`,
+            );
           }
         } catch {
-          setHistoryNotice("We couldn't save to history due to a network issue. Please try again.");
+          setHistoryNotice(
+            "We couldn't save to history due to a network issue. Please try again.",
+          );
         }
       }
       const bucket = userSession?.user?.id?.trim() || "guest";
@@ -569,14 +548,21 @@ export function SeoAgentClient() {
       localStorage.setItem(`rfh:weekly:runs:${bucket}`, String(nextWeekly));
       const newEntry: LocalHistoryEntry = {
         id: `${Date.now()}`,
-        title: topicFirstLine || effectiveInput.primaryKeyword || "Generated article",
+        title:
+          topicFirstLine ||
+          effectiveInput.primaryKeyword ||
+          "Generated article",
         createdAt: new Date().toISOString(),
       };
       const nextHistory = [newEntry, ...localHistory].slice(0, 8);
       setLocalHistory(nextHistory);
-      localStorage.setItem(`rfh:history:list:${bucket}`, JSON.stringify(nextHistory));
+      localStorage.setItem(
+        `rfh:history:list:${bucket}`,
+        JSON.stringify(nextHistory),
+      );
       setArticleEditorEpoch((n) => n + 1);
-      const keywordLabel = effectiveInput.primaryKeyword.trim() || "your keyword";
+      const keywordLabel =
+        effectiveInput.primaryKeyword.trim() || "your keyword";
       setRewardNotice(
         `Reward unlocked: fresh output generated for "${keywordLabel}". Share it or optimize it in one click.`,
       );
@@ -613,7 +599,9 @@ export function SeoAgentClient() {
 
   const runWithAuth = useCallback(async () => {
     if (usageLimitReached) {
-      setError("You've reached your free limit. Upgrade to Pro to keep generating without limits.");
+      setError(
+        "You've reached your free limit. Upgrade to Pro to keep generating without limits.",
+      );
       trackEvent("funnel_dropoff", {
         funnel_name: "upgrade_nudge",
         step_name: "usage_limit_blocked",
@@ -648,60 +636,38 @@ export function SeoAgentClient() {
         options: { emailRedirectTo: redirectTo },
       });
       if (error) throw error;
-      setAuthNotice("Magic link sent. Open your email, then come back and click Generate.");
+      setAuthNotice(
+        "Magic link sent. Open your email, then come back and click Generate.",
+      );
     } catch (e) {
-      setAuthError(e instanceof Error ? e.message : "We couldn't send the magic link. Please try again.");
+      setAuthError(
+        e instanceof Error
+          ? e.message
+          : "We couldn't send the magic link. Please try again.",
+      );
     } finally {
       setAuthLoading(false);
     }
   }, [authEmail]);
 
-  const copyInviteLink = useCallback(async () => {
-    try {
-      const token =
-        inviteCode.trim() ||
-        `rfh-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
-      if (!inviteCode.trim()) setInviteCode(token);
-      const url = `${window.location.origin}/seo-agent?ref=${encodeURIComponent(token)}&try=1`;
-      await navigator.clipboard.writeText(url);
-      setInviteStatus("Invite link copied. Share it to unlock bonus templates.");
-      trackEvent("referral_invite", {
-        action: "invite_link_copied",
-        invite_code: token,
-      });
-      trackHeatmapTrigger("invite_link_copied", { page_path: "/seo-agent" });
-    } catch {
-      setInviteStatus("We couldn't copy your invite link. Please try again.");
-    }
-  }, [inviteCode]);
 
-  const claimInviteUnlock = useCallback(() => {
-    setInviteCount((n) => {
-      const next = n + 1;
-      trackEvent("referral_invite", {
-        action: "invite_tracked",
-        invite_count: next,
-      });
-      return next;
-    });
-    setInviteStatus("Invite recorded. Your bonus unlock progress has been updated.");
-  }, []);
+
+  /** Results UI (tabs, editor, progress) stays hidden until the first run, so new users see one task. */
+  const hasStarted =
+    running ||
+    article.trim().length > 0 ||
+    doneStages.length > 0 ||
+    Boolean(error);
 
   const tabs: { id: TabId; label: string }[] = [
     { id: "article", label: "Article" },
-    { id: "visual", label: "Rich HTML" },
-    { id: "score", label: "Score" },
-    { id: "geo", label: "AI answers" },
-    { id: "seo", label: "Meta & share" },
-    { id: "keywords", label: "Keywords" },
+    { id: "seo", label: "SEO title & meta" },
+    { id: "score", label: "SEO score" },
     { id: "sources", label: "Sources" },
+    { id: "keywords", label: "Keywords" },
+    { id: "visual", label: "Formatted HTML" },
+    { id: "geo", label: "AI search check" },
   ];
-  const didYouKnowItems = [
-    "The Rich HTML tab has ready-to-paste blocks (images and tables) for your site.",
-    "Meta & share has your page title and description—copy them into your CMS.",
-    "Sharing exports can include a small “Powered by” line to help others find the tool.",
-    "Save a keyword (in Shortcuts & extras) to reuse it on your next visit.",
-  ] as const;
   const contextualFeatureHint = useMemo(() => {
     if (running) {
       return "Generation is running—keep this tab open. You can open Keywords or Sources in other tabs when text appears.";
@@ -729,7 +695,11 @@ export function SeoAgentClient() {
     if (msg.includes("limit")) {
       return "Suggestion: open Pricing to upgrade, or come back after your next reset window.";
     }
-    if (msg.includes("network") || msg.includes("fetch") || msg.includes("failed")) {
+    if (
+      msg.includes("network") ||
+      msg.includes("fetch") ||
+      msg.includes("failed")
+    ) {
       return "Suggestion: check your internet connection, then try again.";
     }
     if (msg.includes("login") || msg.includes("auth")) {
@@ -738,52 +708,11 @@ export function SeoAgentClient() {
     return "Suggestion: try generating again. If this keeps happening, refresh the page.";
   }, [error]);
 
-  const applyQuickKeyword = useCallback(
-    (value: string) => {
-      setMode("simple");
-      setSimpleKeyword(value);
-      setHistoryNotice(`Quick action applied: "${value}". Tap generate to get an instant result.`);
-      trackEvent("feature_usage", {
-        feature_name: "hook_model_quick_action",
-        action: "apply_keyword",
-        keyword: value,
-      });
-    },
-    [],
-  );
 
-  const savePinnedKeyword = useCallback(() => {
-    const value = simpleKeyword.trim();
-    if (!value) {
-      setHistoryNotice("Add a keyword first, then pin it for one-click return.");
-      return;
-    }
-    const bucket = userSession?.user?.id?.trim() || "guest";
-    localStorage.setItem(`rfh:pinned-keyword:${bucket}`, value);
-    setPinnedKeyword(value);
-    setHistoryNotice(`Investment saved: "${value}" pinned for your next session.`);
-    trackEvent("feature_usage", {
-      feature_name: "hook_model_investment",
-      action: "pin_keyword",
-    });
-  }, [simpleKeyword, userSession?.user?.id]);
 
-  const dismissDidYouKnow = useCallback(() => {
-    const bucket = userSession?.user?.id?.trim() || "guest";
-    localStorage.setItem(`rfh:dismissed:did-you-know:${bucket}`, "1");
-    setShowDidYouKnow(false);
-  }, [userSession?.user?.id]);
 
   return (
-    <main className="mx-auto flex min-w-0 max-w-6xl flex-col gap-6 px-4 py-8 sm:gap-8 sm:py-10 md:px-6">
-      <p className="font-mono text-xs">
-        <Link
-          href="/"
-          className="text-text-muted transition-colors hover:text-accent"
-        >
-          ← All tools
-        </Link>
-      </p>
+    <main className={`mx-auto flex min-w-0 ${hasStarted ? "max-w-6xl" : "max-w-3xl"} flex-col gap-6 px-4 py-8 sm:gap-8 sm:py-10 md:px-6`}>
       <header className="space-y-4 border-b border-border pb-6 sm:pb-8">
         <div className="space-y-2">
           <h1 className="font-display text-2xl text-text-primary sm:text-3xl md:text-4xl">
@@ -794,16 +723,31 @@ export function SeoAgentClient() {
           </p>
         </div>
 
-        <ol className="grid gap-3 sm:grid-cols-3">
+        <ol className="grid grid-cols-3 gap-2 sm:gap-3">
           {[
-            ["1", "Enter a keyword", "The topic you want to rank for, e.g. “best CRM for small business”."],
-            ["2", "We research and write", "We read the top Google results and write a long-form draft with sources. Takes about 2–4 minutes."],
-            ["3", "Copy or publish", "Get the article plus SEO title and description. Copy it, download it, or save it to your dashboard."],
+            [
+              "1",
+              "Enter a keyword",
+              "The topic you want to rank for, e.g. “best CRM for small business”.",
+            ],
+            [
+              "2",
+              "We research and write",
+              "We read the top Google results and write a long-form draft with sources. Takes about 2–4 minutes.",
+            ],
+            [
+              "3",
+              "Copy or publish",
+              "Get the article plus SEO title and description. Copy it, download it, or save it to your dashboard.",
+            ],
           ].map(([n, title, body]) => (
-            <li key={n} className="rounded-xl border border-border/80 bg-surface/60 p-4">
+            <li
+              key={n}
+              className="rounded-xl border border-border/80 bg-surface/60 p-3 sm:p-4"
+            >
               <p className="font-mono text-xs text-accent">Step {n}</p>
-              <p className="mt-1 font-semibold text-text-primary">{title}</p>
-              <p className="mt-1 text-sm text-text-secondary">{body}</p>
+              <p className="mt-1 text-sm font-semibold leading-snug text-text-primary sm:text-base">{title}</p>
+              <p className="mt-1 hidden text-sm text-text-secondary sm:block">{body}</p>
             </li>
           ))}
         </ol>
@@ -814,7 +758,10 @@ export function SeoAgentClient() {
               ? `Signed in as ${userSession.user.email} · ${usageRemaining} of ${usageLimit} free articles left.`
               : `A free account is needed to generate — your first ${FREE_LOGGED_RUN_LIMIT} articles are free, no card required.`
             : "Checking sign-in…"}{" "}
-          <Link href="/repurpose-url" className="text-accent underline-offset-2 hover:underline">
+          <Link
+            href="/repurpose-url"
+            className="text-accent underline-offset-2 hover:underline"
+          >
             Have a URL instead? Rewrite it into an article
           </Link>
           .
@@ -834,20 +781,23 @@ export function SeoAgentClient() {
         </div>
       ) : null}
 
-      <div className="grid min-w-0 gap-6 lg:grid-cols-[1fr_minmax(260px,300px)]">
+      <div
+        className={`grid min-w-0 gap-6 ${hasStarted ? "lg:grid-cols-[1fr_minmax(260px,300px)]" : ""}`}
+      >
         <div className="min-w-0 space-y-4">
           {mode === "simple" ? (
-            <section
-              className="rounded-xl border border-border bg-surface/80 p-4"
-            >
+            <section className="rounded-xl border border-border bg-surface/80 p-4">
               <h2 className="text-lg font-semibold text-text-primary">
                 What should the article be about?
               </h2>
               <p className="mt-1 text-sm text-text-secondary">
-                One keyword or short phrase is enough. Example: &ldquo;best CRM for small business&rdquo;.
+                One keyword or short phrase is enough. Example: &ldquo;best CRM
+                for small business&rdquo;.
               </p>
               <label className="mt-3 block text-sm text-text-secondary">
-                <span className="font-medium text-text-primary">Keyword or topic</span>
+                <span className="font-medium text-text-primary">
+                  Keyword or topic
+                </span>
                 <input
                   type="text"
                   value={simpleKeyword}
@@ -866,7 +816,9 @@ export function SeoAgentClient() {
               gscRows={gscRows}
               googleSuggestions={googleSuggestions}
               onFetchSearchConsole={() => void handleFetchSearchConsole()}
-              onFetchGoogleSuggestions={() => void handleFetchGoogleSuggestions()}
+              onFetchGoogleSuggestions={() =>
+                void handleFetchGoogleSuggestions()
+              }
               loadingGsc={loadingGsc}
               loadingSuggest={loadingSuggest}
               gscError={gscError}
@@ -885,14 +837,20 @@ export function SeoAgentClient() {
               data-cta-label="run_pipeline"
               className={`touch-manipulation w-full rounded-lg bg-accent px-5 py-2.5 font-mono text-sm font-semibold text-background transition-all duration-200 enabled:hover:opacity-90 enabled:focus:outline-none enabled:focus:ring-2 enabled:focus:ring-accent disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto`}
             >
-              {running ? "Generating… (about 2–4 min)" : userSession ? "Generate article" : "Sign in & generate"}
+              {running
+                ? "Generating… (about 2–4 min)"
+                : userSession
+                  ? "Generate article"
+                  : "Sign in & generate"}
             </button>
             <button
               type="button"
               onClick={() => setMode(mode === "simple" ? "advanced" : "simple")}
               className="text-sm text-text-secondary underline-offset-2 hover:text-accent hover:underline"
             >
-              {mode === "simple" ? "More options (audience, intent, source URL)" : "Use the simple form"}
+              {mode === "simple"
+                ? "More options (audience, intent, source URL)"
+                : "Use the simple form"}
             </button>
             <label className="flex cursor-pointer items-center gap-2 text-xs text-text-secondary sm:text-sm">
               <input
@@ -907,31 +865,20 @@ export function SeoAgentClient() {
             <span className="text-xs text-text-muted sm:text-sm">
               Your topic is sent securely to generate the draft.
             </span>
-            <Link
-              href="/login?next=/seo-agent"
-              className="font-mono text-[11px] text-accent underline-offset-2 hover:underline sm:text-xs"
-            >
-              Log in
-            </Link>
-            <Link
-              href="/dashboard"
-              className="font-mono text-[11px] text-accent underline-offset-2 hover:underline sm:text-xs"
-            >
-              View dashboard
-            </Link>
-              {usageLimitReached ? (
-                <Link
-                  href="/pricing"
-                  className="rounded-lg border border-accent/40 bg-accent/10 px-3 py-2 font-mono text-[11px] text-accent hover:bg-accent/20 sm:text-xs"
-                >
-                  Upgrade to continue
-                </Link>
-              ) : null}
+            {usageLimitReached ? (
+              <Link
+                href="/pricing"
+                className="rounded-lg border border-accent/40 bg-accent/10 px-3 py-2 font-mono text-[11px] text-accent hover:bg-accent/20 sm:text-xs"
+              >
+                Upgrade to continue
+              </Link>
+            ) : null}
           </div>
           {running ? (
             <div className="rounded-lg border border-info/35 bg-info/10 px-3 py-2">
               <p className="font-mono text-[11px] text-info">
-                We&apos;re generating your output now. Keep this tab open for best results.
+                We&apos;re generating your output now. Keep this tab open for
+                best results.
               </p>
             </div>
           ) : null}
@@ -939,7 +886,10 @@ export function SeoAgentClient() {
             <p className="font-mono text-[11px] text-text-muted">
               {historyNotice}{" "}
               {historyLink ? (
-                <Link href={historyLink} className="text-accent underline-offset-2 hover:underline">
+                <Link
+                  href={historyLink}
+                  className="text-accent underline-offset-2 hover:underline"
+                >
                   View entry
                 </Link>
               ) : null}
@@ -947,24 +897,32 @@ export function SeoAgentClient() {
           ) : null}
           {rewardNotice ? (
             <div className="rounded-lg border border-success/45 bg-success/10 px-3 py-2">
-              <p className="font-mono text-[11px] text-success">{rewardNotice}</p>
+              <p className="font-mono text-[11px] text-success">
+                {rewardNotice}
+              </p>
             </div>
           ) : null}
-          <div className="lg:hidden">
-            <PipelineProgress
-              stages={PIPELINE_STAGES}
-              currentStage={stage}
-              doneStages={doneStages}
-            />
-          </div>
-          <div className="lg:hidden">
-            <SeoPublishChecklist
-              articleMarkdown={article}
-              meta={meta}
-              hasKeywordBrief={keywordBriefComplete}
-              contentScore={showSeoScore ? seoScoreResult.overall : undefined}
-            />
-          </div>
+          {hasStarted ? (
+            <>
+              <div className="lg:hidden">
+                <PipelineProgress
+                  stages={PIPELINE_STAGES}
+                  currentStage={stage}
+                  doneStages={doneStages}
+                />
+              </div>
+              <div className="lg:hidden">
+                <SeoPublishChecklist
+                  articleMarkdown={article}
+                  meta={meta}
+                  hasKeywordBrief={keywordBriefComplete}
+                  contentScore={
+                    showSeoScore ? seoScoreResult.overall : undefined
+                  }
+                />
+              </div>
+            </>
+          ) : null}
 
           {error && (
             <div
@@ -973,7 +931,9 @@ export function SeoAgentClient() {
             >
               <p className="font-mono text-sm text-red-200">{error}</p>
               {errorGuidance ? (
-                <p className="mt-1 font-mono text-[11px] text-red-100">{errorGuidance}</p>
+                <p className="mt-1 font-mono text-[11px] text-red-100">
+                  {errorGuidance}
+                </p>
               ) : null}
               <div className="mt-3 flex flex-wrap gap-2">
                 <button
@@ -995,451 +955,264 @@ export function SeoAgentClient() {
             </div>
           )}
 
-          <div className="rounded-xl border border-border bg-surface/80 transition-all duration-200 ease-out">
-            <div
-              className="custom-scrollbar flex gap-1 overflow-x-auto border-b border-border p-2 [-webkit-overflow-scrolling:touch]"
-              role="tablist"
-              aria-label="Output views"
-            >
-              {tabs.map((t) => (
-                <button
-                  key={t.id}
-                  type="button"
-                  role="tab"
-                  aria-selected={tab === t.id}
-                  onClick={() => {
-                    setTab(t.id);
-                    trackEvent("feature_usage", {
-                      feature_name: "seo_agent_tabs",
-                      action: "tab_open",
-                      tab_id: t.id,
-                    });
-                  }}
-                  className={`touch-manipulation whitespace-nowrap rounded-md px-2.5 py-2 font-mono text-[11px] transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-accent sm:px-3 sm:text-xs ${
-                    tab === t.id
-                      ? "bg-accent text-background"
-                      : "text-text-secondary hover:bg-background/80"
-                  }`}
-                >
-                  {t.label}
-                </button>
-              ))}
-            </div>
-            <ContentScoreStrip
-              overall={seoScoreResult.overall}
-              visible={Boolean(article.trim() && showSeoScore)}
-              onViewDetails={() => setTab("score")}
-              onOpenSeoPack={() => setTab("seo")}
-            />
-            <div className="border-b border-border/70 bg-background/30 px-3 py-2">
-              <p className="font-mono text-[11px] text-text-muted">{contextualFeatureHint}</p>
-            </div>
-            <div className="custom-scrollbar max-h-[min(70vh,32rem)] overflow-y-auto p-3 sm:max-h-[70vh] sm:p-4">
-              {tab === "visual" &&
-                (enrichedHtml.trim() ? (
-                  <div className="space-y-3">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          void navigator.clipboard.writeText(enrichedHtml)
-                        }
-                        className="rounded-md border border-border bg-background/80 px-3 py-1.5 font-mono text-[11px] text-text-secondary transition-colors hover:border-accent hover:text-accent"
-                      >
-                        Copy HTML
-                      </button>
-                      <p className="font-mono text-[11px] text-text-muted">
-                        Publish-ready HTML after the markdown article (images
-                        under H2, QuickChart when data is found, tables for
-                        comparisons).
-                      </p>
-                    </div>
-                    <div
-                      className="seo-enriched-preview rounded-lg border border-border bg-background/40 p-4 prose prose-invert max-w-none prose-headings:font-display prose-img:rounded-md"
-                      // eslint-disable-next-line react/no-danger -- server-built publish HTML from our /api/seo-enrich
-                      dangerouslySetInnerHTML={{ __html: enrichedHtml }}
-                    />
-                  </div>
-                ) : (
-                  <p className="font-serif text-text-secondary">
-                    Run the pipeline with{" "}
-                    <span className="font-mono text-accent">Auto-enrich</span>{" "}
-                    enabled (default). After the article and SEO audit, the
-                    server builds visual HTML — open this tab when the run
-                    finishes, or switch here if you disabled enrich.
-                  </p>
-                ))}
-              {tab === "article" && (
-                <div>
-                  <ArticleCopyBar
-                    markdown={article}
-                    title={topicFirstLine || input.primaryKeyword || "Generated article"}
-                    disabled={running}
-                  />
-                  <div className="mb-4 inline-flex rounded-lg border border-border bg-background/60 p-1">
-                    <button
-                      type="button"
-                      onClick={() => setArticleViewMode("edit")}
-                      className={`rounded-md px-3 py-1.5 font-mono text-xs transition-colors ${
-                        articleViewMode === "edit"
-                          ? "bg-accent text-background"
-                          : "text-text-secondary hover:text-text-primary"
-                      }`}
-                    >
-                      Edit Article
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setArticleViewMode("preview")}
-                      className={`rounded-md px-3 py-1.5 font-mono text-xs transition-colors ${
-                        articleViewMode === "preview"
-                          ? "bg-accent text-background"
-                          : "text-text-secondary hover:text-text-primary"
-                      }`}
-                    >
-                      Preview Article
-                    </button>
-                  </div>
-                  <ResearchImagesPanel
-                    topic={
-                      storedResearchTopic.trim() ||
-                      input.topic.trim().split("\n")[0]?.trim() ||
-                      "Article"
-                    }
-                    audience={input.audience}
-                    researchContext={storedResearchContext}
-                    article={article}
-                    disableArticleMutation={running}
-                    onApplyArticle={setArticle}
-                    onRemountEditor={() =>
-                      setArticleEditorEpoch((e) => e + 1)
-                    }
-                  />
-                  {running || articleViewMode === "preview" ? (
-                    article.trim() ? (
-                      <ArticleRenderer markdown={article} streaming={running} />
-                    ) : (
-                      <PanelSkeleton lines={6} />
-                    )
-                  ) : (
-                    <ArticleEditor
-                      key={articleEditorEpoch}
-                      markdown={article}
-                      onChange={setArticle}
-                    />
-                  )}
-                  {showSeoScore ? (
-                    <div className="mt-6">
-                      <ArticleSeoScorecard result={seoScoreResult} compact />
-                    </div>
-                  ) : null}
-                  {article.trim() ? (
-                    <div className="mt-4 rounded-xl border border-accent/35 bg-accent/10 p-3">
-                      <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-accent">
-                        Growth loop
-                      </p>
-                      <p className="mt-1 font-serif text-sm text-text-secondary">
-                        Export, share, or embed this output. Every share carries Powered by RankFlowHQ and can bring your next user.
-                      </p>
-                    </div>
-                  ) : null}
-                  {article.trim() ? (
-                    <div className="mt-6 rounded-xl border border-border bg-surface/70 p-4">
-                      <h3 className="font-display text-2xl text-text-primary">
-                        Generative Engine Optimization panel
-                      </h3>
-                      <p className="mt-1 font-serif text-sm text-text-secondary">
-                        AI Answer Score, ChatGPT snippet preview, and optimization suggestions for this draft.
-                      </p>
-                      <div className="mt-4">
-                        <ArticleGeoPanel
-                          article={article}
-                          topic={topicFirstLine || input.topic.trim() || "this topic"}
-                          primaryKeyword={input.primaryKeyword}
-                        />
-                      </div>
-                    </div>
-                  ) : null}
-                </div>
-              )}
-              {tab === "score" &&
-                (showSeoScore ? (
-                  <ArticleSeoScorecard result={seoScoreResult} />
-                ) : (
-                  <p className="font-serif text-text-secondary">
-                    Add or generate article text first (about 40+ characters). Scores
-                    use your markdown, the SEO package from the audit stage when
-                    available, and your keyword list.
-                  </p>
-                ))}
-              {tab === "geo" && (
-                <ArticleGeoPanel
-                  article={article}
-                  topic={topicFirstLine || input.topic.trim() || "this topic"}
-                  primaryKeyword={input.primaryKeyword}
-                />
-              )}
-              {tab === "seo" && <SeoPackage meta={meta} article={article} />}
-              {tab === "keywords" && (
-                <KeywordsPanel
-                  keywords={keywords}
-                  paas={paas}
-                  featuredSnippet={featuredSnippet}
-                  gscRows={gscRows}
-                  googleSuggestions={googleSuggestions}
-                />
-              )}
-              {tab === "sources" && <SourcesList sources={sources} />}
-            </div>
-          </div>
-
-          <details className="rounded-xl border border-border/80 bg-surface/50">
-            <summary className="cursor-pointer select-none px-4 py-3 text-sm font-medium text-text-primary">
-              Shortcuts &amp; extras (invites, streak, keyword ideas)
-            </summary>
-            <div className="space-y-4 border-t border-border/60 px-4 pb-4 pt-2">
-              <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={() => applyQuickKeyword("ai seo tools for startups")}
-                  className="rounded-md border border-border px-2.5 py-1.5 text-xs text-text-secondary hover:border-accent hover:text-accent"
-                >
-                  Try example keyword
-                </button>
-                <button
-                  type="button"
-                  onClick={() => applyQuickKeyword("how to improve seo traffic")}
-                  className="rounded-md border border-border px-2.5 py-1.5 text-xs text-text-secondary hover:border-accent hover:text-accent"
-                >
-                  Another example
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setTab("seo")}
-                  className="rounded-md border border-border px-2.5 py-1.5 text-xs text-text-secondary hover:border-accent hover:text-accent"
-                >
-                  Open Meta &amp; share
-                </button>
-                <button
-                  type="button"
-                  onClick={() => savePinnedKeyword()}
-                  className="rounded-md border border-accent/40 bg-accent/10 px-2.5 py-1.5 text-xs text-accent hover:bg-accent/20"
-                >
-                  Save keyword for next time
-                </button>
-              </div>
-              {pinnedKeyword ? (
-                <p className="text-xs text-text-muted">
-                  Saved keyword: &ldquo;{pinnedKeyword}&rdquo;
-                </p>
-              ) : null}
-              {showDidYouKnow ? (
-                <div className="rounded-lg border border-border/70 bg-background/40 p-3">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <p className="text-xs font-medium text-text-primary">Tip</p>
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setDidYouKnowIndex((i) => (i + 1) % didYouKnowItems.length)
-                        }
-                        className="text-xs text-accent hover:underline"
-                      >
-                        Next
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => dismissDidYouKnow()}
-                        className="text-xs text-text-muted hover:text-text-secondary"
-                      >
-                        Hide tips
-                      </button>
-                    </div>
-                  </div>
-                  <p className="mt-2 text-sm text-text-secondary">
-                    {didYouKnowItems[didYouKnowIndex]}
-                  </p>
-                </div>
-              ) : null}
-              <section className="rounded-xl border border-border bg-surface/70 p-4">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <p className="text-xs font-medium uppercase tracking-wide text-accent">
-                      Invite friends
-                    </p>
-                    <p className="mt-1 text-sm text-text-secondary">
-                      Share a link to unlock bonus templates when friends try the tool.
-                    </p>
-                  </div>
-                  <div className="rounded-full border border-accent/35 bg-accent/10 px-3 py-1 text-xs text-accent">
-                    Referrals: {inviteCount}/3
-                  </div>
-                </div>
-                <div className="mt-3 h-2 rounded-full bg-background/80">
-                  <div
-                    className="h-full rounded-full bg-accent transition-all duration-300"
-                    style={{ width: `${Math.min(100, (inviteCount / 3) * 100)}%` }}
-                  />
-                </div>
-                <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
-                  <input
-                    type="text"
-                    value={inviteCode}
-                    onChange={(e) => setInviteCode(e.target.value)}
-                    placeholder="Invite code (optional)"
-                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-xs text-text-primary focus:border-accent focus:outline-none"
-                  />
+          {hasStarted ? (
+            <div className="rounded-xl border border-border bg-surface/80 transition-all duration-200 ease-out">
+              <div
+                className="custom-scrollbar flex gap-1 overflow-x-auto border-b border-border p-2 [-webkit-overflow-scrolling:touch]"
+                role="tablist"
+                aria-label="Output views"
+              >
+                {tabs.map((t) => (
                   <button
+                    key={t.id}
                     type="button"
-                    onClick={() => void copyInviteLink()}
-                    data-track-cta
-                    data-cta-label="copy_invite_link"
-                    className="rounded-lg border border-accent/40 bg-accent/10 px-3 py-2 text-xs text-accent transition-colors hover:bg-accent/20"
-                  >
-                    Copy invite link
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => claimInviteUnlock()}
-                    data-track-cta
-                    data-cta-label="track_invite_unlock"
-                    className="rounded-lg border border-border px-3 py-2 text-xs text-text-secondary transition-colors hover:border-accent hover:text-accent"
-                  >
-                    I sent an invite
-                  </button>
-                </div>
-                {inviteStatus ? (
-                  <p className="mt-2 text-xs text-text-muted">{inviteStatus}</p>
-                ) : (
-                  <p className="mt-2 text-xs text-text-muted">
-                    Progress: 1 invite = tier 1, 3 invites = full unlock.
-                  </p>
-                )}
-              </section>
-              <section className="rounded-xl border border-border/80 bg-surface/60 p-4">
-                <div className="flex items-center justify-between gap-2">
-                  <p className="text-xs font-medium uppercase tracking-wide text-accent">
-                    Pro (preview)
-                  </p>
-                  <span className="rounded-full border border-accent/40 bg-accent/10 px-2 py-0.5 text-[10px] text-accent">
-                    Locked
-                  </span>
-                </div>
-                <div className="mt-3 grid gap-2 md:grid-cols-3">
-                  {[
-                    "Bulk article generation queue",
-                    "Team collaboration workspaces",
-                    "Premium conversion templates",
-                  ].map((item) => (
-                    <div
-                      key={item}
-                      className="rounded-lg border border-border/70 bg-background/40 px-3 py-2"
-                    >
-                      <p className="text-sm text-text-secondary blur-[0.8px]">{item}</p>
-                    </div>
-                  ))}
-                </div>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <Link
-                    href="/pricing"
-                    className="inline-flex min-h-10 items-center rounded-lg bg-accent px-4 py-2 text-xs font-semibold text-background hover:opacity-90"
-                  >
-                    View Pro
-                  </Link>
-                  <Link
-                    href="/pricing"
-                    className="inline-flex min-h-10 items-center rounded-lg border border-border px-4 py-2 text-xs text-text-secondary hover:border-accent hover:text-accent"
-                  >
-                    Compare plans
-                  </Link>
-                </div>
-              </section>
-              <section className="rounded-xl border border-border/80 bg-surface/60 p-4">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <p className="text-xs font-medium uppercase tracking-wide text-accent">
-                    This week
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <span className="rounded-full border border-accent/35 bg-accent/10 px-2 py-0.5 text-[10px] text-accent">
-                      {streakDays} day streak
-                    </span>
-                    <span className="rounded-full border border-border/70 bg-background/50 px-2 py-0.5 text-[10px] text-text-secondary">
-                      {weeklyRuns}/{WEEKLY_GOAL} runs
-                    </span>
-                  </div>
-                </div>
-                <div className="mt-3 h-2 rounded-full bg-background/80">
-                  <div
-                    className="h-full rounded-full bg-accent transition-all duration-300"
-                    style={{
-                      width: `${Math.min(100, (weeklyRuns / WEEKLY_GOAL) * 100)}%`,
+                    role="tab"
+                    aria-selected={tab === t.id}
+                    onClick={() => {
+                      setTab(t.id);
+                      trackEvent("feature_usage", {
+                        feature_name: "seo_agent_tabs",
+                        action: "tab_open",
+                        tab_id: t.id,
+                      });
                     }}
-                  />
-                </div>
-                <p className="mt-2 text-xs text-text-muted">
-                  {Math.max(0, WEEKLY_GOAL - weeklyRuns)} more run
-                  {WEEKLY_GOAL - weeklyRuns === 1 ? "" : "s"} to hit your weekly goal.
-                </p>
-              </section>
-              <section className="rounded-xl border border-border/80 bg-surface/60 p-4">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <p className="text-xs font-medium uppercase tracking-wide text-accent">
-                    Recent on this device
-                  </p>
-                  <Link
-                    href="/dashboard"
-                    className="text-xs text-accent underline-offset-2 hover:underline"
+                    className={`touch-manipulation whitespace-nowrap rounded-md px-2.5 py-2 font-mono text-[11px] transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-accent sm:px-3 sm:text-xs ${
+                      tab === t.id
+                        ? "bg-accent text-background"
+                        : "text-text-secondary hover:bg-background/80"
+                    }`}
                   >
-                    Full dashboard
-                  </Link>
-                </div>
-                {localHistory.length ? (
-                  <ul className="mt-3 space-y-2">
-                    {localHistory.map((entry) => (
-                      <li
-                        key={entry.id}
-                        className="rounded-lg border border-border/70 bg-background/40 px-3 py-2"
-                      >
-                        <p className="text-sm text-text-secondary">{entry.title}</p>
-                        <p className="mt-1 text-[10px] text-text-muted">
-                          {new Date(entry.createdAt).toLocaleString()}
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+              <ContentScoreStrip
+                overall={seoScoreResult.overall}
+                visible={Boolean(article.trim() && showSeoScore)}
+                onViewDetails={() => setTab("score")}
+                onOpenSeoPack={() => setTab("seo")}
+              />
+              <div className="border-b border-border/70 bg-background/30 px-3 py-2">
+                <p className="font-mono text-[11px] text-text-muted">
+                  {contextualFeatureHint}
+                </p>
+              </div>
+              <div className="custom-scrollbar max-h-[min(70vh,32rem)] overflow-y-auto p-3 sm:max-h-[70vh] sm:p-4">
+                {tab === "visual" &&
+                  (enrichedHtml.trim() ? (
+                    <div className="space-y-3">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            void navigator.clipboard.writeText(enrichedHtml)
+                          }
+                          className="rounded-md border border-border bg-background/80 px-3 py-1.5 font-mono text-[11px] text-text-secondary transition-colors hover:border-accent hover:text-accent"
+                        >
+                          Copy HTML
+                        </button>
+                        <p className="font-mono text-[11px] text-text-muted">
+                          Publish-ready HTML after the markdown article (images
+                          under H2, QuickChart when data is found, tables for
+                          comparisons).
                         </p>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="mt-3 text-sm text-text-muted">
-                    Titles of articles you generate will show up here for quick reference.
-                  </p>
+                      </div>
+                      <div
+                        className="seo-enriched-preview rounded-lg border border-border bg-background/40 p-4 prose prose-invert max-w-none prose-headings:font-display prose-img:rounded-md"
+                        // eslint-disable-next-line react/no-danger -- server-built publish HTML from our /api/seo-enrich
+                        dangerouslySetInnerHTML={{ __html: enrichedHtml }}
+                      />
+                    </div>
+                  ) : (
+                    <p className="font-serif text-text-secondary">
+                      Run the pipeline with{" "}
+                      <span className="font-mono text-accent">Auto-enrich</span>{" "}
+                      enabled (default). After the article and SEO audit, the
+                      server builds visual HTML — open this tab when the run
+                      finishes, or switch here if you disabled enrich.
+                    </p>
+                  ))}
+                {tab === "article" && (
+                  <div>
+                    <ArticleCopyBar
+                      markdown={article}
+                      title={
+                        topicFirstLine ||
+                        input.primaryKeyword ||
+                        "Generated article"
+                      }
+                      disabled={running}
+                    />
+                    <div className="mb-4 inline-flex rounded-lg border border-border bg-background/60 p-1">
+                      <button
+                        type="button"
+                        onClick={() => setArticleViewMode("edit")}
+                        className={`rounded-md px-3 py-1.5 font-mono text-xs transition-colors ${
+                          articleViewMode === "edit"
+                            ? "bg-accent text-background"
+                            : "text-text-secondary hover:text-text-primary"
+                        }`}
+                      >
+                        Edit Article
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setArticleViewMode("preview")}
+                        className={`rounded-md px-3 py-1.5 font-mono text-xs transition-colors ${
+                          articleViewMode === "preview"
+                            ? "bg-accent text-background"
+                            : "text-text-secondary hover:text-text-primary"
+                        }`}
+                      >
+                        Preview Article
+                      </button>
+                    </div>
+                    <ResearchImagesPanel
+                      topic={
+                        storedResearchTopic.trim() ||
+                        input.topic.trim().split("\n")[0]?.trim() ||
+                        "Article"
+                      }
+                      audience={input.audience}
+                      researchContext={storedResearchContext}
+                      article={article}
+                      disableArticleMutation={running}
+                      onApplyArticle={setArticle}
+                      onRemountEditor={() =>
+                        setArticleEditorEpoch((e) => e + 1)
+                      }
+                    />
+                    {running || articleViewMode === "preview" ? (
+                      article.trim() ? (
+                        <ArticleRenderer
+                          markdown={article}
+                          streaming={running}
+                        />
+                      ) : (
+                        <PanelSkeleton lines={6} />
+                      )
+                    ) : (
+                      <ArticleEditor
+                        key={articleEditorEpoch}
+                        markdown={article}
+                        onChange={setArticle}
+                      />
+                    )}
+                    {showSeoScore ? (
+                      <div className="mt-6">
+                        <ArticleSeoScorecard result={seoScoreResult} compact />
+                      </div>
+                    ) : null}
+                    {article.trim() ? (
+                      <div className="mt-4 rounded-xl border border-accent/35 bg-accent/10 p-3">
+                        <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-accent">
+                          Growth loop
+                        </p>
+                        <p className="mt-1 font-serif text-sm text-text-secondary">
+                          Export, share, or embed this output. Every share
+                          carries Powered by RankFlowHQ and can bring your next
+                          user.
+                        </p>
+                      </div>
+                    ) : null}
+                    {article.trim() ? (
+                      <div className="mt-6 rounded-xl border border-border bg-surface/70 p-4">
+                        <h3 className="font-display text-2xl text-text-primary">
+                          Generative Engine Optimization panel
+                        </h3>
+                        <p className="mt-1 font-serif text-sm text-text-secondary">
+                          AI Answer Score, ChatGPT snippet preview, and
+                          optimization suggestions for this draft.
+                        </p>
+                        <div className="mt-4">
+                          <ArticleGeoPanel
+                            article={article}
+                            topic={
+                              topicFirstLine ||
+                              input.topic.trim() ||
+                              "this topic"
+                            }
+                            primaryKeyword={input.primaryKeyword}
+                          />
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
                 )}
-              </section>
+                {tab === "score" &&
+                  (showSeoScore ? (
+                    <ArticleSeoScorecard result={seoScoreResult} />
+                  ) : (
+                    <p className="font-serif text-text-secondary">
+                      Add or generate article text first (about 40+ characters).
+                      Scores use your markdown, the SEO package from the audit
+                      stage when available, and your keyword list.
+                    </p>
+                  ))}
+                {tab === "geo" && (
+                  <ArticleGeoPanel
+                    article={article}
+                    topic={topicFirstLine || input.topic.trim() || "this topic"}
+                    primaryKeyword={input.primaryKeyword}
+                  />
+                )}
+                {tab === "seo" && <SeoPackage meta={meta} article={article} />}
+                {tab === "keywords" && (
+                  <KeywordsPanel
+                    keywords={keywords}
+                    paas={paas}
+                    featuredSnippet={featuredSnippet}
+                    gscRows={gscRows}
+                    googleSuggestions={googleSuggestions}
+                  />
+                )}
+                {tab === "sources" && <SourcesList sources={sources} />}
+              </div>
             </div>
-          </details>
+          ) : (
+            <div className="rounded-xl border border-dashed border-border/80 bg-surface/40 px-5 py-10 text-center">
+              <p className="font-display text-lg text-text-primary">
+                Your article will appear here
+              </p>
+              <p className="mx-auto mt-2 max-w-md text-sm text-text-secondary">
+                Enter a keyword above and press generate. You&apos;ll see each
+                step as it happens, then the finished article with its SEO
+                title, description and sources.
+              </p>
+            </div>
+          )}
         </div>
 
-        <aside className="hidden space-y-4 lg:sticky lg:top-6 lg:block lg:w-[280px] lg:shrink-0 lg:self-start">
-          <PipelineProgress
-            stages={PIPELINE_STAGES}
-            currentStage={stage}
-            doneStages={doneStages}
-          />
-          <SeoPublishChecklist
-            articleMarkdown={article}
-            meta={meta}
-            hasKeywordBrief={keywordBriefComplete}
-            contentScore={showSeoScore ? seoScoreResult.overall : undefined}
-          />
-        </aside>
+        {hasStarted ? (
+          <aside className="hidden space-y-4 lg:sticky lg:top-6 lg:block lg:w-[280px] lg:shrink-0 lg:self-start">
+            <PipelineProgress
+              stages={PIPELINE_STAGES}
+              currentStage={stage}
+              doneStages={doneStages}
+            />
+            <SeoPublishChecklist
+              articleMarkdown={article}
+              meta={meta}
+              hasKeywordBrief={keywordBriefComplete}
+              contentScore={showSeoScore ? seoScoreResult.overall : undefined}
+            />
+          </aside>
+        ) : null}
       </div>
       {loginPromptOpen ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
           <div className="w-full max-w-md rounded-xl border border-border bg-background p-5">
-            <h2 className="font-display text-2xl text-text-primary">Log in to continue</h2>
+            <h2 className="font-display text-2xl text-text-primary">
+              Log in to continue
+            </h2>
             <p className="mt-2 font-serif text-sm text-text-secondary">
-              To keep the workflow secure, please log in before generating. We&apos;ll send a magic link to your email.
+              To keep the workflow secure, please log in before generating.
+              We&apos;ll send a magic link to your email.
             </p>
             <label className="mt-4 block space-y-2">
-              <span className="font-mono text-xs uppercase text-text-muted">Email</span>
+              <span className="font-mono text-xs uppercase text-text-muted">
+                Email
+              </span>
               <input
                 type="email"
                 value={authEmail}

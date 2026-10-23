@@ -161,7 +161,7 @@ export function SiteHeader() {
                 href="/seo-agent"
                 className="btn-premium pulse-subtle rounded-lg bg-accent px-4 py-2 font-mono text-xs font-semibold text-background transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90"
               >
-                Start Building
+                Start free
               </Link>
             ) : (
               <a
