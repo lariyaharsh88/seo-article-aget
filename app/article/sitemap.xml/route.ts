@@ -1,3 +1,4 @@
+import { PLACEHOLDER_ARTICLE_SLUG_PREFIX } from "@/lib/placeholder-article";
 import { SiteDomain } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { EDUCATION_HOSTS } from "@/lib/education-hosts";
@@ -29,7 +30,10 @@ export async function GET(request: Request) {
       : getSiteUrl().replace(/\/$/, "");
 
   const rows = await prisma.sharedArticle.findMany({
-    where: { siteDomain },
+    where: {
+      siteDomain,
+      NOT: { slug: { startsWith: PLACEHOLDER_ARTICLE_SLUG_PREFIX } },
+    },
     select: {
       slug: true,
       updatedAt: true,

@@ -1,3 +1,4 @@
+import { demoteHtmlH1, isPlaceholderArticleSlug } from "@/lib/placeholder-article";
 import type { Metadata } from "next";
 import { SiteDomain } from "@prisma/client";
 import Link from "next/link";
@@ -102,7 +103,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   );
   const siteOrigin = await getRequestSiteOrigin();
   const description = buildDescription(row.markdown, row.title);
-  return buildPageMetadata({
+  const meta = buildPageMetadata({
     title: row.title,
     description,
     path: `/article/${row.slug}`,
@@ -118,6 +119,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     ],
     siteOrigin,
   });
+  return isPlaceholderArticleSlug(row.slug)
+    ? { ...meta, robots: { index: false, follow: true } }
+    : meta;
 }
 
 export default async function PublicArticlePage({ params }: Props) {
@@ -222,7 +226,7 @@ export default async function PublicArticlePage({ params }: Props) {
           <PublicArticleShareBar title={row.title} url={canonicalUrl} />
           <div
             className="blog-prose mt-8 overflow-x-auto font-serif text-text-primary"
-            dangerouslySetInnerHTML={{ __html: row.html }}
+            dangerouslySetInnerHTML={{ __html: demoteHtmlH1(row.html) }}
           />
           <p className="mt-8 border-t border-border pt-4 font-mono text-xs text-text-muted">
             {row.provenance === "shared-article"

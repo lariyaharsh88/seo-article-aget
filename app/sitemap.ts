@@ -3,7 +3,11 @@ import { SiteDomain } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getSeoLandingSlugs } from "@/lib/seo-landing-pages";
 import { listStaticBlogPosts } from "@/lib/static-blog-posts";
+import { PLACEHOLDER_ARTICLE_SLUG_PREFIX } from "@/lib/placeholder-article";
 import { getSiteUrl } from "@/lib/site-url";
+
+/** Regenerate hourly so new /article/* pages appear without a redeploy. */
+export const revalidate = 3600;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = getSiteUrl();
@@ -130,7 +134,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   let mainShared: { slug: string; updatedAt: Date }[] = [];
   try {
     mainShared = await prisma.sharedArticle.findMany({
-      where: { siteDomain: SiteDomain.main },
+      where: {
+        siteDomain: SiteDomain.main,
+        NOT: { slug: { startsWith: PLACEHOLDER_ARTICLE_SLUG_PREFIX } },
+      },
       select: { slug: true, updatedAt: true },
       orderBy: { updatedAt: "desc" },
       take: 5000,

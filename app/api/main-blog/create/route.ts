@@ -12,7 +12,6 @@ import {
 import { BLOG_ADMIN_EMAIL } from "@/lib/blog-constants";
 import { DEFAULT_ARTICLE_AUTHOR_NAME } from "@/lib/article-author";
 import { ensureUniqueSlug, slugify } from "@/lib/blog-slug";
-import { notifyGoogleSitemaps } from "@/lib/google-indexing";
 import { notifyIndexNowUrlsIfConfigured } from "@/lib/indexnow-submit";
 import { prisma } from "@/lib/prisma";
 import { getSiteUrl } from "@/lib/site-url";
@@ -188,10 +187,6 @@ export async function POST(request: Request) {
         excerpt,
         content: bodyMd,
         slug: row.slug,
-      });
-      void notifyGoogleSitemaps({
-        siteOrigin: getSiteUrl(),
-        sitemapPaths: ["/sitemap.xml", "/blogs/sitemap.xml"],
       });
       void notifyIndexNowUrlsIfConfigured({
         urls: [articleUrl],

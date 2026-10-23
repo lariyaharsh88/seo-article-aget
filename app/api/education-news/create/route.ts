@@ -13,7 +13,6 @@ import { BLOG_ADMIN_EMAIL } from "@/lib/blog-constants";
 import { DEFAULT_ARTICLE_AUTHOR_NAME } from "@/lib/article-author";
 import { slugify } from "@/lib/blog-slug";
 import { ensureUniqueRepurposedSlug } from "@/lib/education-news/repurpose-news-slug";
-import { notifyGoogleSitemaps } from "@/lib/google-indexing";
 import { notifyIndexNowIfConfigured } from "@/lib/indexnow-submit";
 import { prisma } from "@/lib/prisma";
 import { absoluteUrlForSiteDomain } from "@/lib/site-domain";
@@ -216,15 +215,6 @@ export async function POST(request: Request) {
         articleUrl: repurposedCanonicalUrl,
       });
 
-      try {
-        const articleOrigin = new URL(repurposedCanonicalUrl).origin;
-        void notifyGoogleSitemaps({
-          siteOrigin: articleOrigin,
-          sitemapPaths: ["/sitemap.xml", "/news/sitemap.xml"],
-        });
-      } catch {
-        /* ignore */
-      }
 
       try {
         revalidatePath("/news");

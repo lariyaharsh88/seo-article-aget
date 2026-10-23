@@ -2,17 +2,19 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { JsonLd } from "@/components/JsonLd";
 import { buildEducationFunnelUrl } from "@/lib/education-funnel-url";
-import { getRequestSiteOrigin } from "@/lib/request-site-origin";
+import { EDUCATION_CANONICAL_HOST } from "@/lib/education-hosts";
 import { buildPageMetadata } from "@/lib/seo-page";
 
+const EDUCATION_ORIGIN = `https://${EDUCATION_CANONICAL_HOST}`;
+
 export async function generateMetadata(): Promise<Metadata> {
-  const siteOrigin = await getRequestSiteOrigin();
+  // Middleware serves this page at the education subdomain root, so that is the canonical URL.
   return buildPageMetadata({
     title: "Education Hub",
     description:
       "Education tools hub for trends, news aggregation, and archived education coverage.",
-    path: "/education",
-    siteOrigin,
+    path: "/",
+    siteOrigin: EDUCATION_ORIGIN,
     keywords: ["education tools", "education trends", "education news"],
   });
 }
@@ -87,7 +89,7 @@ export default function EducationHubPage() {
     name: "Education Hub",
     description:
       "Education tools and education news publishing surface on education.rankflowhq.com.",
-    url: "/education",
+    url: `${EDUCATION_ORIGIN}/`,
   } as Record<string, unknown>;
 
   return (

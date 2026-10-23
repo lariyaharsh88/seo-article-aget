@@ -8,7 +8,6 @@ import { DEFAULT_ARTICLE_AUTHOR_NAME } from "@/lib/article-author";
 import { ensureUniqueSlug, slugify } from "@/lib/blog-slug";
 import { prisma } from "@/lib/prisma";
 import { getSiteUrl } from "@/lib/site-url";
-import { notifyGoogleSitemaps } from "@/lib/google-indexing";
 import { notifyIndexNowUrlsIfConfigured } from "@/lib/indexnow-submit";
 import { notifyTelegramNewBlogPost } from "@/lib/telegram-channel";
 
@@ -136,10 +135,6 @@ export async function POST(request: Request) {
           excerpt: post.excerpt,
           content: post.content,
           slug: post.slug,
-        });
-        void notifyGoogleSitemaps({
-          siteOrigin: getSiteUrl(),
-          sitemapPaths: ["/sitemap.xml", "/blogs/sitemap.xml"],
         });
         void notifyIndexNowUrlsIfConfigured({
           urls: [articleUrl],

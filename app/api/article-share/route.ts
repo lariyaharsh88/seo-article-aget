@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { slugify } from "@/lib/blog-slug";
 import { buildDistributionPack } from "@/lib/distribution-pack";
-import { notifyGoogleSitemaps } from "@/lib/google-indexing";
 import { notifyIndexNowUrlsIfConfigured } from "@/lib/indexnow-submit";
 import { markdownToArticleHtml } from "@/lib/markdown-to-html";
 import { prisma } from "@/lib/prisma";
@@ -64,10 +63,6 @@ export async function POST(request: Request) {
       revalidatePath(`/article/${slug}`);
       revalidatePath("/article/sitemap.xml");
       revalidatePath("/sitemap.xml");
-      void notifyGoogleSitemaps({
-        siteOrigin: getSiteUrl(),
-        sitemapPaths: ["/sitemap.xml", "/article/sitemap.xml"],
-      });
       void notifyIndexNowUrlsIfConfigured({
         urls: [absoluteUrl],
         includeNewsSitemap: false,

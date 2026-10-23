@@ -8,7 +8,8 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: "*",
         allow: "/",
-        disallow: ["/api/", "/archive/"],
+        // /archive/* returns 410 (middleware); keep it crawlable so Google sees the 410 and drops it.
+        disallow: ["/api/"],
       },
     ],
     sitemap: [
