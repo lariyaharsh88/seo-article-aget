@@ -1,7 +1,14 @@
 import type { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
+import { createHash, timingSafeEqual } from "node:crypto";
 import bcrypt from "bcryptjs";
 import { BLOG_ADMIN_EMAIL } from "@/lib/blog-constants";
+import { hitRateLimit } from "@/lib/rate-limit";
+
+/** Failed-login budget: per IP, and a global cap so rotating IPs cannot brute-force either. */
+const LOGIN_WINDOW_MS = 15 * 60 * 1000;
+const LOGIN_LIMIT_PER_IP = 10;
+const LOGIN_LIMIT_GLOBAL = 100;
 
 async function verifyAdminPassword(plain: string): Promise<boolean> {
   const hash = process.env.BLOG_ADMIN_PASSWORD_HASH?.trim();
@@ -10,7 +17,10 @@ async function verifyAdminPassword(plain: string): Promise<boolean> {
     return bcrypt.compare(plain, hash);
   }
   if (plainEnv) {
-    return plain === plainEnv;
+    // Constant-time compare. Prefer BLOG_ADMIN_PASSWORD_HASH (bcrypt) in production.
+    const a = createHash("sha256").update(plain).digest();
+    const b = createHash("sha256").update(plainEnv).digest();
+    return timingSafeEqual(a, b);
   }
   return false;
 }
@@ -24,8 +34,16 @@ export const authOptions: NextAuthOptions = {
         email: { label: "Email", type: "email", placeholder: "admin@email.com" },
         password: { label: "Password", type: "password" },
       },
-      async authorize(credentials) {
+      async authorize(credentials, req) {
         if (!credentials?.email || !credentials?.password) {
+          return null;
+        }
+        const fwd = req?.headers?.["x-forwarded-for"];
+        const ip = (Array.isArray(fwd) ? fwd[0] : fwd)?.split(",")[0]?.trim() || "unknown";
+        if (
+          !hitRateLimit(`login:ip:${ip}`, LOGIN_LIMIT_PER_IP, LOGIN_WINDOW_MS) ||
+          !hitRateLimit("login:global", LOGIN_LIMIT_GLOBAL, LOGIN_WINDOW_MS)
+        ) {
           return null;
         }
         const email = credentials.email.trim().toLowerCase();

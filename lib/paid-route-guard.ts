@@ -1,7 +1,8 @@
-import { createHash, timingSafeEqual } from "node:crypto";
+import { timingSafeEqual } from "node:crypto";
 import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
 import { authOptions } from "@/lib/auth-options";
+import { hashedIp, hitRateLimit as hit } from "@/lib/rate-limit";
 import { getSupabaseUserFromRequest } from "@/lib/supabase-server";
 
 /**
@@ -13,8 +14,7 @@ import { getSupabaseUserFromRequest } from "@/lib/supabase-server";
  * - signed-in Supabase users (`Authorization: Bearer <access token>`)
  * - anonymous callers only when `allowAnonymous` is set (public site chat)
  *
- * Every caller is also rate limited per IP / user. The limiter is in-memory, so on serverless it is
- * per instance — a speed bump against abuse, not a billing guarantee. Auth is the real gate.
+ * Every caller is also rate limited per IP / user. See lib/rate-limit.ts.
  */
 export const INTERNAL_TOKEN_HEADER = "x-internal-token";
 
@@ -34,30 +34,6 @@ function isInternalRequest(request: Request): boolean {
   const secret = getInternalApiSecret();
   const token = request.headers.get(INTERNAL_TOKEN_HEADER)?.trim();
   return Boolean(secret && token && safeEqual(token, secret));
-}
-
-function clientIp(request: Request): string {
-  const fwd = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
-  return fwd || request.headers.get("x-real-ip")?.trim() || "unknown";
-}
-
-const WINDOW_MS = 60 * 60 * 1000;
-const buckets = new Map<string, { count: number; resetAt: number }>();
-
-function hit(key: string, limit: number): boolean {
-  const now = Date.now();
-  if (buckets.size > 10_000) {
-    buckets.forEach((v, k) => {
-      if (v.resetAt <= now) buckets.delete(k);
-    });
-  }
-  const b = buckets.get(key);
-  if (!b || b.resetAt <= now) {
-    buckets.set(key, { count: 1, resetAt: now + WINDOW_MS });
-    return true;
-  }
-  b.count += 1;
-  return b.count <= limit;
 }
 
 export type PaidRouteOptions = {
@@ -98,8 +74,7 @@ export async function guardPaidRoute(
       { status: 401 },
     );
   }
-  const ipKey = createHash("sha256").update(clientIp(request)).digest("hex").slice(0, 24);
-  return hit(`ip:${ipKey}:${route}`, anonLimit) ? null : tooMany();
+  return hit(`ip:${hashedIp(request)}:${route}`, anonLimit) ? null : tooMany();
 }
 
 function tooMany(): NextResponse {

@@ -138,7 +138,8 @@ export async function middleware(request: NextRequest) {
       const url = request.nextUrl.clone();
       url.hostname = "education.rankflowhq.com";
       url.protocol = "https:";
-      return NextResponse.redirect(url, 301);
+      // 308 keeps the method and body: a 301 turns API POSTs into GETs.
+      return NextResponse.redirect(url, path.startsWith("/api/") ? 308 : 301);
     }
     if (
       path === "/archive/news" ||

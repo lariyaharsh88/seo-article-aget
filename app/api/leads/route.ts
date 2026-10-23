@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { hashedIp, hitRateLimit } from "@/lib/rate-limit";
 import { prisma } from "@/lib/prisma";
 
 const SOURCE_VALUES = new Set(["blog", "news"]);
@@ -8,6 +9,9 @@ function isValidEmail(s: string): boolean {
 }
 
 export async function POST(request: Request) {
+  if (!hitRateLimit(`leads:${hashedIp(request)}`, 5)) {
+    return NextResponse.json({ error: "Too many submissions. Please try again later." }, { status: 429 });
+  }
   let body: {
     source?: string;
     articleSlug?: string;

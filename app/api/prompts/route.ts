@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { hashedIp, hitRateLimit } from "@/lib/rate-limit";
 import {
   dedupeQueries,
   parseAiQuestionLines,
@@ -13,6 +14,9 @@ export const dynamic = "force-dynamic";
 type Body = { seed?: string };
 
 export async function POST(request: Request) {
+  if (!hitRateLimit(`prompts:${hashedIp(request)}`, 20)) {
+    return NextResponse.json({ error: "Too many submissions. Please try again later." }, { status: 429 });
+  }
   let body: Body;
   try {
     body = (await request.json()) as Body;
