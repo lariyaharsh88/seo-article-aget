@@ -36,7 +36,12 @@ function LoginContent() {
       if (authError) throw authError;
       setMessage(email.trim().toLowerCase());
     } catch (e) {
-      setError(e instanceof Error ? e.message : "We couldn't send the sign-in link. Please try again.");
+      const msg = e instanceof Error ? e.message : "";
+      setError(
+        /rate limit/i.test(msg)
+          ? "We've sent too many sign-in emails in the last hour. Please wait a few minutes and try again — or use the link from an earlier email if you still have it."
+          : msg || "We couldn't send the sign-in link. Please try again.",
+      );
     } finally {
       setLoading(false);
     }
