@@ -32,6 +32,7 @@ export default function DashboardPage() {
   const [rows, setRows] = useState<Row[]>([]);
   const [signedIn, setSignedIn] = useState(false);
   const [retrying, setRetrying] = useState(false);
+  const [unlimited, setUnlimited] = useState(false);
 
   const loadDashboard = useCallback(async () => {
     try {
@@ -44,6 +45,10 @@ export default function DashboardPage() {
         setRows([]);
                 return;
       }
+      void fetch("/api/config", { headers: { Authorization: `Bearer ${token}` } })
+        .then((r) => r.json())
+        .then((d: { unlimited?: boolean }) => setUnlimited(d?.unlimited === true))
+        .catch(() => setUnlimited(false));
       const res = await fetch("/api/user-articles", {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -119,7 +124,7 @@ export default function DashboardPage() {
         {[
           ["Articles", rows.length.toLocaleString()],
           ["Words written", totalWords.toLocaleString()],
-          ["Free articles left", freeLeft.toString()],
+          ["Free articles left", unlimited ? "Unlimited" : freeLeft.toString()],
         ].map(([label, value]) => (
           <div key={label} className="rounded-xl border border-border/80 bg-surface/50 p-4">
             <dt className="text-xs text-text-muted">{label}</dt>
@@ -127,7 +132,7 @@ export default function DashboardPage() {
           </div>
         ))}
       </dl>
-      {freeLeft === 0 ? (
+      {!unlimited && freeLeft === 0 ? (
         <p className="mt-3 text-sm text-text-secondary">
           You&apos;ve used your free articles.{" "}
           <Link href="/pricing" className="text-accent hover:underline">

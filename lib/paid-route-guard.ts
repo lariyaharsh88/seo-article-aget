@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { authOptions } from "@/lib/auth-options";
 import { hashedIp, hitRateLimit as hit } from "@/lib/rate-limit";
 import { getSupabaseUserFromRequest } from "@/lib/supabase-server";
+import { isUnlimitedEmail } from "@/lib/unlimited-users";
 
 /**
  * Protects routes that spend our server-side provider keys (Gemini, Groq, OpenRouter, Tavily, Serper…).
@@ -65,6 +66,7 @@ export async function guardPaidRoute(
 
   const user = await getSupabaseUserFromRequest(request).catch(() => null);
   if (user) {
+    if (isUnlimitedEmail(user.email)) return null;
     return hit(`u:${user.id}:${route}`, userLimit) ? null : tooMany();
   }
 

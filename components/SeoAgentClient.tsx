@@ -174,17 +174,8 @@ export function SeoAgentClient() {
   const [gscNote, setGscNote] = useState<string | null>(null);
   const [suggestError, setSuggestError] = useState<string | null>(null);
   const [searchConsoleConfigured, setSearchConsoleConfigured] = useState(false);
-
-  useEffect(() => {
-    void fetch("/api/config")
-      .then((r) => r.json())
-      .then((d: unknown) => {
-        if (isRecord(d) && typeof d.searchConsole === "boolean") {
-          setSearchConsoleConfigured(d.searchConsole);
-        }
-      })
-      .catch(() => setSearchConsoleConfigured(false));
-  }, []);
+  /** Owner/test accounts (UNLIMITED_EMAILS on the server) skip the free-run limit. */
+  const [unlimited, setUnlimited] = useState(false);
 
   useEffect(() => {
     try {
@@ -285,9 +276,23 @@ export function SeoAgentClient() {
     }
   }, [userSession?.user?.id]);
 
+  useEffect(() => {
+    const token = userSession?.access_token;
+    void fetch("/api/config", {
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    })
+      .then((r) => r.json())
+      .then((d: unknown) => {
+        if (!isRecord(d)) return;
+        if (typeof d.searchConsole === "boolean") setSearchConsoleConfigured(d.searchConsole);
+        setUnlimited(d.unlimited === true);
+      })
+      .catch(() => setSearchConsoleConfigured(false));
+  }, [userSession?.access_token]);
+
   const usageLimit = userSession ? FREE_LOGGED_RUN_LIMIT : FREE_GUEST_RUN_LIMIT;
   const usageRemaining = Math.max(0, usageLimit - usageRuns);
-  const usageLimitReached = usageRemaining <= 0;
+  const usageLimitReached = !unlimited && usageRemaining <= 0;
 
   const canRun =
     mode === "simple"
@@ -755,7 +760,7 @@ export function SeoAgentClient() {
         <p className="text-sm text-text-muted">
           {authReady
             ? userSession?.user?.email
-              ? `Signed in as ${userSession.user.email} · ${usageRemaining} of ${usageLimit} free articles left.`
+              ? `Signed in as ${userSession.user.email} · ${unlimited ? "unlimited articles" : `${usageRemaining} of ${usageLimit} free articles left`}.`
               : `A free account is needed to generate — your first ${FREE_LOGGED_RUN_LIMIT} articles are free, no card required.`
             : "Checking sign-in…"}{" "}
           <Link
