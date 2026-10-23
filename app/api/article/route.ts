@@ -1,3 +1,4 @@
+import { guardPaidRoute } from "@/lib/paid-route-guard";
 import {
   resolveGeminiKey,
   resolveGroqKey,
@@ -61,6 +62,8 @@ function isGeminiLimitError(errorMessage: string): boolean {
 }
 
 export async function POST(request: Request) {
+  const denied = await guardPaidRoute(request, { anonLimit: 10, userLimit: 60 });
+  if (denied) return denied;
   const geminiKey = resolveGeminiKey(request);
   const groqKey = resolveGroqKey(request);
   const openRouterKey = resolveOpenRouterKey(request);

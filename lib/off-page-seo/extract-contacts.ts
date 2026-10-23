@@ -1,3 +1,4 @@
+import { safeFetch } from "@/lib/safe-fetch";
 import { load } from "cheerio";
 
 const EMAIL_RE =
@@ -41,13 +42,12 @@ export async function extractContactsForDomain(
   for (const path of paths) {
     const url = `https://${base}${path}`;
     try {
-      const res = await fetch(url, {
+      const res = await safeFetch(url, {
         headers: {
           "User-Agent":
             "Mozilla/5.0 (compatible; RankFlowHQ/1.0; +https://github.com/)",
           Accept: "text/html,application/xhtml+xml",
         },
-        redirect: "follow",
         signal: AbortSignal.timeout(7500),
       });
       if (!res.ok) continue;

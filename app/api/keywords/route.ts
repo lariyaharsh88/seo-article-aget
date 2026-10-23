@@ -1,3 +1,4 @@
+import { guardPaidRoute } from "@/lib/paid-route-guard";
 import { NextResponse } from "next/server";
 import { resolveGeminiKey, resolveSerperKey } from "@/lib/api-keys";
 import { geminiJSON } from "@/lib/gemini";
@@ -18,6 +19,8 @@ type KeywordsBody = Pick<
 };
 
 export async function POST(request: Request) {
+  const denied = await guardPaidRoute(request);
+  if (denied) return denied;
   try {
     const geminiKey = resolveGeminiKey(request);
     const serperKey = resolveSerperKey(request);

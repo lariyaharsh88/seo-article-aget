@@ -1,3 +1,4 @@
+import { guardPaidRoute } from "@/lib/paid-route-guard";
 import { NextResponse } from "next/server";
 import { resolveOpenAIKey } from "@/lib/api-keys";
 import type { ArticleInput, SuggestOptions } from "@/lib/internal-linking/types";
@@ -9,6 +10,8 @@ interface SuggestBody {
 }
 
 export async function POST(request: Request) {
+  const denied = await guardPaidRoute(request);
+  if (denied) return denied;
   try {
     const body = (await request.json()) as SuggestBody;
     const articles = body.articles;

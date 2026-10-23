@@ -1,3 +1,4 @@
+import { guardPaidRoute } from "@/lib/paid-route-guard";
 import {
   resolveGeminiKey,
   resolveGroqKey,
@@ -48,6 +49,8 @@ function ndjsonStream(
 }
 
 export async function POST(request: Request) {
+  const denied = await guardPaidRoute(request);
+  if (denied) return denied;
   const llmKeys = {
     gemini: resolveGeminiKey(request),
     openrouter: resolveOpenRouterKey(request),

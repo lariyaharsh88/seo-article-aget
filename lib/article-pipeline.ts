@@ -1,3 +1,4 @@
+import { getApiAuthHeaders } from "@/lib/auth-headers";
 /**
  * Shared SEO article pipeline (keywords → research → SERP → queries → outline → article stream → audit).
  * Used by /seo-agent and /blog-create.
@@ -13,8 +14,8 @@ import type {
   Source,
 } from "@/lib/types";
 
-function buildHeaders(): HeadersInit {
-  return { "Content-Type": "application/json" };
+async function buildHeaders(): Promise<Record<string, string>> {
+  return { "Content-Type": "application/json", ...(await getApiAuthHeaders()) };
 }
 
 function isRecord(v: unknown): v is Record<string, unknown> {
@@ -83,7 +84,7 @@ export async function runArticlePipeline(
   input: ArticlePipelineConfig,
   cbs: ArticlePipelineCallbacks,
 ): Promise<ArticlePipelineResult> {
-  const headers = buildHeaders();
+  const headers = await buildHeaders();
   const origin = input.fetchBaseUrl?.trim();
   const apiUrl = (path: string) => resolveApiUrl(path, origin);
   let keywordList: Keyword[] = [];
@@ -113,6 +114,7 @@ export async function runArticlePipeline(
         apiUrl(
           `/api/page-meta?url=${encodeURIComponent(input.sourceUrl.trim())}`,
         ),
+        { headers },
       );
       const metaJson: unknown = await metaRes.json();
       if (
@@ -412,7 +414,7 @@ export async function runArticlePipeline(
     try {
       const res = await fetch(apiUrl("/api/seo-enrich"), {
         method: "POST",
-        headers: buildHeaders(),
+        headers,
         body: JSON.stringify({
           markdown: articleBody,
           keyword: workingTopic,

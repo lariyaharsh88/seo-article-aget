@@ -1,3 +1,5 @@
+import { guardPaidRoute } from "@/lib/paid-route-guard";
+import { safeFetch } from "@/lib/safe-fetch";
 import { NextResponse } from "next/server";
 import { load } from "cheerio";
 import {
@@ -71,7 +73,7 @@ async function fetchCompetitorPage(input: {
   snippet: string;
 }): Promise<CompetitorPage | null> {
   try {
-    const res = await fetch(input.url, {
+    const res = await safeFetch(input.url, {
       method: "GET",
       headers: {
         "User-Agent":
@@ -248,6 +250,8 @@ async function generateTextWithFallback(opts: {
 }
 
 export async function POST(request: Request) {
+  const denied = await guardPaidRoute(request, { anonLimit: 10, userLimit: 60 });
+  if (denied) return denied;
   const geminiKey = resolveGeminiKey(request);
   const groqKey = resolveGroqKey(request);
   const openRouterKey = resolveOpenRouterKey(request);

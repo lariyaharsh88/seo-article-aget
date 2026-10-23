@@ -1,3 +1,5 @@
+import { guardPaidRoute } from "@/lib/paid-route-guard";
+import { safeFetch } from "@/lib/safe-fetch";
 import { NextResponse } from "next/server";
 import { addExternalLinkRelToHtml } from "@/lib/html-external-links";
 
@@ -5,6 +7,8 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 export async function GET(request: Request) {
+  const denied = await guardPaidRoute(request, { allowAnonymous: true, anonLimit: 60 });
+  if (denied) return denied;
   try {
     const { searchParams } = new URL(request.url);
     const articleUrl = searchParams.get("url");
@@ -16,7 +20,7 @@ export async function GET(request: Request) {
       );
     }
 
-    const response = await fetch(articleUrl, {
+    const response = await safeFetch(articleUrl, {
       headers: {
         "User-Agent":
           "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36",

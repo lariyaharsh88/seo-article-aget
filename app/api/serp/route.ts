@@ -1,3 +1,4 @@
+import { guardPaidRoute } from "@/lib/paid-route-guard";
 import { NextResponse } from "next/server";
 import { resolveSerperKey } from "@/lib/api-keys";
 import {
@@ -11,6 +12,8 @@ interface SerpBody {
 }
 
 export async function POST(request: Request) {
+  const denied = await guardPaidRoute(request);
+  if (denied) return denied;
   try {
     const serperKey = resolveSerperKey(request);
     if (!serperKey) {

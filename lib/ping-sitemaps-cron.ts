@@ -2,14 +2,7 @@ import { EDUCATION_CANONICAL_HOST } from "@/lib/education-hosts";
 import { notifyGoogleSitemaps } from "@/lib/google-indexing";
 import { getSiteUrl } from "@/lib/site-url";
 
-export function authorizeCronRequest(request: Request): boolean {
-  const secret = process.env.CRON_SECRET?.trim();
-  if (!secret) return request.headers.get("x-vercel-cron") === "1";
-  const url = new URL(request.url);
-  const q = url.searchParams.get("secret")?.trim();
-  const header = request.headers.get("x-cron-secret")?.trim();
-  return q === secret || header === secret || request.headers.get("x-vercel-cron") === "1";
-}
+export { authorizeCronRequest } from "@/lib/cron-auth";
 
 /**
  * Best-effort Google sitemap ping (main + education). Safe to call twice daily

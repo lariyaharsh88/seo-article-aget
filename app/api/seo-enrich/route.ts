@@ -1,3 +1,4 @@
+import { guardPaidRoute } from "@/lib/paid-route-guard";
 import { NextResponse } from "next/server";
 import { marked } from "marked";
 import { addExternalLinkRelToHtml } from "@/lib/html-external-links";
@@ -19,6 +20,8 @@ export const maxDuration = 120;
 const MAX_SECTIONS = 10;
 
 export async function POST(request: Request) {
+  const denied = await guardPaidRoute(request);
+  if (denied) return denied;
   const geminiKey = resolveGeminiKey(request);
 
   let body: { markdown?: string; keyword?: string };

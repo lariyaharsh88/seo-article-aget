@@ -1,9 +1,13 @@
+import { guardPaidRoute } from "@/lib/paid-route-guard";
+import { safeFetch } from "@/lib/safe-fetch";
 import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 export async function GET(request: Request) {
+  const denied = await guardPaidRoute(request);
+  if (denied) return denied;
   const raw = new URL(request.url).searchParams.get("url");
   const url = raw?.trim();
   if (!url) {
@@ -19,13 +23,12 @@ export async function GET(request: Request) {
       );
     }
 
-    const res = await fetch(url, {
+    const res = await safeFetch(url, {
       headers: {
         "User-Agent":
           "Mozilla/5.0 (compatible; SEO-Article-Agent/1.0; +https://github.com)",
         Accept: "text/html,application/xhtml+xml",
       },
-      redirect: "follow",
       signal: AbortSignal.timeout(15_000),
     });
 

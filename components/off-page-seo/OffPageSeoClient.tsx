@@ -1,5 +1,6 @@
 "use client";
 
+import { getApiAuthHeaders } from "@/lib/auth-headers";
 import { useCallback, useMemo, useState } from "react";
 import type { BacklinkOpportunity } from "@/lib/off-page-seo/types";
 
@@ -82,7 +83,7 @@ export function OffPageSeoClient() {
     try {
       const res = await fetch("/api/off-page-seo", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...(await getApiAuthHeaders()) },
         body: JSON.stringify({
           domain: domain.trim(),
           country: country.trim() || "India",

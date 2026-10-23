@@ -1,3 +1,4 @@
+import { guardPaidRoute } from "@/lib/paid-route-guard";
 import { NextResponse } from "next/server";
 import { resolveGeminiKey } from "@/lib/api-keys";
 import { geminiStream } from "@/lib/gemini";
@@ -20,6 +21,8 @@ function stripUnsafeControls(s: string): string {
 }
 
 export async function POST(request: Request) {
+  const denied = await guardPaidRoute(request);
+  if (denied) return denied;
   try {
     const geminiKey = resolveGeminiKey(request);
     if (!geminiKey) {

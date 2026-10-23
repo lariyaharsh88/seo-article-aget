@@ -1,3 +1,4 @@
+import { guardPaidRoute } from "@/lib/paid-route-guard";
 import { NextResponse } from "next/server";
 import { resolveTavilyKey } from "@/lib/api-keys";
 import { tavilySearch } from "@/lib/tavily";
@@ -14,6 +15,8 @@ function toSource(url: string, title: string, snippet: string): Source {
 }
 
 export async function POST(request: Request) {
+  const denied = await guardPaidRoute(request);
+  if (denied) return denied;
   try {
     const tavilyKey = resolveTavilyKey(request);
     if (!tavilyKey) {

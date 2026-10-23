@@ -1,3 +1,4 @@
+import { guardPaidRoute } from "@/lib/paid-route-guard";
 import { NextResponse } from "next/server";
 import { resolveGeminiKey, resolveSerperKey } from "@/lib/api-keys";
 import { enrichSightings } from "@/lib/off-page-seo/enrich";
@@ -10,6 +11,8 @@ import {
 export const maxDuration = 120;
 
 export async function POST(request: Request) {
+  const denied = await guardPaidRoute(request, { anonLimit: 10, userLimit: 60 });
+  if (denied) return denied;
   try {
     const serperKey = resolveSerperKey(request);
     const geminiKey = resolveGeminiKey(request);

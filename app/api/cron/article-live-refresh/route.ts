@@ -1,3 +1,4 @@
+import { authorizeCronRequest } from "@/lib/cron-auth";
 import { SiteDomain } from "@prisma/client";
 import { NextResponse } from "next/server";
 import {
@@ -12,17 +13,8 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 export const maxDuration = 300;
 
-function isAuthorized(request: Request): boolean {
-  const secret = process.env.CRON_SECRET?.trim();
-  if (!secret) return request.headers.get("x-vercel-cron") === "1";
-  const url = new URL(request.url);
-  const q = url.searchParams.get("secret")?.trim();
-  const header = request.headers.get("x-cron-secret")?.trim();
-  return q === secret || header === secret || request.headers.get("x-vercel-cron") === "1";
-}
-
 export async function GET(request: Request) {
-  if (!isAuthorized(request)) {
+  if (!authorizeCronRequest(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
