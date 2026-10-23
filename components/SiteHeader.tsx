@@ -134,11 +134,10 @@ export function SiteHeader() {
           >
             {open ? <CloseIcon /> : <MenuIcon />}
           </button>
-          <nav className="hidden flex-wrap items-center justify-end gap-2 md:flex" aria-label="Primary">
-            <ThemeToggle />
+          <nav className="hidden flex-wrap items-center justify-end gap-1 md:flex" aria-label="Primary">
             {nav.map((item) => {
               const navBtn =
-                "btn-premium rounded-lg border border-border/80 bg-surface/40 px-3 py-1.5 font-mono text-xs text-text-secondary transition-all duration-200 hover:-translate-y-0.5 hover:border-accent/70 hover:text-text-primary focus:outline-none focus:ring-2 focus:ring-accent";
+                "rounded-lg px-3 py-1.5 font-mono text-sm font-medium text-text-secondary transition-colors hover:bg-surface hover:text-text-primary focus:outline-none focus:ring-2 focus:ring-accent";
               const isExternal = item.href.startsWith("http");
               return isExternal ? (
                 <a
@@ -156,10 +155,11 @@ export function SiteHeader() {
                 </Link>
               );
             })}
+            <ThemeToggle />
             {!educationSurface ? (
               <Link
                 href="/seo-agent"
-                className="btn-premium pulse-subtle rounded-lg bg-accent px-4 py-2 font-mono text-xs font-semibold text-background transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90"
+                className="ml-1 rounded-lg bg-accent px-4 py-2 font-mono text-sm font-semibold text-background transition-opacity hover:opacity-90"
               >
                 Start free
               </Link>

@@ -22,9 +22,11 @@ const config: Config = {
         purple: "hsl(var(--color-purple) / <alpha-value>)",
       },
       fontFamily: {
-        display: ["var(--font-inter)", "Inter", "sans-serif"],
+        display: ["var(--font-jakarta)", "Plus Jakarta Sans", "sans-serif"],
         serif: ["var(--font-inter)", "Inter", "sans-serif"],
-        mono: ["var(--font-space-mono)", "monospace"],
+        // Buttons and labels across the app use `font-mono`; they now render in the UI sans.
+        mono: ["var(--font-jakarta)", "Plus Jakarta Sans", "sans-serif"],
+        code: ["var(--font-space-mono)", "ui-monospace", "monospace"],
       },
     },
   },

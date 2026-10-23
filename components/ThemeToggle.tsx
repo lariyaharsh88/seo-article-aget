@@ -9,7 +9,7 @@ function applyTheme(theme: ThemeMode) {
 }
 
 export function ThemeToggle() {
-  const [theme, setTheme] = useState<ThemeMode>("dark");
+  const [theme, setTheme] = useState<ThemeMode>("light");
 
   useEffect(() => {
     const stored = localStorage.getItem("rfh:theme");
@@ -18,7 +18,7 @@ export function ThemeToggle() {
       applyTheme(stored);
       return;
     }
-    const initial: ThemeMode = "dark";
+    const initial: ThemeMode = "light";
     setTheme(initial);
     applyTheme(initial);
   }, []);
@@ -33,11 +33,11 @@ export function ThemeToggle() {
         localStorage.setItem("rfh:theme", nextTheme);
         applyTheme(nextTheme);
       }}
-      className="rounded-lg border border-border/80 bg-surface/45 px-3 py-1.5 font-mono text-xs text-text-secondary hover:border-accent hover:text-text-primary"
+      className="rounded-lg border border-border/80 bg-surface/45 h-9 w-9 text-sm text-text-secondary hover:border-accent hover:text-text-primary"
       aria-label={`Switch to ${nextTheme} mode`}
       title={`Switch to ${nextTheme} mode`}
     >
-      {theme === "dark" ? "Light mode" : "Dark mode"}
+      <span aria-hidden>{theme === "dark" ? "☀" : "☾"}</span>
     </button>
   );
 }

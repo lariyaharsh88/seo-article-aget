@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Space_Mono } from "next/font/google";
+import { Inter, Plus_Jakarta_Sans, Space_Mono } from "next/font/google";
 import Script from "next/script";
 import { Analytics } from "@vercel/analytics/next";
 import { AnalyticsTracker } from "@/components/AnalyticsTracker";
@@ -26,6 +26,15 @@ const inter = Inter({
   display: "swap",
 });
 
+/** Headings and UI labels/buttons (Tailwind `font-display` and `font-mono`). */
+const jakarta = Plus_Jakarta_Sans({
+  weight: ["500", "600", "700", "800"],
+  subsets: ["latin"],
+  variable: "--font-jakarta",
+  display: "swap",
+});
+
+/** Code only (`code`, `pre`) — see globals.css. */
 const spaceMono = Space_Mono({
   weight: ["400", "700"],
   subsets: ["latin"],
@@ -44,7 +53,7 @@ const GA_MEASUREMENT_ID =
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#070b14",
+  themeColor: "#FAF8F5",
 };
 
 export const metadata: Metadata = {
@@ -119,9 +128,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" data-theme="dark" suppressHydrationWarning>
+    <html lang="en" data-theme="light" suppressHydrationWarning>
       <body
-        className={`${inter.variable} ${spaceMono.variable} page-grid`}
+        className={`${inter.variable} ${jakarta.variable} ${spaceMono.variable}`}
       >
         <Script
           id="theme-init"
@@ -133,10 +142,10 @@ export default function RootLayout({
                 var stored = localStorage.getItem("rfh:theme");
                 var theme = stored === "light" || stored === "dark"
                   ? stored
-                  : "dark";
+                  : "light";
                 document.documentElement.setAttribute("data-theme", theme);
               } catch (e) {
-                document.documentElement.setAttribute("data-theme", "dark");
+                document.documentElement.setAttribute("data-theme", "light");
               }
             })();
           `}

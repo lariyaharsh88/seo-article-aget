@@ -2,50 +2,92 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  color-scheme: dark;
-  --color-background: 220 38% 8%;
-  --color-surface: 218 35% 12%;
-  --color-border: 216 26% 23%;
-  --color-accent: 199 89% 60%;
-  --color-accent-dim: 200 98% 39%;
-  --color-text-primary: 210 40% 98%;
-  --color-text-secondary: 215 28% 84%;
-  --color-text-muted: 215 20% 65%;
-  --color-success: 160 84% 39%;
-  --color-info: 188 94% 43%;
-  --color-purple: 239 84% 67%;
-}
-
+/*
+ * Design tokens (HSL triplets). Light & clean is the default; dark is opt-in via the theme toggle.
+ * Accent text on accent buttons uses `text-background`, so each theme keeps that pair readable.
+ */
+:root,
 html[data-theme="light"] {
   color-scheme: light;
-  --color-background: 210 40% 98%;
-  --color-surface: 210 38% 96%;
-  --color-border: 215 25% 86%;
-  --color-accent: 199 89% 48%;
-  --color-accent-dim: 200 90% 38%;
-  --color-text-primary: 222 47% 12%;
-  --color-text-secondary: 215 25% 28%;
-  --color-text-muted: 215 14% 44%;
-  --color-success: 160 84% 32%;
-  --color-info: 191 90% 36%;
-  --color-purple: 239 66% 57%;
+  --color-background: 36 33% 97%; /* #FAF8F5 warm off-white */
+  --color-surface: 0 0% 100%; /* white cards */
+  --color-border: 32 14% 87%;
+  --color-accent: 158 80% 30%; /* #0F8A5F emerald */
+  --color-accent-dim: 158 82% 24%;
+  --color-text-primary: 225 13% 10%; /* #16181D ink */
+  --color-text-secondary: 222 9% 30%;
+  --color-text-muted: 220 7% 45%;
+  --color-success: 152 69% 31%;
+  --color-info: 210 79% 42%;
+  --color-purple: 262 52% 47%;
+  --shadow-color: 30 20% 30%;
+}
+
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --color-background: 220 14% 8%;
+  --color-surface: 220 13% 12%;
+  --color-border: 220 10% 22%;
+  --color-accent: 156 62% 48%;
+  --color-accent-dim: 157 70% 38%;
+  --color-text-primary: 40 20% 96%;
+  --color-text-secondary: 220 9% 78%;
+  --color-text-muted: 220 7% 60%;
+  --color-success: 152 60% 48%;
+  --color-info: 205 80% 62%;
+  --color-purple: 262 70% 72%;
+  --shadow-color: 220 40% 2%;
 }
 
 body {
   @apply min-h-screen bg-background font-serif text-text-primary antialiased;
-  background-image:
-    radial-gradient(circle at 8% -12%, hsl(var(--color-purple) / 0.16), transparent 35%),
-    radial-gradient(circle at 92% 2%, hsl(var(--color-accent) / 0.12), transparent 40%);
+  font-feature-settings: "cv11", "ss01";
   transition:
     background-color 0.32s ease-in-out,
     color 0.32s ease-in-out;
 }
 
-html[data-theme="light"] body {
-  background-image:
-    radial-gradient(circle at 8% -12%, hsl(var(--color-purple) / 0.1), transparent 35%),
-    radial-gradient(circle at 92% 2%, hsl(var(--color-accent) / 0.09), transparent 40%);
+h1,
+h2,
+h3,
+.font-display {
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  word-spacing: 0.04em;
+}
+
+code,
+pre,
+kbd,
+samp {
+  font-family: var(--font-space-mono), ui-monospace, monospace;
+}
+
+/* Cards: white surface + soft warm shadow in light mode. */
+html[data-theme="light"] .rounded-2xl.border,
+html[data-theme="light"] .rounded-xl.border,
+html[data-theme="light"] .rounded-3xl.border {
+  box-shadow: 0 1px 2px hsl(var(--shadow-color) / 0.06), 0 4px 16px hsl(var(--shadow-color) / 0.05);
+}
+
+/* Status colours written for dark backgrounds (text-red-200 etc.) — darken them on light. */
+html[data-theme="light"] :is(.text-red-100, .text-red-200, .text-red-300, .text-rose-100, .text-rose-200) {
+  color: hsl(0 70% 38%);
+}
+html[data-theme="light"] :is(.text-red-400, .text-rose-400) {
+  color: hsl(0 72% 42%);
+}
+html[data-theme="light"] :is(.text-amber-100, .text-amber-200, .text-amber-300, .text-amber-400) {
+  color: hsl(30 85% 30%);
+}
+html[data-theme="light"] :is(.text-emerald-200, .text-emerald-400) {
+  color: hsl(158 80% 26%);
+}
+html[data-theme="light"] :is(.bg-red-950\/30, .bg-red-950\/40) {
+  background-color: hsl(0 80% 97%);
+}
+html[data-theme="light"] :is(.bg-amber-900\/30, .bg-amber-950\/20, .bg-amber-950\/25) {
+  background-color: hsl(40 90% 95%);
 }
 
 a,
@@ -86,9 +128,9 @@ button:active {
 .skeleton {
   background: linear-gradient(
     90deg,
-    rgba(148, 163, 184, 0.14) 0%,
-    rgba(148, 163, 184, 0.26) 50%,
-    rgba(148, 163, 184, 0.14) 100%
+    hsl(var(--color-text-muted) / 0.14) 0%,
+    hsl(var(--color-text-muted) / 0.26) 50%,
+    hsl(var(--color-text-muted) / 0.14) 100%
   );
   background-size: 200% 100%;
   animation: skeleton-shimmer 1.2s ease-in-out infinite;
@@ -111,9 +153,7 @@ button:active {
 }
 
 .btn-premium:hover {
-  transform: translateY(-1px) scale(1.015);
-  box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.4), 0 10px 24px rgba(2, 132, 199, 0.22);
-  filter: saturate(1.04);
+  box-shadow: 0 6px 16px hsl(var(--color-accent) / 0.18);
 }
 
 .card-premium {
@@ -124,10 +164,8 @@ button:active {
 }
 
 .card-premium:hover {
-  transform: translateY(-4px);
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.05) inset,
-    0 18px 36px rgba(2, 6, 23, 0.42);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px hsl(var(--shadow-color) / 0.1);
 }
 
 .pulse-subtle {
@@ -137,21 +175,21 @@ button:active {
 @keyframes pulse-subtle {
   0%,
   100% {
-    box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.16);
+    box-shadow: 0 0 0 0 hsl(var(--color-accent) / 0.16);
   }
   50% {
-    box-shadow: 0 0 0 5px rgba(56, 189, 248, 0.05);
+    box-shadow: 0 0 0 5px hsl(var(--color-accent) / 0.05);
   }
 }
 
 :focus-visible {
-  outline: 2px solid #22d3ee;
+  outline: 2px solid hsl(var(--color-accent));
   outline-offset: 2px;
 }
 
 ::selection {
-  background: rgba(34, 211, 238, 0.3);
-  color: #f8fafc;
+  background: hsl(var(--color-accent) / 0.3);
+  color: hsl(var(--color-text-primary));
 }
 
 .page-grid::before {
@@ -161,8 +199,8 @@ button:active {
   inset: 0;
   z-index: 0;
   background-image:
-    linear-gradient(rgba(30, 41, 59, 0.25) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(30, 41, 59, 0.25) 1px, transparent 1px);
+    linear-gradient(hsl(var(--color-border) / 0.25) 1px, transparent 1px),
+    linear-gradient(90deg, hsl(var(--color-border) / 0.25) 1px, transparent 1px);
   background-size: 48px 48px;
   opacity: 0.25;
   mask-image: radial-gradient(ellipse at top, black 0%, transparent 65%);
@@ -173,7 +211,7 @@ button:active {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background-image: radial-gradient(rgba(148, 163, 184, 0.08) 0.7px, transparent 0.7px);
+  background-image: radial-gradient(hsl(var(--color-text-muted) / 0.08) 0.7px, transparent 0.7px);
   background-size: 3px 3px;
   opacity: 0.25;
 }
@@ -198,13 +236,13 @@ button:active {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03));
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(148, 163, 184, 0.24);
+  border: 1px solid hsl(var(--color-text-muted) / 0.24);
 }
 
 .depth-soft {
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.06) inset,
-    0 14px 28px rgba(2, 6, 23, 0.35);
+    0 14px 28px hsl(var(--shadow-color) / 0.12);
 }
 
 .custom-scrollbar {
@@ -237,15 +275,15 @@ button:active {
   width: 100%;
   margin: 1rem 0;
   font-size: 0.9375rem;
-  border: 1px solid #2a3f55;
+  border: 1px solid hsl(var(--color-border));
   border-radius: 0.5rem;
   overflow: hidden;
-  box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.1);
+  box-shadow: 0 0 0 1px hsl(var(--color-accent) / 0.1);
 }
 
 .article-editor-prose .ProseMirror td,
 .article-editor-prose .ProseMirror th {
-  border: 1px solid #243547;
+  border: 1px solid hsl(var(--color-border));
   padding: 0.55rem 0.75rem;
   vertical-align: top;
 }
@@ -253,21 +291,21 @@ button:active {
 .article-editor-prose .ProseMirror th {
   background: linear-gradient(
     180deg,
-    rgba(34, 211, 238, 0.2) 0%,
-    rgba(34, 211, 238, 0.08) 100%
+    hsl(var(--color-accent) / 0.2) 0%,
+    hsl(var(--color-accent) / 0.08) 100%
   );
   font-weight: 600;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 0.8125rem;
-  color: #f1f5f9;
+  color: hsl(var(--color-text-primary));
 }
 
 .article-editor-prose .ProseMirror tbody tr:nth-child(even) {
-  background: rgba(30, 45, 61, 0.35);
+  background: hsl(var(--color-border) / 0.35);
 }
 
 .article-editor-prose .ProseMirror tbody tr:hover {
-  background: rgba(34, 211, 238, 0.12);
+  background: hsl(var(--color-accent) / 0.12);
 }
 
 .article-editor-prose .ProseMirror .selectedCell:after {
@@ -278,12 +316,12 @@ button:active {
   right: 0;
   top: 0;
   bottom: 0;
-  background: rgba(34, 211, 238, 0.16);
+  background: hsl(var(--color-accent) / 0.16);
   pointer-events: none;
 }
 
 .article-editor-prose .ProseMirror p.is-editor-empty:first-child::before {
-  color: #475569;
+  color: hsl(var(--color-text-muted));
   content: attr(data-placeholder);
   float: left;
   height: 0;
@@ -345,23 +383,23 @@ button:active {
   margin: 1.5rem 0;
   font-size: 0.9375rem;
   line-height: 1.5;
-  border: 1px solid #2a3f55;
+  border: 1px solid hsl(var(--color-border));
   border-radius: 0.5rem;
   overflow: hidden;
-  box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.1);
+  box-shadow: 0 0 0 1px hsl(var(--color-accent) / 0.1);
 }
 
 .blog-prose thead {
   background: linear-gradient(
     180deg,
-    rgba(34, 211, 238, 0.2) 0%,
-    rgba(34, 211, 238, 0.08) 100%
+    hsl(var(--color-accent) / 0.2) 0%,
+    hsl(var(--color-accent) / 0.08) 100%
   );
 }
 
 .blog-prose th,
 .blog-prose td {
-  border: 1px solid #243547;
+  border: 1px solid hsl(var(--color-border));
   padding: 0.65rem 0.85rem;
   text-align: left;
   vertical-align: top;
@@ -373,19 +411,19 @@ button:active {
   font-size: 0.8125rem;
   letter-spacing: 0.02em;
   text-transform: none;
-  color: #f1f5f9;
+  color: hsl(var(--color-text-primary));
 }
 
 .blog-prose tbody tr:nth-child(even) {
-  background: rgba(30, 45, 61, 0.4);
+  background: hsl(var(--color-border) / 0.4);
 }
 
 .blog-prose tbody tr:nth-child(odd) {
-  background: rgba(7, 17, 28, 0.35);
+  background: hsl(var(--color-surface) / 0.6);
 }
 
 .blog-prose tbody tr:hover {
-  background: rgba(34, 211, 238, 0.12);
+  background: hsl(var(--color-accent) / 0.12);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -405,7 +443,7 @@ button:active {
   caption-side: bottom;
   margin-top: 0.5rem;
   font-size: 0.8125rem;
-  color: #94a3b8;
+  color: hsl(var(--color-text-muted));
   text-align: left;
 }
 
