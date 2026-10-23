@@ -315,32 +315,24 @@ export function BulkArticleCreatingAgentClient() {
     }
   }
 
-  if (!authChecked) {
-    return (
-      <main className="mx-auto max-w-4xl px-4 py-12 md:px-6">
-        <p className="font-mono text-sm text-text-muted">Checking session…</p>
-      </main>
-    );
-  }
-
-  if (!session?.access_token) {
+  if (!authChecked || !session?.access_token) {
     return (
       <main className="mx-auto max-w-lg px-4 py-12 md:px-6">
-        <h1 className="font-display text-2xl text-text-primary">
-          Sign in required
-        </h1>
+        <h1 className="font-display text-3xl text-text-primary">Bulk article writer</h1>
         <p className="mt-3 font-serif text-sm text-text-secondary">
-          Bulk article generation saves to your{" "}
-          <strong className="text-text-primary">automated articles</strong>{" "}
-          history (same as the SEO agent). Sign in from the SEO agent, then return
-          here.
+          Write many SEO articles at once: enter a list of keywords (or upload a CSV) and each finished article is
+          saved to <strong className="text-text-primary">My articles</strong>.
         </p>
-        <Link
-          href="/seo-agent"
-          className="mt-6 inline-flex rounded-lg bg-accent px-4 py-2 font-mono text-sm font-semibold text-background hover:opacity-90"
-        >
-          Open SEO Agent to sign in
-        </Link>
+        {!authChecked ? (
+          <p className="mt-6 font-mono text-sm text-text-muted">Checking sign-in…</p>
+        ) : (
+          <Link
+            href="/login?next=/bulk-article-creating-agent"
+            className="mt-6 inline-flex min-h-11 items-center rounded-lg bg-accent px-4 py-2 font-mono text-sm font-semibold text-background hover:opacity-90"
+          >
+            Sign in to start
+          </Link>
+        )}
       </main>
     );
   }
