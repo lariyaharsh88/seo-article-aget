@@ -29,7 +29,7 @@ export default function PricingPage() {
       price: "$0",
       period: "/month",
       subtitle: "For evaluating workflow fit",
-      points: ["2 workflow runs", "Core free tools", "Community support"],
+      points: ["5 free articles", "Core free tools", "Community support"],
       cta: "Start Free",
       href: "/seo-agent?try=1",
       highlight: false,

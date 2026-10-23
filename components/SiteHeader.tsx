@@ -5,18 +5,16 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { buildEducationFunnelUrl } from "@/lib/education-funnel-url";
-import { EDUCATION_HOSTS, EDUCATION_SITE_URL } from "@/lib/education-hosts";
+import { EDUCATION_HOSTS } from "@/lib/education-hosts";
 import { SITE_LOGO_PATH, SITE_NAME } from "@/lib/seo-site";
 
+/** Plain-language labels. Education, bulk articles and other tools live in the footer. */
 const mainNav = [
-  { href: "/", label: "Home" },
-  { href: "/seo-agent", label: "Platform" },
-  { href: "/ai-seo-tools", label: "Solutions" },
-  { href: "/free-tools", label: "Resources" },
-  { href: `${EDUCATION_SITE_URL}/education`, label: "Education" },
-  { href: "/dashboard", label: "Dashboard" },
-  { href: "/bulk-article-creating-agent", label: "Bulk articles" },
+  { href: "/seo-agent", label: "Write an article" },
+  { href: "/free-tools", label: "Free tools" },
+  { href: "/blogs", label: "Blog" },
   { href: "/pricing", label: "Pricing" },
+  { href: "/dashboard", label: "My articles" },
   { href: "/login?next=/seo-agent", label: "Sign in" },
 ] as const;
 

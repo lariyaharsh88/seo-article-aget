@@ -7,7 +7,6 @@ import { useSearchParams } from "next/navigation";
 import type { Session } from "@supabase/supabase-js";
 import { ContentScoreStrip } from "@/components/workflow/ContentScoreStrip";
 import { SeoPublishChecklist } from "@/components/workflow/SeoPublishChecklist";
-import { WorkflowStepper } from "@/components/workflow/WorkflowStepper";
 import { ArticleCopyBar } from "@/components/ArticleCopyBar";
 import { ArticleRenderer } from "@/components/ArticleRenderer";
 import { PipelineProgress } from "@/components/PipelineProgress";
@@ -137,19 +136,11 @@ type ArticleViewMode = "edit" | "preview";
 const FREE_GUEST_RUN_LIMIT = 2;
 const FREE_LOGGED_RUN_LIMIT = 5;
 const WEEKLY_GOAL = 5;
-const ONBOARDING_TOTAL_STEPS = 3;
 
 type LocalHistoryEntry = {
   id: string;
   title: string;
   createdAt: string;
-};
-
-type OnboardingState = {
-  role: "founder" | "marketer" | "agency" | "";
-  objective: "traffic" | "leads" | "content-velocity" | "";
-  cadence: "daily" | "weekly" | "twice-weekly" | "";
-  starterKeyword: string;
 };
 
 function dayStamp(date: Date) {
@@ -162,7 +153,8 @@ function isRecord(v: unknown): v is Record<string, unknown> {
 
 export function SeoAgentClient() {
   const searchParams = useSearchParams();
-  const quickTryMode = searchParams.get("try") === "1";
+  /** Homepage keyword box links here as /seo-agent?keyword=… */
+  const keywordParam = searchParams.get("keyword")?.trim().slice(0, 200) ?? "";
   const [authReady, setAuthReady] = useState(false);
   const [userSession, setUserSession] = useState<Session | null>(null);
   const [loginPromptOpen, setLoginPromptOpen] = useState(false);
@@ -170,10 +162,6 @@ export function SeoAgentClient() {
   const [authLoading, setAuthLoading] = useState(false);
   const [authNotice, setAuthNotice] = useState<string | null>(null);
   const [authError, setAuthError] = useState<string | null>(null);
-  const [displayName, setDisplayName] = useState("");
-  const [profileLoading, setProfileLoading] = useState(false);
-  const [savingProfile, setSavingProfile] = useState(false);
-  const [profileHint, setProfileHint] = useState<string | null>(null);
   const [historyNotice, setHistoryNotice] = useState<string | null>(null);
   const [historyLink, setHistoryLink] = useState<string | null>(null);
   const [mode, setMode] = useState<PipelineMode>("simple");
@@ -227,70 +215,6 @@ export function SeoAgentClient() {
     }
   }, []);
 
-  useEffect(() => {
-    const uid = userSession?.user?.id?.trim();
-    const email = userSession?.user?.email ?? "";
-    const token = userSession?.access_token;
-    if (!uid) {
-      setDisplayName("");
-      setProfileLoading(false);
-      setProfileHint(null);
-      return;
-    }
-    if (!token) {
-      const stored = localStorage.getItem(`rfh:name:${uid}`) || "";
-      setDisplayName(stored || email.split("@")[0] || "");
-      return;
-    }
-
-    let cancelled = false;
-    setProfileLoading(true);
-    setProfileHint(null);
-    void (async () => {
-      try {
-        const res = await fetch("/api/user-profile", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const data: unknown = await res.json();
-        if (cancelled) return;
-        if (!res.ok) {
-          const msg =
-            isRecord(data) && typeof data.error === "string"
-              ? data.error
-              : `HTTP ${res.status}`;
-          setProfileHint(msg);
-          const stored = localStorage.getItem(`rfh:name:${uid}`) || "";
-          setDisplayName(stored || email.split("@")[0] || "");
-          return;
-        }
-        const profile =
-          isRecord(data) && isRecord(data.profile) ? data.profile : null;
-        const dn =
-          profile && typeof profile.displayName === "string"
-            ? profile.displayName.trim()
-            : "";
-        if (dn) {
-          setDisplayName(dn);
-          localStorage.setItem(`rfh:name:${uid}`, dn);
-        } else {
-          const stored = localStorage.getItem(`rfh:name:${uid}`) || "";
-          setDisplayName(stored || email.split("@")[0] || "");
-        }
-      } catch {
-        if (!cancelled) {
-          const stored = localStorage.getItem(`rfh:name:${uid}`) || "";
-          setDisplayName(stored || email.split("@")[0] || "");
-          setProfileHint("We couldn't load your profile right now. Please try again.");
-        }
-      } finally {
-        if (!cancelled) setProfileLoading(false);
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [userSession?.user?.id, userSession?.user?.email, userSession?.access_token]);
   const [tab, setTab] = useState<TabId>("article");
   const [running, setRunning] = useState(false);
   const [stage, setStage] = useState<string | null>(null);
@@ -325,22 +249,12 @@ export function SeoAgentClient() {
   const [pinnedKeyword, setPinnedKeyword] = useState("");
   const [showDidYouKnow, setShowDidYouKnow] = useState(true);
   const [didYouKnowIndex, setDidYouKnowIndex] = useState(0);
-  const [onboardingDone, setOnboardingDone] = useState(false);
-  const [onboardingOpen, setOnboardingOpen] = useState(false);
-  const [onboardingStep, setOnboardingStep] = useState(1);
-  const [onboarding, setOnboarding] = useState<OnboardingState>({
-    role: "",
-    objective: "",
-    cadence: "",
-    starterKeyword: "",
-  });
-
   useEffect(() => {
-    if (quickTryMode && !simpleKeyword.trim()) {
-      setSimpleKeyword("best ai seo tools for startups");
+    if (keywordParam) {
+      setSimpleKeyword(keywordParam);
       setMode("simple");
     }
-  }, [quickTryMode, simpleKeyword]);
+  }, [keywordParam]);
 
   useEffect(() => {
     const bucket = userSession?.user?.id?.trim() || "guest";
@@ -392,83 +306,9 @@ export function SeoAgentClient() {
     }
   }, [userSession?.user?.id]);
 
-  useEffect(() => {
-    const bucket = userSession?.user?.id?.trim() || "guest";
-    setOnboardingDone(
-      localStorage.getItem(`rfh:onboarding:done:${bucket}`) === "1",
-    );
-  }, [userSession?.user?.id]);
-
   const usageLimit = userSession ? FREE_LOGGED_RUN_LIMIT : FREE_GUEST_RUN_LIMIT;
   const usageRemaining = Math.max(0, usageLimit - usageRuns);
   const usageLimitReached = usageRemaining <= 0;
-  const hasFirstOutput = article.trim().length >= 40;
-  const hasVisitedOptimizationStep =
-    tab === "seo" || tab === "score" || (hasFirstOutput && !running);
-
-  const onboardingProgress = Math.round(
-    (onboardingStep / ONBOARDING_TOTAL_STEPS) * 100,
-  );
-  const onboardingChecklistItems = [
-    { id: "setup", label: "Finish quick setup (optional)", done: onboardingDone },
-    { id: "output", label: "Generate your first article", done: hasFirstOutput },
-    {
-      id: "optimize",
-      label: "Open Meta & share or Score",
-      done: hasVisitedOptimizationStep,
-    },
-  ] as const;
-  const onboardingChecklistDone = onboardingChecklistItems.filter((item) => item.done).length;
-
-  const skipOnboardingTour = useCallback(() => {
-    const bucket = userSession?.user?.id?.trim() || "guest";
-    localStorage.setItem(`rfh:onboarding:done:${bucket}`, "1");
-    setOnboardingDone(true);
-    setOnboardingOpen(false);
-  }, [userSession?.user?.id]);
-
-  const completeOnboarding = useCallback(() => {
-    const bucket = userSession?.user?.id?.trim() || "guest";
-    localStorage.setItem(`rfh:onboarding:done:${bucket}`, "1");
-    setOnboardingDone(true);
-    setOnboardingOpen(false);
-
-    const audienceMap: Record<NonNullable<OnboardingState["role"]>, string> = {
-      founder: "startup founders",
-      marketer: "growth marketers",
-      agency: "agency SEO teams",
-      "": "",
-    };
-    const intentMap: Record<NonNullable<OnboardingState["objective"]>, PipelineInput["intent"]> = {
-      traffic: "informational",
-      leads: "commercial",
-      "content-velocity": "transactional",
-      "": "informational",
-    };
-
-    if (onboarding.starterKeyword.trim()) {
-      setSimpleKeyword(onboarding.starterKeyword.trim());
-    }
-    setInput((prev) => ({
-      ...prev,
-      audience: onboarding.role ? audienceMap[onboarding.role] : prev.audience,
-      intent: onboarding.objective ? intentMap[onboarding.objective] : prev.intent,
-      primaryKeyword: onboarding.starterKeyword.trim() || prev.primaryKeyword,
-      topic:
-        onboarding.starterKeyword.trim() && !prev.topic.trim()
-          ? onboarding.starterKeyword.trim()
-          : prev.topic,
-    }));
-
-    setHistoryNotice(
-      'Setup saved. Press "Generate article" below when you are ready.',
-    );
-    trackEvent("onboarding_complete", {
-      role: onboarding.role || "unknown",
-      objective: onboarding.objective || "unknown",
-      cadence: onboarding.cadence || "unknown",
-    });
-  }, [onboarding, userSession?.user?.id]);
 
   const canRun =
     mode === "simple"
@@ -501,10 +341,6 @@ export function SeoAgentClient() {
     [mode, simpleKeyword, input.topic, input.primaryKeyword, input.sourceUrl],
   );
 
-  const articleWorkflowComplete = article.trim().length >= 80;
-  const publishWorkflowComplete = Boolean(
-    meta?.metaTitle?.trim() && meta?.metaDescription?.trim(),
-  );
 
   const handleFetchSearchConsole = useCallback(async () => {
     setLoadingGsc(true);
@@ -775,81 +611,6 @@ export function SeoAgentClient() {
     topicFirstLine,
   ]);
 
-  const runInstantDemo = useCallback(async () => {
-    if (running) return;
-    trackEvent("funnel_step", {
-      funnel_name: "plg_try_without_signup",
-      step_name: "instant_demo_started",
-      step_order: 1,
-    });
-    trackHeatmapTrigger("instant_demo_started", { page_path: "/seo-agent" });
-    setRunning(true);
-    setError(null);
-    setLogLines([]);
-    setDoneStages([]);
-    setStage(null);
-    setArticle("");
-    setMeta(null);
-    setKeywords([]);
-    setSources([]);
-    setPaas([]);
-    setFeaturedSnippet(null);
-    setEnrichedHtml("");
-    setHistoryNotice(null);
-    setHistoryLink(null);
-    setArticleViewMode("preview");
-    setTab("article");
-
-    const markDone = (id: string) => {
-      setDoneStages((prev) => (prev.includes(id) ? prev : [...prev, id]));
-    };
-    const steps = [
-      "input-validation",
-      "keyword-pipeline",
-      "outline",
-      "article",
-      "seo-package",
-    ];
-    for (const s of steps) {
-      setStage(s);
-      pushLog(`Demo: ${s.replace("-", " ")}`);
-      await new Promise((r) => setTimeout(r, 500));
-      markDone(s);
-    }
-
-    const k = simpleKeyword.trim() || "seo content workflow";
-    setArticle(
-      `# ${k}: Quick Demo Draft\n\n` +
-        `## Fast summary\nThis instant demo shows how a structured content workflow can improve ranking consistency and publishing speed.\n\n` +
-        `## Key points\n- Clear keyword intent alignment\n- Better heading hierarchy for readability\n- Internal links for stronger topic authority\n\n` +
-        `## Next step\nCreate a full draft with your own topic and audience settings.`,
-    );
-    setMeta({
-      metaTitle: `${k} | SEO Guide`,
-      metaDescription:
-        "A quick demo showing how structured SEO workflows improve ranking consistency and user engagement.",
-      urlSlug: k.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, ""),
-      focusKeyword: k,
-      secondaryKeywords: ["seo workflow", "content optimization"],
-      schemaType: "Article",
-      ogTitle: `${k} | SEO Guide`,
-      twitterDescription:
-        "Instant demo preview of a structured SEO workflow and publish-ready draft format.",
-      readabilityGrade: "8th grade",
-      estimatedWordCount: "750",
-    });
-    setHistoryNotice("Instant demo ready. Sign in to generate full production outputs.");
-    setRewardNotice("Reward unlocked: instant demo is ready. Upgrade to run your full workflow.");
-    window.setTimeout(() => setRewardNotice(null), 4500);
-    trackEvent("funnel_step", {
-      funnel_name: "plg_try_without_signup",
-      step_name: "instant_demo_completed",
-      step_order: 2,
-    });
-    setStage(null);
-    setRunning(false);
-  }, [pushLog, running, simpleKeyword]);
-
   const runWithAuth = useCallback(async () => {
     if (usageLimitReached) {
       setError("You've reached your free limit. Upgrade to Pro to keep generating without limits.");
@@ -857,10 +618,6 @@ export function SeoAgentClient() {
         funnel_name: "upgrade_nudge",
         step_name: "usage_limit_blocked",
       });
-      return;
-    }
-    if (!userSession && quickTryMode) {
-      await runInstantDemo();
       return;
     }
     if (!userSession) {
@@ -874,7 +631,7 @@ export function SeoAgentClient() {
       return;
     }
     await runPipeline();
-  }, [quickTryMode, runInstantDemo, runPipeline, usageLimitReached, userSession]);
+  }, [runPipeline, usageLimitReached, userSession]);
 
   const sendAuthMagicLink = useCallback(async () => {
     setAuthError(null);
@@ -898,54 +655,6 @@ export function SeoAgentClient() {
       setAuthLoading(false);
     }
   }, [authEmail]);
-
-  const savePersonalization = useCallback(async () => {
-    const uid = userSession?.user?.id?.trim();
-    const token = userSession?.access_token;
-    if (!uid) return;
-    setProfileHint(null);
-    if (!token) {
-      localStorage.setItem(`rfh:name:${uid}`, displayName.trim());
-      setProfileHint("Saved locally (sign in to sync to your account).");
-      return;
-    }
-    setSavingProfile(true);
-    try {
-      const res = await fetch("/api/user-profile", {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ displayName: displayName.trim() }),
-      });
-      const data: unknown = await res.json();
-      if (!res.ok) {
-        const msg =
-          isRecord(data) && typeof data.error === "string"
-            ? data.error
-            : `HTTP ${res.status}`;
-        setProfileHint(msg);
-        return;
-      }
-      localStorage.setItem(`rfh:name:${uid}`, displayName.trim());
-      setProfileHint("Saved to your account.");
-    } catch (e) {
-      setProfileHint(e instanceof Error ? e.message : "We couldn't save your changes. Please try again.");
-    } finally {
-      setSavingProfile(false);
-    }
-  }, [displayName, userSession?.user?.id, userSession?.access_token]);
-
-  const signOutUser = useCallback(async () => {
-    try {
-      const supabase = getSupabaseBrowserClient();
-      await supabase.auth.signOut();
-      setLoginPromptOpen(false);
-    } catch {
-      /* ignore signout UI failures */
-    }
-  }, []);
 
   const copyInviteLink = useCallback(async () => {
     try {
@@ -1081,348 +790,36 @@ export function SeoAgentClient() {
             SEO article generator
           </h1>
           <p className="max-w-2xl text-base text-text-secondary">
-            Type a keyword or topic, press generate, then copy your article and meta tags. Use{" "}
-            <span className="font-medium text-text-primary">Quick Start</span> for the fastest path.
-          </p>
-          <p className="text-sm text-text-muted">
-            {authReady
-              ? userSession?.user?.email
-                ? `Signed in as ${userSession.user.email}.`
-                : quickTryMode
-                  ? "You can try without an account."
-                  : "You can try without signing in; sign in later to save work."
-              : "Checking sign-in…"}
-            {" "}
-            <Link
-              href="/repurpose-url"
-              className="text-accent underline-offset-2 hover:underline"
-            >
-              Have a URL only? Turn it into an article here
-            </Link>
-            .
+            Turn one keyword into a researched, ready-to-publish article.
           </p>
         </div>
 
-        {!onboardingDone && !onboardingOpen ? (
-          <div className="flex flex-col gap-3 rounded-xl border border-border/80 bg-surface/60 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm text-text-secondary">
-              Optional: 30-second preferences to tailor your first draft.
-            </p>
-            <div className="flex flex-shrink-0 flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setOnboardingOpen(true);
-                  setOnboardingStep(1);
-                }}
-                className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-background hover:opacity-90"
-              >
-                Short tour
-              </button>
-              <button
-                type="button"
-                onClick={() => skipOnboardingTour()}
-                className="rounded-lg border border-border px-4 py-2 text-sm text-text-secondary hover:border-accent hover:text-accent"
-              >
-                Skip — I’ll enter a keyword
-              </button>
-            </div>
-          </div>
-        ) : null}
+        <ol className="grid gap-3 sm:grid-cols-3">
+          {[
+            ["1", "Enter a keyword", "The topic you want to rank for, e.g. “best CRM for small business”."],
+            ["2", "We research and write", "We read the top Google results and write a long-form draft with sources. Takes about 2–4 minutes."],
+            ["3", "Copy or publish", "Get the article plus SEO title and description. Copy it, download it, or save it to your dashboard."],
+          ].map(([n, title, body]) => (
+            <li key={n} className="rounded-xl border border-border/80 bg-surface/60 p-4">
+              <p className="font-mono text-xs text-accent">Step {n}</p>
+              <p className="mt-1 font-semibold text-text-primary">{title}</p>
+              <p className="mt-1 text-sm text-text-secondary">{body}</p>
+            </li>
+          ))}
+        </ol>
 
-        <div className="inline-flex rounded-lg border border-border bg-surface/70 p-1">
-          <button
-            type="button"
-            onClick={() => setMode("simple")}
-            className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-              mode === "simple"
-                ? "bg-accent text-background"
-                : "text-text-secondary hover:text-text-primary"
-            }`}
-          >
-            Quick Start
-          </button>
-          <button
-            type="button"
-            onClick={() => setMode("advanced")}
-            className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-              mode === "advanced"
-                ? "bg-accent text-background"
-                : "text-text-secondary hover:text-text-primary"
-            }`}
-          >
-            Advanced
-          </button>
-        </div>
-        <WorkflowStepper
-          keywordComplete={keywordBriefComplete}
-          articleComplete={articleWorkflowComplete}
-          publishComplete={publishWorkflowComplete}
-        />
-        <div className="flex flex-col gap-2 rounded-lg border border-border/70 bg-background/40 px-3 py-2 sm:flex-row sm:items-center sm:gap-4">
-          <p className="text-sm text-text-secondary">
-            Free runs left:{" "}
-            <span className="font-semibold text-text-primary">
-              {usageRemaining} / {usageLimit}
-            </span>
-            {usageLimitReached ? (
-              <span className="text-red-300"> — limit reached</span>
-            ) : null}
-          </p>
-          <div className="h-2 min-w-0 flex-1 rounded-full bg-background/80 sm:max-w-xs">
-            <div
-              className={`h-full rounded-full transition-all duration-300 ${
-                usageLimitReached ? "bg-red-400" : "bg-accent"
-              }`}
-              style={{
-                width: `${Math.min(100, (usageRuns / usageLimit) * 100)}%`,
-              }}
-            />
-          </div>
-          <Link
-            href="/pricing"
-            className="text-sm font-medium text-accent hover:underline"
-          >
-            See plans
+        <p className="text-sm text-text-muted">
+          {authReady
+            ? userSession?.user?.email
+              ? `Signed in as ${userSession.user.email} · ${usageRemaining} of ${usageLimit} free articles left.`
+              : `A free account is needed to generate — your first ${FREE_LOGGED_RUN_LIMIT} articles are free, no card required.`
+            : "Checking sign-in…"}{" "}
+          <Link href="/repurpose-url" className="text-accent underline-offset-2 hover:underline">
+            Have a URL instead? Rewrite it into an article
           </Link>
-        </div>
+          .
+        </p>
       </header>
-
-      {onboardingOpen ? (
-        <section className="rounded-2xl border border-accent/40 bg-surface/70 p-4">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="font-mono text-xs uppercase tracking-[0.14em] text-accent">
-              Quick setup guide ({onboardingStep}/{ONBOARDING_TOTAL_STEPS})
-            </p>
-            <button
-              type="button"
-              onClick={() => skipOnboardingTour()}
-              className="rounded-md border border-border px-2 py-1 font-mono text-[11px] text-text-secondary hover:border-accent hover:text-accent"
-            >
-              Skip
-            </button>
-          </div>
-          <div className="mt-2 h-1.5 rounded-full bg-background/70">
-            <div className="h-full rounded-full bg-accent transition-all duration-300" style={{ width: `${onboardingProgress}%` }} />
-          </div>
-          <p className="mt-2 font-mono text-[11px] text-text-muted">
-            Step {onboardingStep}/{ONBOARDING_TOTAL_STEPS} - you are under 30 seconds away from your first &ldquo;aha&rdquo; moment.
-          </p>
-
-          {onboardingStep === 1 ? (
-            <div className="mt-4 space-y-3">
-              <p className="font-display text-lg text-text-primary">What best describes you?</p>
-              <p className="font-serif text-sm text-text-secondary">
-                We will personalize your first quick win.
-              </p>
-              <div className="grid gap-2 sm:grid-cols-3">
-                {[
-                  { id: "founder", label: "Founder" },
-                  { id: "marketer", label: "Marketer" },
-                  { id: "agency", label: "Agency" },
-                ].map((item) => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() =>
-                      setOnboarding((prev) => ({ ...prev, role: item.id as OnboardingState["role"] }))
-                    }
-                    className={`rounded-lg border px-3 py-2 font-mono text-xs ${
-                      onboarding.role === item.id
-                        ? "border-accent bg-accent/10 text-accent"
-                        : "border-border text-text-secondary hover:border-accent/60"
-                    }`}
-                  >
-                    {item.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          ) : null}
-
-          {onboardingStep === 2 ? (
-            <div className="mt-4 space-y-3">
-              <p className="font-display text-lg text-text-primary">Set your goal and publishing pace</p>
-              <p className="font-serif text-sm text-text-secondary">
-                Pick what success looks like this week.
-              </p>
-              <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-accent">
-                Main goal
-              </p>
-              <div className="grid gap-2 sm:grid-cols-3">
-                {[
-                  { id: "traffic", label: "Grow traffic" },
-                  { id: "leads", label: "Capture leads" },
-                  { id: "content-velocity", label: "Publish faster" },
-                ].map((item) => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() =>
-                      setOnboarding((prev) => ({
-                        ...prev,
-                        objective: item.id as OnboardingState["objective"],
-                      }))
-                    }
-                    className={`rounded-lg border px-3 py-2 font-mono text-xs ${
-                      onboarding.objective === item.id
-                        ? "border-accent bg-accent/10 text-accent"
-                        : "border-border text-text-secondary hover:border-accent/60"
-                    }`}
-                  >
-                    {item.label}
-                  </button>
-                ))}
-              </div>
-              <p className="pt-1 font-mono text-[11px] uppercase tracking-[0.14em] text-accent">
-                Publishing pace
-              </p>
-              <div className="grid gap-2 sm:grid-cols-3">
-                {[
-                  { id: "daily", label: "Daily" },
-                  { id: "twice-weekly", label: "Twice weekly" },
-                  { id: "weekly", label: "Weekly" },
-                ].map((item) => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() =>
-                      setOnboarding((prev) => ({ ...prev, cadence: item.id as OnboardingState["cadence"] }))
-                    }
-                    className={`rounded-lg border px-3 py-2 font-mono text-xs ${
-                      onboarding.cadence === item.id
-                        ? "border-accent bg-accent/10 text-accent"
-                        : "border-border text-text-secondary hover:border-accent/60"
-                    }`}
-                  >
-                    {item.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          ) : null}
-
-          {onboardingStep === 3 ? (
-            <div className="mt-4 space-y-3">
-              <p className="font-display text-lg text-text-primary">Pick one starter keyword</p>
-              <p className="font-serif text-sm text-text-secondary">
-                This powers your first result immediately.
-              </p>
-              <div className="grid gap-2 sm:grid-cols-3">
-                {[
-                  "ai seo tools for startups",
-                  "how to improve seo traffic",
-                  "best content workflow for saas",
-                ].map((item) => (
-                  <button
-                    key={item}
-                    type="button"
-                    onClick={() =>
-                      setOnboarding((prev) => ({ ...prev, starterKeyword: item }))
-                    }
-                    className={`rounded-lg border px-3 py-2 font-mono text-xs ${
-                      onboarding.starterKeyword === item
-                        ? "border-accent bg-accent/10 text-accent"
-                        : "border-border text-text-secondary hover:border-accent/60"
-                    }`}
-                  >
-                    {item}
-                  </button>
-                ))}
-              </div>
-              <input
-                type="text"
-                value={onboarding.starterKeyword}
-                onChange={(e) =>
-                  setOnboarding((prev) => ({ ...prev, starterKeyword: e.target.value }))
-                }
-                placeholder="e.g. seo workflow for saas startup"
-                className="w-full rounded-lg border border-border bg-background px-3 py-2 font-serif text-sm text-text-primary focus:border-accent focus:outline-none"
-              />
-              <p className="font-mono text-[11px] text-text-muted">
-                Guided path: keep this keyword, then tap the highlighted generate button.
-              </p>
-            </div>
-          ) : null}
-
-          <div className="mt-4 flex flex-wrap justify-between gap-2">
-            <button
-              type="button"
-              onClick={() => setOnboardingStep((s) => Math.max(1, s - 1))}
-              disabled={onboardingStep === 1}
-              className="rounded-lg border border-border px-3 py-2 font-mono text-xs text-text-secondary disabled:opacity-40"
-            >
-              Back
-            </button>
-            {onboardingStep < ONBOARDING_TOTAL_STEPS ? (
-              <button
-                type="button"
-                onClick={() =>
-                  setOnboardingStep((s) => Math.min(ONBOARDING_TOTAL_STEPS, s + 1))
-                }
-                className="rounded-lg bg-accent px-4 py-2 font-mono text-xs font-semibold text-background hover:opacity-90"
-              >
-                Continue
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={() => completeOnboarding()}
-                className="rounded-lg bg-accent px-4 py-2 font-mono text-xs font-semibold text-background hover:opacity-90"
-              >
-                Finish & unlock my quick win
-              </button>
-            )}
-          </div>
-        </section>
-      ) : null}
-
-      {!onboardingOpen && onboardingChecklistDone < 3 ? (
-        <section className="rounded-2xl border border-border/80 bg-surface/60 p-4">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="font-mono text-xs uppercase tracking-[0.14em] text-accent">
-              Getting started
-            </p>
-            <span className="rounded-full border border-accent/35 bg-accent/10 px-2 py-0.5 font-mono text-[10px] text-accent">
-              {onboardingChecklistDone}/3 complete
-            </span>
-          </div>
-          <div className="mt-2 h-1.5 rounded-full bg-background/70">
-            <div
-              className="h-full rounded-full bg-accent transition-all duration-300"
-              style={{ width: `${Math.round((onboardingChecklistDone / 3) * 100)}%` }}
-            />
-          </div>
-          <ul className="mt-3 space-y-2">
-            {onboardingChecklistItems.map((item) => (
-              <li
-                key={item.id}
-                className="flex items-center gap-2 rounded-lg border border-border/70 bg-background/35 px-3 py-2"
-              >
-                <span
-                  className={`inline-flex h-5 w-5 items-center justify-center rounded-full border font-mono text-[10px] ${
-                    item.done
-                      ? "border-accent/50 bg-accent/10 text-accent"
-                      : "border-border text-text-muted"
-                  }`}
-                >
-                  {item.done ? "✓" : "•"}
-                </span>
-                <span className="font-serif text-sm text-text-secondary">{item.label}</span>
-              </li>
-            ))}
-          </ul>
-          {onboardingChecklistDone < 3 ? (
-            <p className="mt-3 text-sm text-text-muted">
-              Optional checklist—skip anything you don&apos;t need. You can always use the tour in the header.
-            </p>
-          ) : (
-            <p className="mt-3 text-sm text-accent">
-              You&apos;ve covered setup, a draft, and SEO tools. Nice work.
-            </p>
-          )}
-        </section>
-      ) : null}
 
       {ADSENSE_SLOTS.toolInline ? (
         <div className="space-y-2">
@@ -1439,23 +836,9 @@ export function SeoAgentClient() {
 
       <div className="grid min-w-0 gap-6 lg:grid-cols-[1fr_minmax(260px,300px)]">
         <div className="min-w-0 space-y-4">
-          {quickTryMode && !userSession ? (
-            <section className="rounded-xl border border-accent/40 bg-accent/10 p-3">
-              <p className="text-sm font-medium text-text-primary">
-                Demo mode — no account needed
-              </p>
-              <p className="mt-1 text-sm text-text-secondary">
-                Add a keyword below and press generate. Keep this tab open while the article is created.
-              </p>
-            </section>
-          ) : null}
           {mode === "simple" ? (
             <section
-              className={`rounded-xl border bg-surface/80 p-4 ${
-                onboardingOpen && onboardingStep === ONBOARDING_TOTAL_STEPS
-                  ? "border-accent/70 shadow-[0_0_0_1px_rgba(34,211,238,0.25)]"
-                  : "border-border"
-              }`}
+              className="rounded-xl border border-border bg-surface/80 p-4"
             >
               <h2 className="text-lg font-semibold text-text-primary">
                 What should the article be about?
@@ -1474,11 +857,6 @@ export function SeoAgentClient() {
                   className="mt-2 w-full rounded-lg border border-border bg-background px-3 py-2 font-serif text-text-primary placeholder:text-text-muted focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
                 />
               </label>
-              {onboardingOpen && onboardingStep === ONBOARDING_TOTAL_STEPS ? (
-                <p className="mt-2 rounded-md border border-accent/40 bg-accent/10 px-2 py-1 font-mono text-[11px] text-accent">
-                  Ready—click &ldquo;Generate article&rdquo; below.
-                </p>
-              ) : null}
             </section>
           ) : (
             <TopicForm
@@ -1499,30 +877,22 @@ export function SeoAgentClient() {
           )}
 
           <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
-            {onboardingOpen && onboardingStep === ONBOARDING_TOTAL_STEPS ? (
-              <p className="w-full rounded-md border border-accent/40 bg-accent/10 px-3 py-2 font-mono text-[11px] text-accent">
-                Click the green &ldquo;Generate article&rdquo; button below.
-              </p>
-            ) : null}
             <button
               type="button"
               onClick={() => void runWithAuth()}
               disabled={!canRun || usageLimitReached}
               data-track-cta
-              data-cta-label={quickTryMode && !userSession ? "run_instant_demo" : "run_pipeline"}
-              className={`touch-manipulation w-full rounded-lg bg-accent px-5 py-2.5 font-mono text-sm font-semibold text-background transition-all duration-200 enabled:hover:opacity-90 enabled:focus:outline-none enabled:focus:ring-2 enabled:focus:ring-accent disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto ${
-                onboardingOpen && onboardingStep === ONBOARDING_TOTAL_STEPS
-                  ? "ring-2 ring-accent ring-offset-2 ring-offset-background"
-                  : ""
-              }`}
+              data-cta-label="run_pipeline"
+              className={`touch-manipulation w-full rounded-lg bg-accent px-5 py-2.5 font-mono text-sm font-semibold text-background transition-all duration-200 enabled:hover:opacity-90 enabled:focus:outline-none enabled:focus:ring-2 enabled:focus:ring-accent disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto`}
             >
-              {running
-                ? "Generating…"
-                : !userSession && quickTryMode
-                  ? "Generate article"
-                : mode === "simple"
-                  ? "Generate article"
-                  : "Generate article"}
+              {running ? "Generating… (about 2–4 min)" : userSession ? "Generate article" : "Sign in & generate"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode(mode === "simple" ? "advanced" : "simple")}
+              className="text-sm text-text-secondary underline-offset-2 hover:text-accent hover:underline"
+            >
+              {mode === "simple" ? "More options (audience, intent, source URL)" : "Use the simple form"}
             </button>
             <label className="flex cursor-pointer items-center gap-2 text-xs text-text-secondary sm:text-sm">
               <input
@@ -1580,50 +950,6 @@ export function SeoAgentClient() {
               <p className="font-mono text-[11px] text-success">{rewardNotice}</p>
             </div>
           ) : null}
-          {userSession?.user?.id ? (
-            <div className="rounded-xl border border-border bg-surface/60 p-3">
-              <p className="font-mono text-xs text-text-secondary">
-                Personalization: display name is stored in your account (database)
-                when you save.
-              </p>
-              {profileLoading ? (
-                <p className="mt-2 font-mono text-[11px] text-text-muted">
-                  Loading profile…
-                </p>
-              ) : null}
-              {profileHint ? (
-                <p className="mt-2 font-mono text-[11px] text-text-muted">
-                  {profileHint}
-                </p>
-              ) : null}
-              <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center">
-                <input
-                  type="text"
-                  value={displayName}
-                  onChange={(e) => setDisplayName(e.target.value)}
-                  placeholder="Your display name"
-                  disabled={profileLoading}
-                  className="w-full rounded-lg border border-border bg-background px-3 py-2 font-mono text-sm text-text-primary focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent sm:max-w-xs"
-                />
-                <button
-                  type="button"
-                  onClick={() => void savePersonalization()}
-                  disabled={savingProfile || profileLoading}
-                  className="rounded-lg border border-border px-3 py-2 font-mono text-xs text-text-secondary hover:border-accent hover:text-accent disabled:opacity-40"
-                >
-                  {savingProfile ? "Saving…" : "Save name"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void signOutUser()}
-                  className="rounded-lg border border-border px-3 py-2 font-mono text-xs text-text-secondary hover:border-accent hover:text-accent"
-                >
-                  Logout
-                </button>
-              </div>
-            </div>
-          ) : null}
-
           <div className="lg:hidden">
             <PipelineProgress
               stages={PIPELINE_STAGES}

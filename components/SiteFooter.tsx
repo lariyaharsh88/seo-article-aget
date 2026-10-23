@@ -41,7 +41,7 @@ export function SiteFooter() {
         <div className="space-y-3">
           <p className="font-display text-lg text-text-primary">{SITE_NAME}</p>
           <p className="max-w-md font-serif text-sm text-text-secondary">
-            Create more ranking-ready pages in less time with one workflow for research, writing, and optimization.
+            Turn a keyword into a researched, SEO-ready article in a few minutes.
           </p>
           <Link
             href="/seo-agent"
@@ -50,7 +50,7 @@ export function SiteFooter() {
             Start Free
           </Link>
           <p className="font-mono text-[11px] text-text-muted">
-            Start in under 60 seconds. No setup friction.
+            Free account · first 5 articles free.
           </p>
         </div>
         <nav aria-label="Footer" className="md:justify-self-center">
@@ -87,18 +87,6 @@ export function SiteFooter() {
             ))}
           </ul>
         </nav>
-        <div className="rounded-xl border border-border/80 bg-surface/50 p-4 md:justify-self-end">
-          <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-accent">
-            Build with confidence
-          </p>
-          <p className="mt-2 font-serif text-xs text-text-secondary">
-            Trusted by SaaS teams, agencies, and operators focused on measurable organic growth.
-          </p>
-          <div className="mt-3 space-y-1 font-mono text-[11px] text-text-muted">
-            <p>1,200+ teams using workflows</p>
-            <p>85,000+ SEO pages generated</p>
-          </div>
-        </div>
       </div>
       <div className="border-t border-border/60 bg-surface/30 px-4 py-3">
         <p className="mx-auto max-w-7xl text-center font-mono text-xs text-text-secondary">

@@ -28,7 +28,7 @@ export function MainMobileStickyCta() {
         href="/seo-agent"
         className="btn-premium pulse-subtle flex min-h-11 w-full items-center justify-center rounded-xl bg-accent px-4 py-2.5 font-mono text-sm font-semibold text-background"
       >
-        Get SEO Traffic Now
+        Write an article — free
       </Link>
     </div>
   );

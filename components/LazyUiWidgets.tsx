@@ -6,10 +6,6 @@ const SiteChatWidget = dynamic(
   () => import("@/components/SiteChatWidget").then((m) => m.SiteChatWidget),
   { ssr: false },
 );
-const ExitIntentPopup = dynamic(
-  () => import("@/components/ExitIntentPopup").then((m) => m.ExitIntentPopup),
-  { ssr: false },
-);
 const EducationStickyGenerateButton = dynamic(
   () =>
     import("@/components/EducationStickyGenerateButton").then(
@@ -26,7 +22,6 @@ export function LazyUiWidgets() {
   return (
     <>
       <SiteChatWidget />
-      <ExitIntentPopup />
       <EducationStickyGenerateButton />
       <MainMobileStickyCta />
     </>
