@@ -17,7 +17,10 @@ export function getSupabaseBrowserClient(): SupabaseClient {
 
   client = createClient(url, anon, {
     auth: {
-      flowType: "pkce",
+      // Implicit flow: the magic link carries the session in the URL hash, so it works even when the
+      // email is opened in another browser/app or on www vs apex. PKCE needs the verifier stored in the
+      // *same* browser that requested the link and failed with "PKCE code verifier not found".
+      flowType: "implicit",
       persistSession: true,
       autoRefreshToken: true,
       detectSessionInUrl: true,
