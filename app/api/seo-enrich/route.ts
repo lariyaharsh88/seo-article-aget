@@ -12,6 +12,7 @@ import {
 import { pickSectionImage } from "@/lib/seo-enrichment/section-image";
 import { buildBarChartUrl } from "@/lib/seo-enrichment/quickchart-url";
 import type { EnrichedSectionLog, VisualKind } from "@/lib/seo-enrichment/types";
+import { guardUsage } from "@/lib/usage-guard";
 
 export const maxDuration = 120;
 
@@ -20,6 +21,9 @@ const MAX_SECTIONS = 10;
 export async function POST(request: Request) {
   const denied = await guardPaidRoute(request);
   if (denied) return denied;
+  const guard = await guardUsage(request, "step");
+  if (!guard.ok) return guard.response;
+
   const geminiKey = resolveGeminiKey(request);
 
   let body: { markdown?: string; keyword?: string };

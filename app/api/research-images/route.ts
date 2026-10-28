@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { buildResearchInfographicAssets } from "@/lib/research-infographic-from-text";
+import { guardUsage } from "@/lib/usage-guard";
 
 interface Body {
   topic?: string;
@@ -10,6 +11,9 @@ interface Body {
 }
 
 export async function POST(request: Request) {
+  const guard = await guardUsage(request, "step");
+  if (!guard.ok) return guard.response;
+
   try {
     const body = (await request.json()) as Body;
     const topic = body.topic?.trim();

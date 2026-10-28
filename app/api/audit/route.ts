@@ -4,6 +4,7 @@ import { resolveGeminiKey } from "@/lib/api-keys";
 import { geminiJSON } from "@/lib/gemini";
 import { defaultSeoMeta, isSeoMeta } from "@/lib/seo-meta-guards";
 import type { SeoMeta } from "@/lib/types";
+import { guardUsage } from "@/lib/usage-guard";
 
 interface AuditBody {
   topic?: string;
@@ -14,6 +15,9 @@ interface AuditBody {
 export async function POST(request: Request) {
   const denied = await guardPaidRoute(request);
   if (denied) return denied;
+  const guard = await guardUsage(request, "step");
+  if (!guard.ok) return guard.response;
+
   try {
     const geminiKey = resolveGeminiKey(request);
     if (!geminiKey) {

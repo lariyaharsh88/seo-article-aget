@@ -6,6 +6,7 @@ import {
   extractRelatedQueries,
   serperSearch,
 } from "@/lib/serper";
+import { guardUsage } from "@/lib/usage-guard";
 
 interface SerpBody {
   topic?: string;
@@ -14,6 +15,9 @@ interface SerpBody {
 export async function POST(request: Request) {
   const denied = await guardPaidRoute(request);
   if (denied) return denied;
+  const guard = await guardUsage(request, "step");
+  if (!guard.ok) return guard.response;
+
   try {
     const serperKey = resolveSerperKey(request);
     if (!serperKey) {

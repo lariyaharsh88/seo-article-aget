@@ -14,6 +14,8 @@ type Row = {
   createdAt: string;
   dashboardLink: string;
 };
+
+/** Fallback until /api/usage answers; must match MONTHLY_RUN_LIMITS.free in lib/usage-guard.ts. */
 const FREE_LOGGED_RUN_LIMIT = 5;
 
 async function parseJsonSafe<T>(res: Response): Promise<T | null> {
@@ -33,6 +35,11 @@ export default function DashboardPage() {
   const [signedIn, setSignedIn] = useState(false);
   const [retrying, setRetrying] = useState(false);
   const [unlimited, setUnlimited] = useState(false);
+  const [usage, setUsage] = useState<{
+    plan: string;
+    remaining: number;
+    limit: number;
+  } | null>(null);
 
   const loadDashboard = useCallback(async () => {
     try {
@@ -43,12 +50,24 @@ export default function DashboardPage() {
       setSignedIn(Boolean(token));
       if (!token) {
         setRows([]);
-                return;
+        return;
       }
-      void fetch("/api/config", { headers: { Authorization: `Bearer ${token}` } })
+      void fetch("/api/config", {
+        headers: { Authorization: `Bearer ${token}` },
+      })
         .then((r) => r.json())
-        .then((d: { unlimited?: boolean }) => setUnlimited(d?.unlimited === true))
+        .then((d: { unlimited?: boolean }) =>
+          setUnlimited(d?.unlimited === true),
+        )
         .catch(() => setUnlimited(false));
+      void fetch("/api/usage", {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((u: { plan: string; remaining: number; limit: number } | null) =>
+          setUsage(u),
+        )
+        .catch(() => setUsage(null));
       const res = await fetch("/api/user-articles", {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -64,7 +83,11 @@ export default function DashboardPage() {
       }
       setRows(Array.isArray(payload.items) ? payload.items : []);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Something went wrong. Please refresh.");
+      setError(
+        e instanceof Error
+          ? e.message
+          : "Something went wrong. Please refresh.",
+      );
     } finally {
       setLoading(false);
       setRetrying(false);
@@ -76,9 +99,20 @@ export default function DashboardPage() {
   }, [loadDashboard]);
 
   const totalWords = rows.reduce((sum, row) => sum + row.wordCount, 0);
-  const freeLeft = Math.max(0, FREE_LOGGED_RUN_LIMIT - rows.length);
+  // Server-side monthly quota (/api/usage) when available; otherwise estimate from saved articles.
+  const freeLeft = usage
+    ? usage.remaining
+    : Math.max(0, FREE_LOGGED_RUN_LIMIT - rows.length);
+  const leftLabel =
+    usage && usage.plan !== "free"
+      ? `Articles left this month (${usage.plan})`
+      : "Free articles left";
   const formatDate = (iso: string) =>
-    new Date(iso).toLocaleDateString("en-IN", { year: "numeric", month: "short", day: "numeric" });
+    new Date(iso).toLocaleDateString("en-IN", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
 
   if (loading) {
     return (
@@ -95,8 +129,8 @@ export default function DashboardPage() {
       <main className="mx-auto max-w-md px-4 py-16 md:px-6">
         <h1 className="font-display text-3xl text-text-primary">My articles</h1>
         <p className="mt-3 font-serif text-sm text-text-secondary">
-          Sign in to see the articles you&apos;ve generated. New here? Signing in creates a free account with 5
-          free articles.
+          Sign in to see the articles you&apos;ve generated. New here? Signing
+          in creates a free account with 5 free articles.
         </p>
         <Link
           href="/login?next=/dashboard"
@@ -112,23 +146,36 @@ export default function DashboardPage() {
     <main className="mx-auto max-w-3xl px-4 py-10 md:px-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="font-display text-3xl text-text-primary">My articles</h1>
-        <Link
-          href="/seo-agent"
-          className="inline-flex min-h-11 items-center rounded-lg bg-accent px-4 py-2 font-mono text-sm font-semibold text-background hover:opacity-90"
-        >
-          + Write a new article
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <Link
+            href="/dashboard/projects"
+            className="inline-flex min-h-11 items-center rounded-lg border border-border px-4 py-2 font-mono text-sm text-text-secondary hover:border-accent hover:text-accent"
+          >
+            Projects &amp; brand voice
+          </Link>
+          <Link
+            href="/seo-agent"
+            className="inline-flex min-h-11 items-center rounded-lg bg-accent px-4 py-2 font-mono text-sm font-semibold text-background hover:opacity-90"
+          >
+            + Write a new article
+          </Link>
+        </div>
       </div>
 
       <dl className="mt-6 grid grid-cols-3 gap-3">
         {[
           ["Articles", rows.length.toLocaleString()],
           ["Words written", totalWords.toLocaleString()],
-          ["Free articles left", unlimited ? "Unlimited" : freeLeft.toString()],
+          [leftLabel, unlimited ? "Unlimited" : freeLeft.toString()],
         ].map(([label, value]) => (
-          <div key={label} className="rounded-xl border border-border/80 bg-surface/50 p-4">
+          <div
+            key={label}
+            className="rounded-xl border border-border/80 bg-surface/50 p-4"
+          >
             <dt className="text-xs text-text-muted">{label}</dt>
-            <dd className="mt-1 font-display text-2xl text-text-primary">{value}</dd>
+            <dd className="mt-1 font-display text-2xl text-text-primary">
+              {value}
+            </dd>
           </div>
         ))}
       </dl>
@@ -143,8 +190,13 @@ export default function DashboardPage() {
       ) : null}
 
       {error ? (
-        <div role="alert" className="mt-6 rounded-xl border border-red-500/40 bg-red-500/10 p-4">
-          <p className="text-sm text-red-200">We couldn&apos;t load your articles. Please try again.</p>
+        <div
+          role="alert"
+          className="mt-6 rounded-xl border border-red-500/40 bg-red-500/10 p-4"
+        >
+          <p className="text-sm text-red-200">
+            We couldn&apos;t load your articles. Please try again.
+          </p>
           <button
             type="button"
             disabled={retrying}
@@ -159,11 +211,17 @@ export default function DashboardPage() {
         </div>
       ) : rows.length === 0 ? (
         <div className="mt-6 rounded-xl border border-dashed border-border/80 bg-surface/40 px-5 py-10 text-center">
-          <p className="font-display text-lg text-text-primary">No articles yet</p>
-          <p className="mx-auto mt-2 max-w-sm text-sm text-text-secondary">
-            Enter a keyword in the article writer and your finished articles will be listed here.
+          <p className="font-display text-lg text-text-primary">
+            No articles yet
           </p>
-          <Link href="/seo-agent" className="mt-4 inline-block font-mono text-sm text-accent hover:underline">
+          <p className="mx-auto mt-2 max-w-sm text-sm text-text-secondary">
+            Enter a keyword in the article writer and your finished articles
+            will be listed here.
+          </p>
+          <Link
+            href="/seo-agent"
+            className="mt-4 inline-block font-mono text-sm text-accent hover:underline"
+          >
             Write your first article →
           </Link>
         </div>
@@ -175,10 +233,15 @@ export default function DashboardPage() {
                 href={row.dashboardLink}
                 className="block rounded-xl border border-border bg-surface/50 p-4 transition-colors hover:border-accent/60"
               >
-                <p className="font-display text-lg text-text-primary">{row.title}</p>
+                <p className="font-display text-lg text-text-primary">
+                  {row.title}
+                </p>
                 <p className="mt-1 text-xs text-text-muted">
-                  {formatDate(row.createdAt)} · {row.wordCount.toLocaleString()} words
-                  {row.primaryKeyword ? ` · keyword: ${row.primaryKeyword}` : ""}
+                  {formatDate(row.createdAt)} · {row.wordCount.toLocaleString()}{" "}
+                  words
+                  {row.primaryKeyword
+                    ? ` · keyword: ${row.primaryKeyword}`
+                    : ""}
                 </p>
               </Link>
             </li>

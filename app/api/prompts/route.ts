@@ -7,6 +7,7 @@ import {
 import { fetchGoogleSearchSuggestions } from "@/lib/google-suggest";
 import { openRouterChat } from "@/lib/openrouter";
 import { prisma } from "@/lib/prisma";
+import { guardUsage } from "@/lib/usage-guard";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -17,6 +18,9 @@ export async function POST(request: Request) {
   if (!hitRateLimit(`prompts:${hashedIp(request)}`, 20)) {
     return NextResponse.json({ error: "Too many submissions. Please try again later." }, { status: 429 });
   }
+  const guard = await guardUsage(request, "step");
+  if (!guard.ok) return guard.response;
+
   let body: Body;
   try {
     body = (await request.json()) as Body;

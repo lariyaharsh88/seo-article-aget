@@ -2,6 +2,7 @@ import { guardPaidRoute } from "@/lib/paid-route-guard";
 import { NextResponse } from "next/server";
 import { resolveGroqKey } from "@/lib/api-keys";
 import { buildSiteChatSystemPrompt } from "@/lib/site-chat-prompt";
+import { guardUsage } from "@/lib/usage-guard";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -142,6 +143,9 @@ function normalizeMessages(raw: unknown): ChatMessage[] | null {
 export async function POST(request: Request) {
   const denied = await guardPaidRoute(request, { allowAnonymous: true, anonLimit: 30, userLimit: 120 });
   if (denied) return denied;
+  const guard = await guardUsage(request, "chat");
+  if (!guard.ok) return guard.response;
+
   const deepseekApiKey = process.env.DEEPSEEK_API_KEY?.trim();
   const groqApiKey = resolveGroqKey(request);
   if (!deepseekApiKey && !groqApiKey) {

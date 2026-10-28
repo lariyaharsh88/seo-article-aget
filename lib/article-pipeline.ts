@@ -18,6 +18,18 @@ async function buildHeaders(): Promise<Record<string, string>> {
   return { "Content-Type": "application/json", ...(await getApiAuthHeaders()) };
 }
 
+/** Turns a failed API response into a readable error (uses the JSON `error` field when present). */
+async function responseError(res: Response): Promise<Error> {
+  const text = await res.text();
+  try {
+    const parsed = JSON.parse(text) as { error?: unknown };
+    if (typeof parsed.error === "string" && parsed.error.trim()) return new Error(parsed.error);
+  } catch {
+    // not JSON
+  }
+  return new Error(text.slice(0, 200) || `HTTP ${res.status}`);
+}
+
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null;
 }
@@ -51,6 +63,8 @@ export type ArticlePipelineConfig = {
    * Browser runs: omit for same-origin `/api/...`.
    */
   fetchBaseUrl?: string;
+  /** Optional project (brand voice + knowledge base) applied by /api/article. */
+  projectId?: string;
 };
 
 export type ArticlePipelineCallbacks = {
@@ -330,12 +344,10 @@ export async function runArticlePipeline(
         searchConsoleQueries: input.searchConsoleQueries,
         googleSuggestions: input.googleSuggestions,
         providerMode: "gemini-only",
+        ...(input.projectId ? { projectId: input.projectId } : {}),
       }),
     });
-    if (!res.ok) {
-      const text = await res.text();
-      throw new Error(text.slice(0, 200) || `HTTP ${res.status}`);
-    }
+    if (!res.ok) throw await responseError(res);
     const reader = res.body?.getReader();
     if (!reader) throw new Error("No response stream");
     const decoder = new TextDecoder();

@@ -9,6 +9,7 @@ import {
 } from "@/lib/serper";
 import { fallbackKeywords, normalizeKeywordList } from "@/lib/keyword-guards";
 import type { Keyword, PipelineInput } from "@/lib/types";
+import { guardUsage } from "@/lib/usage-guard";
 
 type KeywordsBody = Pick<
   PipelineInput,
@@ -21,6 +22,9 @@ type KeywordsBody = Pick<
 export async function POST(request: Request) {
   const denied = await guardPaidRoute(request);
   if (denied) return denied;
+  const guard = await guardUsage(request, "step");
+  if (!guard.ok) return guard.response;
+
   try {
     const geminiKey = resolveGeminiKey(request);
     const serperKey = resolveSerperKey(request);

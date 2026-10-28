@@ -63,12 +63,16 @@ ${buildStructuredDataAndDataSectionsBlock()}
 export function buildArticlePromptFragments(opts: {
   seed: string;
   outlinePreview: string;
+  /** Pre-built project block (brand voice + knowledge base); empty when no project. */
+  projectBlock?: string;
 }): {
   variationBlock: string;
   internalLinksBlock: string;
   qualityExtensionsBlock: string;
+  projectBlock: string;
 } {
   return {
+    projectBlock: opts.projectBlock?.trim() ? `\n${opts.projectBlock.trim()}\n` : "",
     variationBlock: buildContentVariationInstruction(
       `${opts.seed}|${opts.outlinePreview.slice(0, 1000)}`,
       "long-form",

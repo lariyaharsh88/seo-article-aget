@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { resolveOpenAIKey } from "@/lib/api-keys";
 import type { ArticleInput, SuggestOptions } from "@/lib/internal-linking/types";
 import { suggestInternalLinks } from "@/lib/internal-linking/suggest";
+import { guardUsage } from "@/lib/usage-guard";
 
 interface SuggestBody {
   articles?: ArticleInput[];
@@ -12,6 +13,9 @@ interface SuggestBody {
 export async function POST(request: Request) {
   const denied = await guardPaidRoute(request);
   if (denied) return denied;
+  const guard = await guardUsage(request, "step");
+  if (!guard.ok) return guard.response;
+
   try {
     const body = (await request.json()) as SuggestBody;
     const articles = body.articles;

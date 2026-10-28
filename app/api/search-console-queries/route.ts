@@ -4,6 +4,7 @@ import {
   parseGscApiError,
   searchConsoleEnvConfigured,
 } from "@/lib/gsc-queries";
+import { guardUsage } from "@/lib/usage-guard";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -14,6 +15,9 @@ interface Body {
 }
 
 export async function POST(request: Request) {
+  const guard = await guardUsage(request, "step");
+  if (!guard.ok) return guard.response;
+
   if (!searchConsoleEnvConfigured()) {
     return NextResponse.json(
       {

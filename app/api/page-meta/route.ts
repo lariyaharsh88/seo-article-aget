@@ -1,6 +1,7 @@
 import { guardPaidRoute } from "@/lib/paid-route-guard";
 import { safeFetch } from "@/lib/safe-fetch";
 import { NextResponse } from "next/server";
+import { guardUsage } from "@/lib/usage-guard";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -8,6 +9,9 @@ export const runtime = "nodejs";
 export async function GET(request: Request) {
   const denied = await guardPaidRoute(request);
   if (denied) return denied;
+  const guard = await guardUsage(request, "step");
+  if (!guard.ok) return guard.response;
+
   const raw = new URL(request.url).searchParams.get("url");
   const url = raw?.trim();
   if (!url) {

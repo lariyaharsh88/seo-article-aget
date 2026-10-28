@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { guardUsage } from "@/lib/usage-guard";
 
 type Cluster = {
   name: string;
@@ -120,6 +121,9 @@ function clusterKeywords(keywords: string[]): Cluster[] {
 }
 
 export async function POST(request: Request) {
+  const guard = await guardUsage(request, "step");
+  if (!guard.ok) return guard.response;
+
   try {
     const body = (await request.json()) as Body;
     const keywords = normalizeKeywordList(body.keywords);

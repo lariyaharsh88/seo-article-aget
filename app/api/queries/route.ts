@@ -2,6 +2,7 @@ import { guardPaidRoute } from "@/lib/paid-route-guard";
 import { NextResponse } from "next/server";
 import { resolveGeminiKey } from "@/lib/api-keys";
 import { geminiJSON } from "@/lib/gemini";
+import { guardUsage } from "@/lib/usage-guard";
 
 interface QueriesBody {
   topic?: string;
@@ -17,6 +18,9 @@ function normalizeQueries(raw: unknown): string[] {
 export async function POST(request: Request) {
   const denied = await guardPaidRoute(request);
   if (denied) return denied;
+  const guard = await guardUsage(request, "step");
+  if (!guard.ok) return guard.response;
+
   try {
     const geminiKey = resolveGeminiKey(request);
     if (!geminiKey) {

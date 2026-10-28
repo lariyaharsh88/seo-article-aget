@@ -58,15 +58,15 @@ model BlogPost {
 
 /// Lead form submissions from /blogs/[slug] and /news/[slug].
 model LeadInquiry {
-  id            String   @id @default(cuid())
-  source        String
-  articleSlug   String
-  articleTitle  String
-  name          String
-  email         String
-  phone         String?
-  message       String?  @db.Text
-  createdAt     DateTime @default(now())
+  id           String   @id @default(cuid())
+  source       String
+  articleSlug  String
+  articleTitle String
+  name         String
+  email        String
+  phone        String?
+  message      String?  @db.Text
+  createdAt    DateTime @default(now())
 
   @@index([createdAt])
   @@index([source, articleSlug])
@@ -74,54 +74,69 @@ model LeadInquiry {
 
 /// Public share pages created from generated article output.
 model SharedArticle {
-  id          String     @id @default(cuid())
-  slug        String     @unique
-  title       String
-  markdown    String     @db.Text
-  html        String     @db.Text
-  siteDomain  SiteDomain @default(main)
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  id         String     @id @default(cuid())
+  slug       String     @unique
+  title      String
+  markdown   String     @db.Text
+  html       String     @db.Text
+  siteDomain SiteDomain @default(main)
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
 
   @@index([createdAt])
 }
 
 // Sitemap-backed education news: persisted + optional AI repurposed draft (SEO-style).
 model EducationNewsArticle {
-  id                 String     @id @default(cuid())
-  url                String     @unique
-  title              String
-  source             String
-  lastmod            String
-  siteDomain         SiteDomain @default(education)
-  authorName         String     @default("Harsh")
-  rawArticleText     String?   @db.Text
-  rawFetchedAt       DateTime?
-  repurposedMarkdown String?   @db.Text
-  repurposedAt       DateTime?
+  id                     String     @id @default(cuid())
+  url                    String     @unique
+  title                  String
+  source                 String
+  lastmod                String
+  siteDomain             SiteDomain @default(education)
+  authorName             String     @default("Harsh")
+  rawArticleText         String?    @db.Text
+  rawFetchedAt           DateTime?
+  repurposedMarkdown     String?    @db.Text
+  repurposedAt           DateTime?
   // URL on this site: /news/{repurposedSlug}; full URL stored for sharing / SEO.
-  repurposedSlug          String? @unique
-  repurposedCanonicalUrl  String?
+  repurposedSlug         String?    @unique
+  repurposedCanonicalUrl String?
   // Hero/OG image on images CDN (e.g. images.rankflowhq.com) after Vercel Blob upload.
-  repurposedImageUrl String?
+  repurposedImageUrl     String?
   // Optional board/exam logo URL for featured image template (left slot); see NEWS_FEATURED_EXAM_LOGO_URL fallback.
-  examLogoUrl        String?
+  examLogoUrl            String?
   // pending | processing | ready | error
-  repurposeStatus    String    @default("pending")
-  errorMessage       String?   @db.Text
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
+  repurposeStatus        String     @default("pending")
+  errorMessage           String?    @db.Text
+  createdAt              DateTime   @default(now())
+  updatedAt              DateTime   @updatedAt
 }
 
 /// App-side profile for Supabase Auth users (synced via API; keyed by Supabase user id).
 model UserProfile {
-  id               String   @id @default(cuid())
+  id             String   @id @default(cuid())
   /// `auth.users.id` from Supabase (UUID string).
-  supabaseUserId   String   @unique
-  email            String?
-  displayName      String?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  supabaseUserId String   @unique
+  email          String?
+  displayName    String?
+  /// Billing plan: free | pro | scale | enterprise. Set manually until payments are wired up.
+  plan           String   @default("free")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+/// Server-side usage counters for quotas and rate limits (see lib/usage-guard.ts).
+/// `subject` is `u:<supabaseUserId>` or `ip:<hash>`; `bucket` is e.g. `runs:2026-10` or `rl:step:2026-10-14T09`.
+model UsageCounter {
+  id        String   @id @default(cuid())
+  subject   String
+  bucket    String
+  count     Int      @default(0)
+  updatedAt DateTime @updatedAt
+
+  @@unique([subject, bucket])
+  @@index([updatedAt])
 }
 
 /// Per-user generation history for dashboard (Supabase-authenticated users).
@@ -132,14 +147,16 @@ model UserGeneratedArticle {
   topic          String
   primaryKeyword String?
   sourceUrl      String?
+  /// Optional Project (brand voice / knowledge base) used for this run.
+  projectId      String?
   markdown       String   @db.Text
   wordCount      Int      @default(0)
   createdAt      DateTime @default(now())
 
-  keywords                 ArticleKeyword[]
-  embedding                ArticleEmbedding?
-  outgoingLinkSuggestions  InternalLinkSuggestion[] @relation("LinkFrom")
-  incomingLinkSuggestions  InternalLinkSuggestion[] @relation("LinkTo")
+  keywords                ArticleKeyword[]
+  embedding               ArticleEmbedding?
+  outgoingLinkSuggestions InternalLinkSuggestion[] @relation("LinkFrom")
+  incomingLinkSuggestions InternalLinkSuggestion[] @relation("LinkTo")
 
   @@index([supabaseUserId, createdAt])
 }
@@ -152,12 +169,12 @@ enum KeywordRole {
 }
 
 model ArticleKeyword {
-  id        String      @id @default(cuid())
+  id        String               @id @default(cuid())
   articleId String
   article   UserGeneratedArticle @relation(fields: [articleId], references: [id], onDelete: Cascade)
   phrase    String
-  role      KeywordRole @default(secondary)
-  createdAt DateTime    @default(now())
+  role      KeywordRole          @default(secondary)
+  createdAt DateTime             @default(now())
 
   @@index([articleId])
   @@index([phrase])
@@ -165,13 +182,13 @@ model ArticleKeyword {
 
 /// Cached embedding vector (JSON float[]) for semantic similarity — avoids recomputing on every link pass.
 model ArticleEmbedding {
-  id         String   @id @default(cuid())
-  articleId  String   @unique
+  id         String               @id @default(cuid())
+  articleId  String               @unique
   article    UserGeneratedArticle @relation(fields: [articleId], references: [id], onDelete: Cascade)
   model      String
   dimensions Int
   vector     Json
-  updatedAt  DateTime @updatedAt
+  updatedAt  DateTime             @updatedAt
 }
 
 /// Suggested internal link edge between two stored articles (optional persistence layer).
@@ -183,7 +200,7 @@ enum InternalLinkKind {
 }
 
 model InternalLinkSuggestion {
-  id            String           @id @default(cuid())
+  id            String               @id @default(cuid())
   fromArticleId String
   toArticleId   String
   fromArticle   UserGeneratedArticle @relation("LinkFrom", fields: [fromArticleId], references: [id], onDelete: Cascade)
@@ -191,7 +208,7 @@ model InternalLinkSuggestion {
   score         Float
   anchorText    String
   kind          InternalLinkKind
-  rationale     String?          @db.Text
+  rationale     String?              @db.Text
   appliedAt     DateTime?
 
   @@unique([fromArticleId, toArticleId])
@@ -210,20 +227,20 @@ enum DistributionBatchStatus {
 }
 
 model DistributionBatch {
-  id               String                  @id @default(cuid())
-  supabaseUserId   String?
+  id             String                  @id @default(cuid())
+  supabaseUserId String?
   /// Optional link to app content (e.g. UserGeneratedArticle id or shared slug).
-  articleRef       String?
-  canonicalUrl     String
-  title            String
-  summary          String?                 @db.Text
-  packJson         Json
-  scheduledAt      DateTime?
-  status           DistributionBatchStatus @default(queued)
-  resultJson       Json?
-  lastError        String?                 @db.Text
-  createdAt        DateTime                @default(now())
-  updatedAt        DateTime                @updatedAt
+  articleRef     String?
+  canonicalUrl   String
+  title          String
+  summary        String?                 @db.Text
+  packJson       Json
+  scheduledAt    DateTime?
+  status         DistributionBatchStatus @default(queued)
+  resultJson     Json?
+  lastError      String?                 @db.Text
+  createdAt      DateTime                @default(now())
+  updatedAt      DateTime                @updatedAt
 
   @@index([status, scheduledAt])
   @@index([supabaseUserId, createdAt])
@@ -237,4 +254,39 @@ model SeoFeedbackSnapshot {
   createdAt   DateTime @default(now())
 
   @@index([pageUrl, createdAt])
+}
+
+/// A user's project: one site/brand with its own voice and knowledge base, fed into article generation.
+model Project {
+  id             String   @id @default(cuid())
+  supabaseUserId String
+  name           String
+  siteUrl        String?
+  /// Tone/style rules, e.g. "Friendly, second person, no jargon, short paragraphs".
+  brandVoice     String   @default("") @db.Text
+  /// Default target audience for this project.
+  audience       String?
+  /// Facts about the business/product the writer must use (pricing, features, USPs, do/don't claims).
+  knowledgeBase  String   @default("") @db.Text
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([supabaseUserId])
+}
+
+/// A user's CMS connection for one-click publishing. Credentials are AES-256-GCM encrypted (lib/secret-box.ts).
+model PublishConnection {
+  id             String   @id @default(cuid())
+  supabaseUserId String
+  /// wordpress | ghost | webflow | shopify
+  platform       String
+  label          String
+  siteUrl        String
+  credentialsEnc String   @db.Text
+  /// Non-secret platform settings (e.g. Webflow collectionId, Shopify blogId).
+  settings       Json?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([supabaseUserId])
 }

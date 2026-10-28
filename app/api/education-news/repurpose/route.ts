@@ -10,6 +10,7 @@ import {
   runRepurposePending,
   type RepurposeProgressUpdate,
 } from "@/lib/education-news/repurpose-runner";
+import { guardUsage } from "@/lib/usage-guard";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
@@ -51,6 +52,9 @@ function ndjsonStream(
 export async function POST(request: Request) {
   const denied = await guardPaidRoute(request);
   if (denied) return denied;
+  const guard = await guardUsage(request, "step");
+  if (!guard.ok) return guard.response;
+
   const llmKeys = {
     gemini: resolveGeminiKey(request),
     openrouter: resolveOpenRouterKey(request),
