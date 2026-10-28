@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import {
-  SITE_LOGO_DIMENSIONS,
-  SITE_LOGO_PATH,
+  SITE_OG_IMAGE_DIMENSIONS,
+  SITE_OG_IMAGE_PATH,
   SITE_NAME,
 } from "@/lib/seo-site";
 import { getSiteUrl } from "@/lib/site-url";
@@ -34,13 +34,13 @@ export function buildPageMetadata(opts: {
   const articleCard = isArticle
     ? `${base}/og/card?${new URLSearchParams({ title: opts.title, w: "1200", h: "630" }).toString()}`
     : null;
-  const defaultHero = articleCard || `${base}${SITE_LOGO_PATH}`;
+  const defaultHero = articleCard || `${base}${SITE_OG_IMAGE_PATH}`;
   const heroUrl = customHero || defaultHero;
   const ogImages = [
     {
       url: heroUrl,
-      width: customHero || articleCard ? 1200 : SITE_LOGO_DIMENSIONS.width,
-      height: customHero || articleCard ? 630 : SITE_LOGO_DIMENSIONS.height,
+      width: SITE_OG_IMAGE_DIMENSIONS.width,
+      height: SITE_OG_IMAGE_DIMENSIONS.height,
       alt: opts.title,
     },
   ];

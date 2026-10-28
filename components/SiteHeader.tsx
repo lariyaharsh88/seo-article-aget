@@ -1,12 +1,12 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { buildEducationFunnelUrl } from "@/lib/education-funnel-url";
 import { EDUCATION_HOSTS } from "@/lib/education-hosts";
-import { SITE_LOGO_PATH, SITE_NAME } from "@/lib/seo-site";
+import { SITE_NAME } from "@/lib/seo-site";
+import { BrandMark } from "@/components/BrandMark";
 
 /** Plain-language labels. Education, bulk articles and other tools live in the footer. */
 const mainNav = [
@@ -101,15 +101,11 @@ export function SiteHeader() {
             className="flex min-w-0 items-center gap-3 transition-opacity duration-200 hover:opacity-90"
             onClick={() => setOpen(false)}
           >
-            <Image
-              src={SITE_LOGO_PATH}
-              alt={`${SITE_NAME} — AI · SEO · Growth`}
-              width={44}
-              height={44}
-              className={`shrink-0 object-contain transition-all duration-300 ease-in-out ${
+            <BrandMark
+              title={`${SITE_NAME} — AI · SEO · Growth`}
+              className={`shrink-0 rounded-xl shadow-sm transition-all duration-300 ease-in-out ${
                 scrolled ? "h-9 w-9" : "h-11 w-11"
               }`}
-              priority
             />
             <div className="min-w-0 text-left">
               <span className="font-display text-sm leading-tight text-text-primary sm:text-base">

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BrandMark } from "@/components/BrandMark";
 import { AdSenseSlot } from "@/components/AdSenseSlot";
 import { ADSENSE_SLOTS } from "@/lib/adsense-config";
 import { EDUCATION_SITE_URL } from "@/lib/education-hosts";
@@ -39,7 +40,7 @@ export function SiteFooter() {
       ) : null}
       <div className="mx-auto grid max-w-7xl gap-8 px-4 py-12 md:grid-cols-[1.2fr_1fr_auto] md:items-start md:px-6">
         <div className="space-y-3">
-          <p className="font-display text-lg text-text-primary">{SITE_NAME}</p>
+          <p className="flex items-center gap-2 font-display text-lg text-text-primary"><BrandMark className="h-7 w-7 rounded-lg" />{SITE_NAME}</p>
           <p className="max-w-md font-serif text-sm text-text-secondary">
             Turn a keyword into a researched, SEO-ready article in a few minutes.
           </p>

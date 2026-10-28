@@ -13,9 +13,9 @@ import { SupabaseAuthHashRedirect } from "@/components/SupabaseAuthHashRedirect"
 import { StructuredData } from "@/components/StructuredData";
 import { ADSENSE_CLIENT_ID } from "@/lib/adsense-config";
 import {
-  SITE_LOGO_DIMENSIONS,
-  SITE_LOGO_PATH,
   SITE_NAME,
+  SITE_OG_IMAGE_DIMENSIONS,
+  SITE_OG_IMAGE_PATH,
 } from "@/lib/seo-site";
 import { getMetadataBaseUrl, getSiteUrl } from "@/lib/site-url";
 import "./globals.css";
@@ -97,9 +97,9 @@ export const metadata: Metadata = {
     description: GLOBAL_SEO_DESCRIPTION,
     images: [
       {
-        url: SITE_LOGO_PATH,
-        width: SITE_LOGO_DIMENSIONS.width,
-        height: SITE_LOGO_DIMENSIONS.height,
+        url: SITE_OG_IMAGE_PATH,
+        width: SITE_OG_IMAGE_DIMENSIONS.width,
+        height: SITE_OG_IMAGE_DIMENSIONS.height,
         alt: `${SITE_NAME} — AI · SEO · Growth`,
       },
     ],
@@ -108,7 +108,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: SITE_NAME,
     description: GLOBAL_SEO_DESCRIPTION,
-    images: [SITE_LOGO_PATH],
+    images: [SITE_OG_IMAGE_PATH],
   },
   other: {
     "google-adsense-account": ADSENSE_CLIENT_ID,
