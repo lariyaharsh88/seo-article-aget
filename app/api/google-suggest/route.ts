@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { fetchGoogleSearchSuggestions } from "@/lib/google-suggest";
+import { hashedIp, hitRateLimit } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -11,6 +12,10 @@ export async function GET(request: Request) {
       { error: "q must be at least 2 characters", suggestions: [] },
       { status: 400 },
     );
+  }
+
+  if (!hitRateLimit(`google-suggest:${hashedIp(request)}`, 120)) {
+    return NextResponse.json({ error: "Too many requests", suggestions: [] }, { status: 429 });
   }
 
   try {

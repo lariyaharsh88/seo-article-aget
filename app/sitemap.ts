@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getSeoLandingSlugs } from "@/lib/seo-landing-pages";
 import { listStaticBlogPosts } from "@/lib/static-blog-posts";
 import { PLACEHOLDER_ARTICLE_SLUG_PREFIX } from "@/lib/placeholder-article";
+import { FREE_TOOLS } from "@/lib/free-tools/registry";
 import { getSiteUrl } from "@/lib/site-url";
 
 /** Regenerate hourly so new /article/* pages appear without a redeploy. */
@@ -13,7 +14,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = getSiteUrl();
   const now = new Date();
 
+  const freeToolRoutes: MetadataRoute.Sitemap = [
+    { url: `${base}/free-tools`, lastModified: now, changeFrequency: "weekly", priority: 0.9 },
+    ...FREE_TOOLS.map((t) => ({
+    url: `${base}/free-tools/${t.slug}`,
+    lastModified: now,
+    changeFrequency: "monthly" as const,
+    priority: 0.85,
+    })),
+  ];
+
   const routes: MetadataRoute.Sitemap = [
+    ...freeToolRoutes,
     {
       url: base,
       lastModified: now,
@@ -49,30 +61,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: now,
       changeFrequency: "weekly",
       priority: 0.88,
-    },
-    {
-      url: `${base}/free-tools/keyword-clustering`,
-      lastModified: now,
-      changeFrequency: "weekly",
-      priority: 0.9,
-    },
-    {
-      url: `${base}/free-tools/llms-txt-generator`,
-      lastModified: now,
-      changeFrequency: "weekly",
-      priority: 0.84,
-    },
-    {
-      url: `${base}/free-tools/ai-search-grader`,
-      lastModified: now,
-      changeFrequency: "weekly",
-      priority: 0.84,
-    },
-    {
-      url: `${base}/free-tools/keyword-extractor`,
-      lastModified: now,
-      changeFrequency: "weekly",
-      priority: 0.82,
     },
     {
       url: `${base}/pricing`,
