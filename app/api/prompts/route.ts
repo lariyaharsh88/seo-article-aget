@@ -6,6 +6,7 @@ import {
 import { fetchGoogleSearchSuggestions } from "@/lib/google-suggest";
 import { openRouterChat } from "@/lib/openrouter";
 import { prisma } from "@/lib/prisma";
+import { guardUsage } from "@/lib/usage-guard";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -13,6 +14,9 @@ export const dynamic = "force-dynamic";
 type Body = { seed?: string };
 
 export async function POST(request: Request) {
+  const guard = await guardUsage(request, "step");
+  if (!guard.ok) return guard.response;
+
   let body: Body;
   try {
     body = (await request.json()) as Body;

@@ -13,12 +13,16 @@ import { mockSectionImageUrl } from "@/lib/seo-enrichment/mock-image-url";
 import { buildPollinationsImageUrl } from "@/lib/seo-enrichment/pollinations-url";
 import { buildBarChartUrl } from "@/lib/seo-enrichment/quickchart-url";
 import type { EnrichedSectionLog, VisualKind } from "@/lib/seo-enrichment/types";
+import { guardUsage } from "@/lib/usage-guard";
 
 export const maxDuration = 120;
 
 const MAX_SECTIONS = 10;
 
 export async function POST(request: Request) {
+  const guard = await guardUsage(request, "step");
+  if (!guard.ok) return guard.response;
+
   const geminiKey = resolveGeminiKey(request);
 
   let body: { markdown?: string; keyword?: string };

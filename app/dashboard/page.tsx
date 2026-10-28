@@ -14,7 +14,6 @@ type Row = {
   createdAt: string;
   dashboardLink: string;
 };
-const FREE_LOGGED_RUN_LIMIT = 5;
 
 async function parseJsonSafe<T>(res: Response): Promise<T | null> {
   const raw = await res.text();
@@ -32,6 +31,7 @@ export default function DashboardPage() {
   const [rows, setRows] = useState<Row[]>([]);
   const [signedIn, setSignedIn] = useState(false);
   const [retrying, setRetrying] = useState(false);
+  const [usage, setUsage] = useState<{ plan: string; remaining: number; limit: number } | null>(null);
 
   const loadDashboard = useCallback(async () => {
     try {
@@ -45,6 +45,10 @@ export default function DashboardPage() {
         setError("Please log in to view your dashboard.");
         return;
       }
+      void fetch("/api/usage", { headers: { Authorization: `Bearer ${token}` } })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((u: { plan: string; remaining: number; limit: number } | null) => setUsage(u))
+        .catch(() => setUsage(null));
       const res = await fetch("/api/user-articles", {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -90,7 +94,6 @@ export default function DashboardPage() {
     const created = new Date(row.createdAt).getTime();
     return Number.isFinite(created) && now - created <= 7 * 24 * 60 * 60 * 1000;
   }).length;
-  const estimatedCreditsLeft = Math.max(0, FREE_LOGGED_RUN_LIMIT - thisWeekRuns);
   const statSkeleton = (
     <div className="rounded-xl border border-border/80 bg-background/35 p-4">
       <div className="skeleton h-3 w-24 rounded-md" />
@@ -129,6 +132,12 @@ export default function DashboardPage() {
             <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-text-muted">Latest run</p>
             <p className="mt-1 font-serif text-sm text-text-secondary">{lastRun}</p>
           </div>
+          <Link
+            href="/dashboard/projects"
+            className="mt-3 block rounded-lg border border-border/80 bg-background/40 px-3 py-2 font-mono text-xs text-text-secondary transition-colors hover:border-accent hover:text-accent"
+          >
+            Projects &amp; brand voice →
+          </Link>
         </aside>
         <section className="space-y-5">
           <header id="overview" className="rounded-2xl border border-border/80 bg-surface/50 p-5">
@@ -263,8 +272,12 @@ export default function DashboardPage() {
                 <p className="mt-1 font-display text-3xl text-text-primary">{thisWeekRuns}</p>
               </div>
               <div className="rounded-xl border border-border/80 bg-background/35 p-4">
-                <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-text-muted">Est. free credits left</p>
-                <p className="mt-1 font-display text-3xl text-text-primary">{estimatedCreditsLeft}</p>
+                <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-text-muted">
+                  Runs left this month{usage ? ` · ${usage.plan}` : ""}
+                </p>
+                <p className="mt-1 font-display text-3xl text-text-primary">
+                  {usage ? `${usage.remaining}/${usage.limit}` : "—"}
+                </p>
               </div>
                   </>
                 )}

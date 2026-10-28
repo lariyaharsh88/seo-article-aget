@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { markdownToArticleHtml } from "@/lib/markdown-to-html";
 import { appendLiveUpdateToMarkdown } from "@/lib/article-live-updates";
 import { prisma } from "@/lib/prisma";
+import { guardAdminOrInternal } from "@/lib/usage-guard";
 
 type Body = {
   slug?: string;
@@ -11,6 +12,9 @@ type Body = {
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
+  const denied = await guardAdminOrInternal(request);
+  if (denied) return denied;
+
   let body: Body;
   try {
     body = (await request.json()) as Body;

@@ -5,12 +5,16 @@ import {
   extractRelatedQueries,
   serperSearch,
 } from "@/lib/serper";
+import { guardUsage } from "@/lib/usage-guard";
 
 interface SerpBody {
   topic?: string;
 }
 
 export async function POST(request: Request) {
+  const guard = await guardUsage(request, "step");
+  if (!guard.ok) return guard.response;
+
   try {
     const serperKey = resolveSerperKey(request);
     if (!serperKey) {

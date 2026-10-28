@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { analyzeArticleQuality } from "@/lib/article-publish-middleware";
 import { prisma } from "@/lib/prisma";
+import { loadProjectForUser } from "@/lib/project-context";
 import { getSupabaseUserFromRequest } from "@/lib/supabase-server";
 
 export const runtime = "nodejs";
@@ -27,9 +28,14 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const projectFilter = new URL(request.url).searchParams.get("projectId")?.trim() || "";
+
   try {
     const rows = await prisma.userGeneratedArticle.findMany({
-      where: { supabaseUserId: user.id },
+      where: {
+        supabaseUserId: user.id,
+        ...(projectFilter ? { projectId: projectFilter } : {}),
+      },
       orderBy: { createdAt: "desc" },
       take: 100,
       select: {
@@ -39,6 +45,7 @@ export async function GET(request: Request) {
         primaryKeyword: true,
         sourceUrl: true,
         wordCount: true,
+        projectId: true,
         createdAt: true,
       },
     });
@@ -80,6 +87,8 @@ export async function POST(request: Request) {
     enforceQuality?: boolean;
     /** Optional: detect duplicate heading skeleton vs these fingerprints. */
     previousHeadingFingerprints?: string[];
+    /** Optional project to file this article under (ignored if not owned). */
+    projectId?: string;
   };
   try {
     body = (await request.json()) as typeof body;
@@ -116,6 +125,14 @@ export async function POST(request: Request) {
     }
   }
 
+  let projectId: string | null = null;
+  const requestedProjectId =
+    typeof body.projectId === "string" ? body.projectId.trim() : "";
+  if (requestedProjectId) {
+    const project = await loadProjectForUser(requestedProjectId, user.id);
+    projectId = project ? project.id : null;
+  }
+
   try {
     const row = await prisma.userGeneratedArticle.create({
       data: {
@@ -126,6 +143,7 @@ export async function POST(request: Request) {
         sourceUrl: body.sourceUrl?.trim() || null,
         markdown,
         wordCount: readWordCount(markdown),
+        projectId,
       },
       select: { id: true, createdAt: true },
     });

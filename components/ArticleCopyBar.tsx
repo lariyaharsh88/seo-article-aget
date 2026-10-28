@@ -75,6 +75,62 @@ export function ArticleCopyBar({
     [markdown, title, flash],
   );
 
+  const fileBase = useCallback(
+    () =>
+      (title?.trim() || "generated-article")
+        .toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, "")
+        .trim()
+        .replace(/\s+/g, "-")
+        .slice(0, 80) || "generated-article",
+    [title],
+  );
+
+  const downloadDocx = useCallback(async () => {
+    if (!markdown.trim()) return;
+    try {
+      const { markdownToDocxBlob } = await import("@/lib/export-docx");
+      const blob = await markdownToDocxBlob(markdown, title?.trim() || "Generated article");
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${fileBase()}.docx`;
+      a.click();
+      URL.revokeObjectURL(url);
+      trackEvent("feature_usage", { feature_name: "article_export", action: "download_docx" });
+      flash("Word file downloaded. Opens in Word or Google Docs (File → Open → Upload).");
+    } catch {
+      flash("Couldn't build the Word file. Please try again.");
+    }
+  }, [markdown, title, fileBase, flash]);
+
+  /** PDF via the browser's print dialog ("Save as PDF") — keeps real text, links and headings. */
+  const downloadPdf = useCallback(() => {
+    if (!markdown.trim()) return;
+    const win = window.open("", "_blank");
+    if (!win) {
+      flash("Allow pop-ups to save as PDF.");
+      return;
+    }
+    const docTitle = (title?.trim() || "Generated article").replace(/</g, "&lt;");
+    win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${docTitle}</title>
+<style>
+  body{font:12pt/1.6 Georgia,serif;color:#111;max-width:720px;margin:32px auto;padding:0 24px}
+  h1,h2,h3,h4{font-family:Helvetica,Arial,sans-serif;line-height:1.25;page-break-after:avoid}
+  h1{font-size:24pt}h2{font-size:17pt;margin-top:28px}h3{font-size:13pt}
+  a{color:#1d4ed8}img{max-width:100%}table{border-collapse:collapse;width:100%;margin:12px 0}
+  td,th{border:1px solid #ccc;padding:6px 8px;text-align:left;font-size:10.5pt}
+  blockquote{border-left:3px solid #ccc;margin:0;padding-left:12px;color:#444}
+  pre,code{font-family:Menlo,monospace;font-size:10pt}
+  @page{margin:18mm}
+</style></head><body>${markdownToArticleHtml(markdown)}</body></html>`);
+    win.document.close();
+    win.focus();
+    win.onafterprint = () => win.close();
+    window.setTimeout(() => win.print(), 300);
+    trackEvent("feature_usage", { feature_name: "article_export", action: "download_pdf" });
+  }, [markdown, title, flash]);
+
   const createShareLink = useCallback(async () => {
     if (!markdown.trim()) return;
     try {
@@ -212,6 +268,22 @@ export function ArticleCopyBar({
           className="touch-manipulation w-full rounded-lg border border-border bg-background/80 px-3 py-2 font-mono text-xs text-text-secondary transition-colors hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto sm:py-1.5"
         >
           Download HTML
+        </button>
+        <button
+          type="button"
+          onClick={() => void downloadDocx()}
+          disabled={disabled || empty}
+          className="touch-manipulation w-full rounded-lg border border-border bg-background/80 px-3 py-2 font-mono text-xs text-text-secondary transition-colors hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto sm:py-1.5"
+        >
+          Download Word (.docx)
+        </button>
+        <button
+          type="button"
+          onClick={downloadPdf}
+          disabled={disabled || empty}
+          className="touch-manipulation w-full rounded-lg border border-border bg-background/80 px-3 py-2 font-mono text-xs text-text-secondary transition-colors hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto sm:py-1.5"
+        >
+          Save as PDF
         </button>
         <button
           type="button"

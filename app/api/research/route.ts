@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { resolveTavilyKey } from "@/lib/api-keys";
 import { tavilySearch } from "@/lib/tavily";
 import type { Source } from "@/lib/types";
+import { guardUsage } from "@/lib/usage-guard";
 
 interface ResearchBody {
   topic?: string;
@@ -14,6 +15,9 @@ function toSource(url: string, title: string, snippet: string): Source {
 }
 
 export async function POST(request: Request) {
+  const guard = await guardUsage(request, "step");
+  if (!guard.ok) return guard.response;
+
   try {
     const tavilyKey = resolveTavilyKey(request);
     if (!tavilyKey) {

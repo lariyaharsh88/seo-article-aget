@@ -10,6 +10,7 @@ import { geminiJSON, geminiText } from "@/lib/gemini";
 import { groqStream } from "@/lib/groq";
 import { openRouterChat } from "@/lib/openrouter";
 import { extractRelatedQueries, serperSearch } from "@/lib/serper";
+import { guardUsage } from "@/lib/usage-guard";
 
 type Body = {
   keyword?: string;
@@ -248,6 +249,9 @@ async function generateTextWithFallback(opts: {
 }
 
 export async function POST(request: Request) {
+  const guard = await guardUsage(request, "step");
+  if (!guard.ok) return guard.response;
+
   const geminiKey = resolveGeminiKey(request);
   const groqKey = resolveGroqKey(request);
   const openRouterKey = resolveOpenRouterKey(request);

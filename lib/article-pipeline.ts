@@ -13,8 +13,39 @@ import type {
   Source,
 } from "@/lib/types";
 
-function buildHeaders(): HeadersInit {
-  return { "Content-Type": "application/json" };
+/**
+ * Browser: attaches the Supabase session so the server can apply the user's plan quota.
+ * Server (admin bulk routes): attaches the internal token so runs bypass end-user quotas.
+ */
+async function buildHeaders(): Promise<Record<string, string>> {
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (typeof window === "undefined") {
+    const secret =
+      process.env.INTERNAL_API_SECRET?.trim() || process.env.NEXTAUTH_SECRET?.trim();
+    if (secret) headers["x-internal-token"] = secret;
+    return headers;
+  }
+  try {
+    const { getSupabaseBrowserClient } = await import("@/lib/supabase-browser");
+    const { data } = await getSupabaseBrowserClient().auth.getSession();
+    const token = data.session?.access_token;
+    if (token) headers.Authorization = `Bearer ${token}`;
+  } catch {
+    // Supabase not configured — continue as guest.
+  }
+  return headers;
+}
+
+/** Turns a failed API response into a readable error (uses the JSON `error` field when present). */
+async function responseError(res: Response): Promise<Error> {
+  const text = await res.text();
+  try {
+    const parsed = JSON.parse(text) as { error?: unknown };
+    if (typeof parsed.error === "string" && parsed.error.trim()) return new Error(parsed.error);
+  } catch {
+    // not JSON
+  }
+  return new Error(text.slice(0, 200) || `HTTP ${res.status}`);
 }
 
 function isRecord(v: unknown): v is Record<string, unknown> {
@@ -50,6 +81,8 @@ export type ArticlePipelineConfig = {
    * Browser runs: omit for same-origin `/api/...`.
    */
   fetchBaseUrl?: string;
+  /** Optional project (brand voice + knowledge base) applied by /api/article. */
+  projectId?: string;
 };
 
 export type ArticlePipelineCallbacks = {
@@ -83,7 +116,7 @@ export async function runArticlePipeline(
   input: ArticlePipelineConfig,
   cbs: ArticlePipelineCallbacks,
 ): Promise<ArticlePipelineResult> {
-  const headers = buildHeaders();
+  const headers = await buildHeaders();
   const origin = input.fetchBaseUrl?.trim();
   const apiUrl = (path: string) => resolveApiUrl(path, origin);
   let keywordList: Keyword[] = [];
@@ -113,6 +146,7 @@ export async function runArticlePipeline(
         apiUrl(
           `/api/page-meta?url=${encodeURIComponent(input.sourceUrl.trim())}`,
         ),
+        { headers },
       );
       const metaJson: unknown = await metaRes.json();
       if (
@@ -328,12 +362,10 @@ export async function runArticlePipeline(
         searchConsoleQueries: input.searchConsoleQueries,
         googleSuggestions: input.googleSuggestions,
         providerMode: "gemini-only",
+        ...(input.projectId ? { projectId: input.projectId } : {}),
       }),
     });
-    if (!res.ok) {
-      const text = await res.text();
-      throw new Error(text.slice(0, 200) || `HTTP ${res.status}`);
-    }
+    if (!res.ok) throw await responseError(res);
     const reader = res.body?.getReader();
     if (!reader) throw new Error("No response stream");
     const decoder = new TextDecoder();
@@ -412,7 +444,7 @@ export async function runArticlePipeline(
     try {
       const res = await fetch(apiUrl("/api/seo-enrich"), {
         method: "POST",
-        headers: buildHeaders(),
+        headers,
         body: JSON.stringify({
           markdown: articleBody,
           keyword: workingTopic,

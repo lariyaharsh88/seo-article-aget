@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { resolveGeminiKey } from "@/lib/api-keys";
 import { geminiJSON } from "@/lib/gemini";
+import { guardUsage } from "@/lib/usage-guard";
 
 interface QueriesBody {
   topic?: string;
@@ -14,6 +15,9 @@ function normalizeQueries(raw: unknown): string[] {
 }
 
 export async function POST(request: Request) {
+  const guard = await guardUsage(request, "step");
+  if (!guard.ok) return guard.response;
+
   try {
     const geminiKey = resolveGeminiKey(request);
     if (!geminiKey) {

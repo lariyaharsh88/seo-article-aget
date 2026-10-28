@@ -3,6 +3,7 @@ import { resolveGeminiKey } from "@/lib/api-keys";
 import { geminiStream } from "@/lib/gemini";
 import { capPromptText } from "@/lib/prompt-truncate";
 import type { Keyword, PipelineInput } from "@/lib/types";
+import { guardUsage } from "@/lib/usage-guard";
 
 interface OutlineBody {
   topic?: string;
@@ -20,6 +21,9 @@ function stripUnsafeControls(s: string): string {
 }
 
 export async function POST(request: Request) {
+  const guard = await guardUsage(request, "step");
+  if (!guard.ok) return guard.response;
+
   try {
     const geminiKey = resolveGeminiKey(request);
     if (!geminiKey) {

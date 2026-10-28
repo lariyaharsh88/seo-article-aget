@@ -9,6 +9,9 @@ import { openRouterStream } from "@/lib/openrouter";
 import { buildArticlePromptFragments } from "@/lib/article-generation-prompt";
 import { capPromptText } from "@/lib/prompt-truncate";
 import type { Keyword, PipelineInput } from "@/lib/types";
+import { guardUsage } from "@/lib/usage-guard";
+import { buildProjectPromptBlock, loadProjectForUser } from "@/lib/project-context";
+import { getSupabaseUserFromRequest } from "@/lib/supabase-server";
 
 interface ArticleBody {
   topic?: string;
@@ -24,6 +27,8 @@ interface ArticleBody {
   googleSuggestions?: string[];
   /** Provider mode used by tool clients. */
   providerMode?: "gemini-only" | "multi";
+  /** Optional project whose brand voice + knowledge base steer the article. */
+  projectId?: string;
 }
 
 function encodeSseChunk(text: string): Uint8Array {
@@ -83,7 +88,30 @@ export async function POST(request: Request) {
     });
   }
 
-  const audience = body.audience?.trim() || "general readers";
+  let project: Awaited<ReturnType<typeof loadProjectForUser>> = null;
+  const projectId = typeof body.projectId === "string" ? body.projectId.trim() : "";
+  if (projectId) {
+    const user = await getSupabaseUserFromRequest(request);
+    project = user ? await loadProjectForUser(projectId, user.id) : null;
+    if (!project) {
+      return new Response(JSON.stringify({ error: "Project not found" }), {
+        status: 404,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+  }
+
+  // Charge the run only once the request is valid, so malformed calls don't burn quota.
+  const guard = await guardUsage(request, "run");
+  if (!guard.ok) return guard.response;
+
+  const bodyAudience = body.audience?.trim() || "";
+  const audience =
+    (bodyAudience && bodyAudience.toLowerCase() !== "general readers"
+      ? bodyAudience
+      : project?.audience?.trim()) ||
+    bodyAudience ||
+    "general readers";
   const providerMode = body.providerMode === "gemini-only" ? "gemini-only" : "multi";
   if (providerMode === "gemini-only" && !geminiKey) {
     return new Response(
@@ -141,6 +169,7 @@ export async function POST(request: Request) {
   const promptFragments = buildArticlePromptFragments({
     seed: `${topic}|${primary}|${intent}|${outlineText.slice(0, 500)}`,
     outlinePreview: outlineText,
+    projectBlock: project ? buildProjectPromptBlock(project) : "",
   });
   const wordTarget =
     searchItemCount > 20
@@ -169,7 +198,7 @@ PRIMARY KEYWORD: ${primary}
 ALL KEYWORDS (use naturally): ${allKeywords}
 TARGET AUDIENCE: ${audience}
 SEARCH INTENT: ${intent}
-
+${promptFragments.projectBlock}
 OUTLINE TO FOLLOW EXACTLY:
 ${outlineText}
 

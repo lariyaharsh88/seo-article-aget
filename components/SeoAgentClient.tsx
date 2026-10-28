@@ -9,6 +9,9 @@ import { ContentScoreStrip } from "@/components/workflow/ContentScoreStrip";
 import { SeoPublishChecklist } from "@/components/workflow/SeoPublishChecklist";
 import { WorkflowStepper } from "@/components/workflow/WorkflowStepper";
 import { ArticleCopyBar } from "@/components/ArticleCopyBar";
+import ProjectPicker from "@/components/ProjectPicker";
+import { PublishPanel } from "@/components/PublishPanel";
+import TermCoveragePanel from "@/components/TermCoveragePanel";
 import { ArticleRenderer } from "@/components/ArticleRenderer";
 import { PipelineProgress } from "@/components/PipelineProgress";
 import { TopicForm } from "@/components/TopicForm";
@@ -196,6 +199,15 @@ export function SeoAgentClient() {
     useState(false);
 
   useEffect(() => {
+    // Remove API keys saved by the retired in-browser keys panel (readable by any XSS).
+    try {
+      localStorage.removeItem("rankflowhq-agent-keys");
+    } catch {
+      // storage unavailable
+    }
+  }, []);
+
+  useEffect(() => {
     void fetch("/api/config")
       .then((r) => r.json())
       .then((d: unknown) => {
@@ -292,6 +304,8 @@ export function SeoAgentClient() {
     };
   }, [userSession?.user?.id, userSession?.user?.email, userSession?.access_token]);
   const [tab, setTab] = useState<TabId>("article");
+  /** Project (brand voice + knowledge base) applied to generation. */
+  const [projectId, setProjectId] = useState<string | null>(null);
   const [running, setRunning] = useState(false);
   const [stage, setStage] = useState<string | null>(null);
   const [doneStages, setDoneStages] = useState<string[]>([]);
@@ -318,6 +332,8 @@ export function SeoAgentClient() {
   const [inviteStatus, setInviteStatus] = useState<string | null>(null);
   const [inviteCount, setInviteCount] = useState(0);
   const [usageRuns, setUsageRuns] = useState(0);
+  /** Server-enforced monthly limit from /api/usage; falls back to the defaults until it loads. */
+  const [serverUsageLimit, setServerUsageLimit] = useState<number | null>(null);
   const [streakDays, setStreakDays] = useState(1);
   const [weeklyRuns, setWeeklyRuns] = useState(0);
   const [localHistory, setLocalHistory] = useState<LocalHistoryEntry[]>([]);
@@ -399,7 +415,22 @@ export function SeoAgentClient() {
     );
   }, [userSession?.user?.id]);
 
-  const usageLimit = userSession ? FREE_LOGGED_RUN_LIMIT : FREE_GUEST_RUN_LIMIT;
+  useEffect(() => {
+    if (!authReady) return;
+    const token = userSession?.access_token;
+    void fetch("/api/usage", token ? { headers: { Authorization: `Bearer ${token}` } } : undefined)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d: unknown) => {
+        if (isRecord(d) && typeof d.used === "number" && typeof d.limit === "number") {
+          setUsageRuns(d.used);
+          setServerUsageLimit(d.limit);
+        }
+      })
+      .catch(() => {});
+  }, [authReady, userSession?.access_token]);
+
+  const usageLimit =
+    serverUsageLimit ?? (userSession ? FREE_LOGGED_RUN_LIMIT : FREE_GUEST_RUN_LIMIT);
   const usageRemaining = Math.max(0, usageLimit - usageRuns);
   const usageLimitReached = usageRemaining <= 0;
   const hasFirstOutput = article.trim().length >= 40;
@@ -662,6 +693,7 @@ export function SeoAgentClient() {
           primaryKeyword: effectiveInput.primaryKeyword,
           searchConsoleQueries: searchConsoleQueriesForArticle,
           googleSuggestions,
+          projectId: projectId ?? undefined,
         },
         {
           onStage: setStage,
@@ -707,6 +739,7 @@ export function SeoAgentClient() {
               topic: effectiveInput.topic,
               primaryKeyword: effectiveInput.primaryKeyword,
               sourceUrl: effectiveInput.sourceUrl,
+              projectId: projectId ?? undefined,
               title: topicFirstLine || effectiveInput.primaryKeyword || "Generated article",
             }),
           });
@@ -1498,6 +1531,8 @@ export function SeoAgentClient() {
             />
           )}
 
+          <ProjectPicker value={projectId} onChange={setProjectId} />
+
           <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
             {onboardingOpen && onboardingStep === ONBOARDING_TOTAL_STEPS ? (
               <p className="w-full rounded-md border border-accent/40 bg-accent/10 px-3 py-2 font-mono text-[11px] text-accent">
@@ -1750,6 +1785,15 @@ export function SeoAgentClient() {
                     title={topicFirstLine || input.primaryKeyword || "Generated article"}
                     disabled={running}
                   />
+                  <PublishPanel
+                    markdown={article}
+                    title={meta?.ogTitle || topicFirstLine || input.primaryKeyword || "Generated article"}
+                    metaTitle={meta?.metaTitle}
+                    metaDescription={meta?.metaDescription}
+                    slug={meta?.urlSlug}
+                    tags={meta?.secondaryKeywords?.slice(0, 8)}
+                    disabled={running || !article.trim()}
+                  />
                   <div className="mb-4 inline-flex rounded-lg border border-border bg-background/60 p-1">
                     <button
                       type="button"
@@ -1838,7 +1882,16 @@ export function SeoAgentClient() {
               )}
               {tab === "score" &&
                 (showSeoScore ? (
-                  <ArticleSeoScorecard result={seoScoreResult} />
+                  <div className="space-y-6">
+                    <ArticleSeoScorecard result={seoScoreResult} />
+                    <TermCoveragePanel
+                      markdown={article}
+                      keyword={
+                        input.primaryKeyword.trim() || simpleKeyword.trim() || topicFirstLine
+                      }
+                      disabled={running}
+                    />
+                  </div>
                 ) : (
                   <p className="font-serif text-text-secondary">
                     Add or generate article text first (about 40+ characters). Scores

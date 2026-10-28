@@ -5,6 +5,7 @@ import {
 } from "@/lib/ai-seo/visibility-analyze";
 import { openRouterChat } from "@/lib/openrouter";
 import { prisma } from "@/lib/prisma";
+import { guardUsage } from "@/lib/usage-guard";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -15,6 +16,9 @@ type Body = {
 };
 
 export async function POST(request: Request) {
+  const guard = await guardUsage(request, "step");
+  if (!guard.ok) return guard.response;
+
   let body: Body;
   try {
     body = (await request.json()) as Body;

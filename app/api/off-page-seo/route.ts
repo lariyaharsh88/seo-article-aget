@@ -5,11 +5,15 @@ import {
   applyGeminiPrioritization,
   applyRulePrioritization,
 } from "@/lib/off-page-seo/prioritize";
+import { guardUsage } from "@/lib/usage-guard";
 
 /** Vercel / long-running: increase on Pro if timeouts occur. */
 export const maxDuration = 120;
 
 export async function POST(request: Request) {
+  const guard = await guardUsage(request, "step");
+  if (!guard.ok) return guard.response;
+
   try {
     const serperKey = resolveSerperKey(request);
     const geminiKey = resolveGeminiKey(request);
